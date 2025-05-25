@@ -25,7 +25,7 @@ def get_recent_trade_data(
 
         # 根据日期来排序
         df["日期"] = pd.to_datetime(df["日期"])
-        df = df.sort_values("日期", ascending=False)
+        df = df.sort_values("日期", ascending=True)
 
         # 返回最新的10条数据
         return df.head(count).reset_index(drop=True)

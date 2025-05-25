@@ -3,7 +3,7 @@ import mplfinance as mpf
 import pandas as pd
 
 from mongodb import database
-from strategy import get_recent_trade_data
+from strategy.stock10up import get_recent_trade_data
 
 plt.switch_backend('TkAgg')  # 弹出显示
 
@@ -14,7 +14,6 @@ count = 50
 stock_name = database.stock_pool.find_one({"代码": symbol})["名称"]
 
 # 1. 获取股票数据（示例：贵州茅台 sh600519）
-# 使用示例（带前复权）
 stock_data = get_recent_trade_data(symbol, count)
 if not stock_data.empty:
     # 2. 数据清洗与格式化
@@ -34,7 +33,7 @@ if not stock_data.empty:
     # 设置样式和参数
     custom_style = mpf.make_mpf_style(
         base_mpf_style='yahoo',  # 基础样式
-        rc={'font.family': 'Hei', 'font.size': 12},
+        rc={'font.family': 'Hei', 'font.size': 12, },
         marketcolors=mpf.make_marketcolors(
             up='red',
             down='green',
@@ -52,16 +51,23 @@ if not stock_data.empty:
     kwargs = dict(
         type='candle',
         style=custom_style,
-        title=f'股票{count}日K线图 - {stock_name}',
+        title=f'{stock_name}{count}日K线图',
         ylabel='价格',
         ylabel_lower='成交量',  # 成交量面板标签
         volume=True,
         figratio=(12, 6),
         figscale=1.2,
-        scale_padding={'left': 0.2, 'right': 0.8, 'top': 0.8, 'bottom': 0.2},  # 坐标轴缩放边距
+        panel_ratios=(4, 1),  # 主图与成交量图高度比 4:1
+        scale_padding={'left': 0.2, 'right': 0.8, 'top': 0.8, 'bottom': 0.6},  # 坐标轴缩放边距
         mav=(5, 10, 20),  # 添加5日、10日、20日均线
-        show_nontrading=True,  # 展示非交易日
+        show_nontrading=False,  # 不展示非交易日
         datetime_format='%Y-%m-%d',
+        xrotation=0,  # X轴标签旋转角度
+        update_width_config=dict(
+            candle_linewidth=0.5,  # K线边框粗细
+            candle_width=0.8,  # K线宽度（0.8=80%的默认宽度）
+            volume_width=0.7  # 成交量柱宽
+        ),
 
     )
 
