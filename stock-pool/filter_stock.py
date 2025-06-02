@@ -1,15 +1,19 @@
 import akshare as ak
 
 
-def filter_stocks(stock_df):
-    # 排除'ST'的股票
-    not_st = ~stock_df['名称'].str.contains('ST')
+def filter_by_stock_type(df):
+    """过滤股票类型：排除ST股、科创板、北交所"""
+
+    # 排除ST股票（名称包含ST、*ST、S*ST等）
+    df = df[~df['名称'].str.contains('ST|退', na=False)]
+
     # 排除北交所,科创板
-    not_bj = ~stock_df['代码'].str.startswith(('8', '4', '688'))
+    df = df[~df['代码'].str.startswith(('8', '4', '688'))]
+
     # 排除市值低于50亿
-    not_small_company = stock_df['流通市值'] > 5000000000
-    # 组合条件
-    return not_st & not_bj & not_small_company
+    df = df[~(df['流通市值'] > 5000000000)]  # 可选：如果不想要创业板
+
+    return df
 
 
 def extract_fields(original_list, selected_fields):
@@ -25,7 +29,7 @@ def get_filtered_stocks():
         print("获取数据失败！")
         return
     # 直接通过布尔索引过滤
-    filtered_stocks = stock_list[filter_stocks(stock_list)]
+    filtered_stocks = filter_by_stock_type(stock_list)
     filtered_stocks = filtered_stocks.to_dict(orient='records')
     filtered_stocks = extract_fields(filtered_stocks, ['名称', '代码'])
     return filtered_stocks
