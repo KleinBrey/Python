@@ -3,15 +3,15 @@ import mplfinance as mpf
 import pandas as pd
 
 from mongodb import database
-from strategy.stock10up import get_recent_trade_data
+from strategy.chartdata import get_recent_trade_data
 
 plt.switch_backend('TkAgg')  # 弹出显示
 
 symbol = "600519"
 
-count = 50
+count = 200
 
-stock_name = database.stock_pool.find_one({"代码": symbol})["名称"]
+stock_name = "贵州茅台"
 
 # 1. 获取股票数据（示例：贵州茅台 sh600519）
 stock_data = get_recent_trade_data(symbol, count)
