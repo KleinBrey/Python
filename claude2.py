@@ -10,12 +10,14 @@
 5. 按当天个股热度进行排序，导出excel
 """
 
+import time
+import warnings
+from datetime import datetime, timedelta
+import numpy as np
 import akshare as ak
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import warnings
-import time
+
+import mongodb.database as database
 
 warnings.filterwarnings('ignore')
 
@@ -159,14 +161,42 @@ class StockScreener:
         print(f"热度排序完成")
         return df
 
-    def export_to_excel(self, df, filename=None):
-        """导出结果到Excel"""
+    # def export_to_excel(self, df, filename=None):
+    #     """导出结果到Excel"""
+    #     if df.empty:
+    #         print("没有数据可导出")
+    #         return
+    #
+    #     if filename is None:
+    #         filename = f"股票筛选结果_{self.today}.xlsx"
+    #
+    #     # 选择要导出的列
+    #     export_columns = [
+    #         '代码', '名称', '最新价', '涨跌幅', '涨跌额', '成交量', '成交额',
+    #         '换手率', '总市值_亿', '流通市值', '成交量放大倍数', '热度指标'
+    #     ]
+    #
+    #     # 只选择存在的列
+    #     available_columns = [col for col in export_columns if col in df.columns]
+    #     export_df = df[available_columns].copy()
+    #
+    #     # 格式化数据
+    #     export_df['总市值_亿'] = export_df['总市值_亿'].round(2)
+    #     export_df['成交量放大倍数'] = export_df['成交量放大倍数'].round(2)
+    #     export_df['热度指标'] = export_df['热度指标'].round(2)
+    #
+    #     try:
+    #         export_df.to_excel(filename, index=False, engine='openpyxl')
+    #         print(f"结果已导出到: {filename}")
+    #         print(f"共导出 {len(export_df)} 只股票")
+    #     except Exception as e:
+    #         print(f"导出Excel失败: {e}")
+
+    def export_to_mongodb(self, df):
+        """导出结果到MongoDB"""
         if df.empty:
             print("没有数据可导出")
             return
-
-        if filename is None:
-            filename = f"股票筛选结果_{self.today}.xlsx"
 
         # 选择要导出的列
         export_columns = [
@@ -183,12 +213,39 @@ class StockScreener:
         export_df['成交量放大倍数'] = export_df['成交量放大倍数'].round(2)
         export_df['热度指标'] = export_df['热度指标'].round(2)
 
-        try:
-            export_df.to_excel(filename, index=False, engine='openpyxl')
-            print(f"结果已导出到: {filename}")
-            print(f"共导出 {len(export_df)} 只股票")
-        except Exception as e:
-            print(f"导出Excel失败: {e}")
+        # 转换DataFrame为字典列表
+        records = export_df.to_dict('records')
+
+        # 为每条记录添加时间戳和筛选日期
+        current_time = datetime.now()
+        for record in records:
+            record['筛选日期'] = self.today
+            record['创建时间'] = current_time
+            record['数据来源'] = 'akshare'
+
+            # 处理NaN值，MongoDB不支持NaN
+            for key, value in record.items():
+                if pd.isna(value):
+                    record[key] = None
+                elif isinstance(value, (np.int64, np.float64)):
+                    record[key] = float(value) if not np.isnan(value) else None
+
+        # 批量插入数据
+        if records:
+            # 可以选择是否先清空当天的数据
+            # collection.delete_many({"筛选日期": self.today})  # 取消注释以删除当天旧数据
+            result = database.stock_filter_result.insert_many(records)
+            print(f"成功导入MongoDB:")
+            print(f"  插入记录数: {len(result.inserted_ids)}")
+            print(f"  筛选日期: {self.today}")
+
+            # 创建索引以提高查询性能
+            try:
+                database.stock_filter_result.create_index([("代码", 1), ("筛选日期", -1)])
+                database.stock_filter_result.create_index([("热度指标", -1)])
+                database.stock_filter_result.create_index([("筛选日期", -1)])
+            except Exception as idx_e:
+                print(f"创建索引时出现警告: {idx_e}")
 
     def run_screening(self):
         """执行完整的股票筛选流程"""
@@ -230,7 +287,7 @@ class StockScreener:
         final_results = self.sort_by_popularity(filtered_stocks)
 
         # 7. 导出Excel
-        self.export_to_excel(final_results)
+        self.export_to_mongodb(final_results)
 
         # 8. 显示结果摘要
         print("\n" + "=" * 50)

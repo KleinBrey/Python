@@ -1,5 +1,6 @@
 import mongodb.database as database
 from filter_stock import get_filtered_stocks
+from require_detail import collect_stock_all_data
 
 """
 构建股票池数据
@@ -10,7 +11,8 @@ def main():
     print("获取股票池数据...")
     try:
         stocks = get_filtered_stocks()
-        print(f"成功获取 {len(stocks)} 只股票数据")
+        # stocks = stocks.head(10)
+        stocks = collect_stock_all_data(stocks)
         # 先清除数据集里的老数据，再插入新获取的数据
         database.stock_pool.delete_many({})
         database.stock_pool.insert_many(stocks)

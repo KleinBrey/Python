@@ -1,4 +1,5 @@
 import akshare as ak
+import numpy as np
 
 
 def filter_by_stock_type(df):
@@ -16,9 +17,19 @@ def filter_by_stock_type(df):
     return df
 
 
-def extract_fields(original_list, selected_fields):
-    filtered_list = [{key: item[key] for key in selected_fields} for item in original_list]
-    return filtered_list
+def filter_by_market_cap(df):
+    """按市值筛选：30亿 < 市值 < 300亿"""
+
+    # 总市值单位通常是元，需要转换为亿元，四舍五入为整数
+    # 先处理缺失值和无穷值
+    df['总市值_亿'] = df['总市值'] / 100000000
+    df['总市值_亿'] = df['总市值_亿'].fillna(0).replace([np.inf, -np.inf], 0).round().astype(int)
+
+    # 筛选市值在30亿到300亿之间
+    df = df[(df['总市值_亿'] > 30) & (df['总市值_亿'] < 300)]
+
+    return df
+
 
 
 def get_filtered_stocks():
@@ -30,6 +41,7 @@ def get_filtered_stocks():
         return
     # 直接通过布尔索引过滤
     filtered_stocks = filter_by_stock_type(stock_list)
-    filtered_stocks = filtered_stocks.to_dict(orient='records')
-    filtered_stocks = extract_fields(filtered_stocks, ['名称', '代码'])
+    filtered_stocks = filter_by_market_cap(filtered_stocks)
+    filtered_stocks = filtered_stocks[['名称', '代码']]
+    print(f"成功获取 {len(filtered_stocks)} 只股票数据")
     return filtered_stocks
