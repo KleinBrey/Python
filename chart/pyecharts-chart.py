@@ -3,6 +3,8 @@ import pandas as pd
 from pyecharts.charts import Kline, Line
 from pyecharts import options as opts
 import datetime
+import os
+from utils.open_file_in_browser import open_file_in_browser
 
 
 def get_stock_data(stock_code, period="daily", adjust="qfq", start_date=None, end_date=None):
@@ -41,7 +43,7 @@ def get_stock_data(stock_code, period="daily", adjust="qfq", start_date=None, en
         return stock_data
 
     except Exception as e:
-        print(f"获取股票数据失败: {e}")
+        print(f"获取股票 {stock_code} 数据失败: {e}")
         return None
 
 
@@ -178,15 +180,24 @@ def create_simple_kline_chart(stock_data, stock_code, stock_name=""):
     return kline
 
 
-def main():
-    """主函数"""
-    # 配置参数
-    stock_code = "000001"  # 平安银行
-    stock_name = "平安银行"
-    start_date = "20240101"
-    end_date = "20241201"
+def process_single_stock(stock_info, start_date, end_date, output_dir):
+    """
+    处理单个股票的数据和图表生成
 
-    print(f"正在获取股票 {stock_name}({stock_code}) 的数据...")
+    Args:
+        stock_info: 股票信息字典，包含 'code' 和 'name'
+        start_date: 开始日期
+        end_date: 结束日期
+        output_dir: 输出目录
+
+    Returns:
+        dict: 包含股票统计信息的字典
+    """
+    stock_code = stock_info['code']
+    stock_name = stock_info['name']
+
+    print(f"\n正在处理股票: {stock_name}({stock_code})")
+    print("-" * 40)
 
     # 获取股票数据
     stock_data = get_stock_data(
@@ -198,34 +209,110 @@ def main():
     )
 
     if stock_data is None or stock_data.empty:
-        print("获取股票数据失败或数据为空")
-        return
+        print(f"❌ 获取股票 {stock_name}({stock_code}) 数据失败或数据为空")
+        return None
 
-    print(f"成功获取 {len(stock_data)} 条数据")
-    print("数据预览:")
-    print(stock_data.head())
+    print(f"✅ 成功获取 {len(stock_data)} 条数据")
 
     # 创建K线图
-    print("正在生成K线图...")
+    print("📊 正在生成K线图...")
     chart = create_simple_kline_chart(stock_data, stock_code, stock_name)
 
     # 保存图表
-    output_file = f"{stock_name}_{stock_code}_kline_simple.html"
-    chart.render(output_file)
-    print(f"K线图已保存为: {output_file}")
+    output_file = f"{stock_name}_{stock_code}_kline.html"
+    output_path = os.path.join(output_dir, output_file)
+    chart.render(output_path)
+    print(f"💾 K线图已保存为: {output_path}")
 
-    # 显示一些统计信息
-    print(f"\n--- {stock_name} 数据统计 ---")
-    print(f"数据时间范围: {stock_data['日期'].min()} 至 {stock_data['日期'].max()}")
-    print(f"最高价: {stock_data['最高'].max():.2f}")
-    print(f"最低价: {stock_data['最低'].min():.2f}")
-    print(f"最新收盘价: {stock_data['收盘'].iloc[-1]:.2f}")
-    print(f"期间涨跌幅: {((stock_data['收盘'].iloc[-1] / stock_data['收盘'].iloc[0] - 1) * 100):.2f}%")
+    # 在浏览器中打开
+    abs_path = os.path.abspath(output_path)
+    open_file_in_browser(abs_path)
+
+    # 计算统计信息
+    stats = {
+        'name': stock_name,
+        'code': stock_code,
+        'data_count': len(stock_data),
+        'date_range': f"{stock_data['日期'].min().strftime('%Y-%m-%d')} 至 {stock_data['日期'].max().strftime('%Y-%m-%d')}",
+        'highest_price': stock_data['最高'].max(),
+        'lowest_price': stock_data['最低'].min(),
+        'latest_close': stock_data['收盘'].iloc[-1],
+        'period_change': ((stock_data['收盘'].iloc[-1] / stock_data['收盘'].iloc[0] - 1) * 100)
+    }
+
+    # 显示统计信息
+    print(f"\n📈 {stock_name} 数据统计:")
+    print(f"   数据时间范围: {stats['date_range']}")
+    print(f"   最高价: {stats['highest_price']:.2f}")
+    print(f"   最低价: {stats['lowest_price']:.2f}")
+    print(f"   最新收盘价: {stats['latest_close']:.2f}")
+    print(f"   期间涨跌幅: {stats['period_change']:.2f}%")
+
+    return stats
+
+
+def main():
+    """主函数"""
+    # 配置股票列表
+    stocks = [
+
+        {"code": "002115", "name": "三维通信"}
+    ]
+
+    # 配置日期参数
+    start_date = "20250101"
+    end_date = "20250830"
+
+    # 创建输出目录
+    output_dir = "output-chart"
+    os.makedirs(output_dir, exist_ok=True)
+
+    print("🚀 开始批量生成股票K线图")
+    print(f"📅 数据时间范围: {start_date} - {end_date}")
+    print(f"📊 共需处理 {len(stocks)} 只股票")
+    print("=" * 60)
+
+    # 存储所有股票的统计信息
+    all_stats = []
+
+    # 逐个处理每只股票
+    for i, stock_info in enumerate(stocks, 1):
+        print(f"\n[{i}/{len(stocks)}] 开始处理...")
+        stats = process_single_stock(stock_info, start_date, end_date, output_dir)
+
+        if stats:
+            all_stats.append(stats)
+            print(f"✅ {stock_info['name']} 处理完成")
+        else:
+            print(f"❌ {stock_info['name']} 处理失败")
+
+    # 显示汇总信息
+    print("\n" + "=" * 60)
+    print(f"🎉 批量处理完成！成功处理 {len(all_stats)} 只股票")
+
+    if all_stats:
+        print("\n📊 汇总统计信息:")
+        print("-" * 60)
+        print(f"{'股票名称':<12} {'代码':<10} {'涨跌幅':<10} {'最新价':<10} {'最高价':<10}")
+        print("-" * 60)
+
+        for stats in all_stats:
+            print(f"{stats['name']:<12} {stats['code']:<10} {stats['period_change']:>6.2f}% "
+                  f"{stats['latest_close']:>8.2f} {stats['highest_price']:>8.2f}")
+
+        print("-" * 60)
+
+        # 找出表现最好和最差的股票
+        best_performer = max(all_stats, key=lambda x: x['period_change'])
+        worst_performer = min(all_stats, key=lambda x: x['period_change'])
+
+        print(f"\n🏆 期间表现最佳: {best_performer['name']} ({best_performer['period_change']:.2f}%)")
+        print(f"📉 期间表现最差: {worst_performer['name']} ({worst_performer['period_change']:.2f}%)")
 
 
 if __name__ == "__main__":
     # 安装依赖提示
-    print("请确保已安装以下依赖包:")
+    print("📦 请确保已安装以下依赖包:")
     print("pip install akshare pyecharts pandas")
     print("-" * 50)
 

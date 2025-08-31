@@ -1,7 +1,7 @@
 from mongodb.mongo import MongoDBHelper
 
 # mongoDB stock_pool
-stock_pool = MongoDBHelper(db_name="python", collection_name="stock-pool")
+stock_pool = MongoDBHelper(db_name="python", collection_name="stock_pool")
 
 # mongoDB 缓存股票的历史数据
 stock_daily_data = MongoDBHelper(db_name="python", collection_name="stock_daily_data")
