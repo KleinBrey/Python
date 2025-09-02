@@ -12,7 +12,7 @@ def filter_by_stock_type(df):
     df = df[~df['代码'].str.startswith(('8', '4', '688'))]
 
     # 排除市值低于50亿
-    df = df[~(df['流通市值'] > 5000000000)]  # 可选：如果不想要创业板
+    df = df[~(df['流通市值'] > 5000000000)]
 
     return df
 

@@ -9,7 +9,7 @@ import time
 import akshare as ak
 import pandas as pd
 from datetime import datetime, timedelta
-from utils import convert_numpy_type
+from utils import convert_data
 
 
 class StockDataCollector:
@@ -208,7 +208,7 @@ def collect_stock_all_data(stocks):
         # 导出数据
         if collector.all_stocks_data:
             print("\n程序执行完成！")
-            cleaned_data = convert_numpy_type.clean_mongo_data(collector.all_stocks_data)
+            cleaned_data = convert_data.to_mongo_format(collector.all_stocks_data)
             return cleaned_data
 
         else:
