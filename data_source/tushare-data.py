@@ -2,8 +2,7 @@
 import mplfinance as mpf
 import pandas as pd
 from mongodb import database
-
-from data_source import pro
+from data_source import tushare
 
 
 def save_daily_to_mongo(ts_codes, start_date, end_date):
@@ -13,7 +12,7 @@ def save_daily_to_mongo(ts_codes, start_date, end_date):
     :param start_date: 开始日期, 例 "20180701"
     :param end_date: 结束日期, 例 "20180718"
     """
-    df = pro.daily(ts_code=ts_codes, start_date=start_date, end_date=end_date)
+    df = tushare.daily(ts_code=ts_codes, start_date=start_date, end_date=end_date)
 
     if df.empty:
         print("没有获取到数据")

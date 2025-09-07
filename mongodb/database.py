@@ -1,6 +1,6 @@
 from mongodb.mongo import MongoDBHelper
 
-# mongoDB stock_pool
+# mongoDB 筛选股票池
 stock_pool = MongoDBHelper(db_name="python", collection_name="stock_pool")
 
 # mongoDB 缓存股票的历史数据

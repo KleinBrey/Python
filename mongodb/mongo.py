@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 
+
 class MongoDBHelper:
     def __init__(self, uri="mongodb://localhost:27017/", db_name="python", collection_name="stock"):
         """
@@ -41,14 +42,21 @@ class MongoDBHelper:
         result = self.collection.find_one(query)
         return result
 
-    def find_many(self, query):
+    def find_many(self, query, fields=None):
         """
         根据查询条件查找多条数据。
 
-        :param query: 查询条件字典
-        :return: 查询到的数据列表
-        """
-        results = self.collection.find(query)
+       :param query: 查询条件字典
+       :param fields: 要返回的字段列表，例如 ["股票代码", "股票名称", "市净率"]
+       :return: 查询到的数据列表
+       """
+        # 构造 projection
+        projection = None
+        if fields:
+            projection = {field: 1 for field in fields}
+            projection["_id"] = 0  # 永远去掉 _id
+
+        results = self.collection.find(query, projection)
         return list(results)
 
     def update_one(self, query, new_data):
@@ -92,4 +100,3 @@ class MongoDBHelper:
         """
         result = self.collection.delete_many(query)
         return result.deleted_count
-

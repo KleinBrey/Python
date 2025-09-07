@@ -1,47 +1,98 @@
-import akshare as ak
-import numpy as np
+from data_source import tushare
+from mongodb import database
+import pandas as pd
+
+# ========================
+# 常量配置
+# ========================
+COLUMN_MAP = {
+    "ts_code": "股票代码",
+    "name": "股票名称",
+    "industry": "行业",
+    "total_share": "总股本(亿)",
+    "bvps": "每股净资产",
+    "pb": "市净率",
+    "market_value": "总市值(亿)"
+}
+
+MARKET_CAP_MIN = 50   # 总市值下限（亿）
+MARKET_CAP_MAX = 300  # 总市值上限（亿）
+
+def rename_columns(df) :
+    """将列名替换为中文"""
+    return df.rename(columns=COLUMN_MAP)
+
 
 
 def filter_by_stock_type(df):
     """过滤股票类型：排除ST股、科创板、北交所"""
 
     # 排除ST股票（名称包含ST、*ST、S*ST等）
-    df = df[~df['名称'].str.contains('ST|退', na=False)]
+    df = df[~df['name'].str.contains('ST|退', na=False)]
 
     # 排除北交所,科创板
-    df = df[~df['代码'].str.startswith(('8', '4', '688'))]
-
-    # 排除市值低于50亿
-    df = df[~(df['流通市值'] > 5000000000)]
+    df = df[~df['ts_code'].str.startswith(('8', '4', '688'))]
 
     return df
 
 
 def filter_by_market_cap(df):
-    """按市值筛选：30亿 < 市值 < 300亿"""
-
-    # 总市值单位通常是元，需要转换为亿元，四舍五入为整数
-    # 先处理缺失值和无穷值
-    df['总市值_亿'] = df['总市值'] / 100000000
-    df['总市值_亿'] = df['总市值_亿'].fillna(0).replace([np.inf, -np.inf], 0).round().astype(int)
-
-    # 筛选市值在30亿到300亿之间
-    df = df[(df['总市值_亿'] > 30) & (df['总市值_亿'] < 300)]
-
+    """过滤市值范围"""
+    df = df[(df['market_value'] > MARKET_CAP_MIN) & (df['market_value'] < MARKET_CAP_MAX)]
     return df
 
 
 
 def get_filtered_stocks():
     # 获取全量A股实时数据
-    stock_list = ak.stock_zh_a_spot_em()
+    stock_list = tushare.bak_basic(**{
+        "trade_date": "",
+        "ts_code": "",
+        "limit": "",
+        "offset": ""
+    }, fields=[
+        "ts_code",
+        "name",
+        "industry",
+        "total_share",
+        "bvps",
+        "pb"
+    ])
     # 验证数据是否存在
     if stock_list.empty:
         print("获取数据失败！")
         return
-    # 直接通过布尔索引过滤
+
+    # 计算总市值（保留两位小数）
+    stock_list['market_value'] = stock_list['total_share'] * stock_list['pb'] * stock_list['bvps']
+    stock_list['market_value'] = stock_list['market_value'].round(2)
+
+    # 根据条件进行过滤
     filtered_stocks = filter_by_stock_type(stock_list)
     filtered_stocks = filter_by_market_cap(filtered_stocks)
-    filtered_stocks = filtered_stocks[['名称', '代码']]
+
+    # 转换标题为中文
+    filtered_stocks = rename_columns(filtered_stocks)
     print(f"成功获取 {len(filtered_stocks)} 只股票数据")
     return filtered_stocks
+
+def save_to_mongo(df: pd.DataFrame, collection_name: str = "stock_pool") -> None:
+    """保存结果到 MongoDB"""
+    try:
+        database[collection_name].delete_many({})
+        database[collection_name].insert_many(df.to_dict(orient="records"))
+        print(f"✅ 数据已保存到 MongoDB.{collection_name}")
+    except Exception as e:
+        print(f"❌ 保存到 MongoDB 失败: {e}")
+
+
+def main():
+    data = get_filtered_stocks()
+
+    if data is not None and not data.empty:
+        save_to_mongo(data)
+        print(data)
+
+if __name__ == "__main__":
+    main()
+
