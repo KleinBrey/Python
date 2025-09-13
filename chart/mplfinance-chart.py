@@ -1,29 +1,24 @@
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import pandas as pd
-
-from mongodb import database
-from strategy.chartdata import get_recent_trade_data
+from strategy.chartdata import get_stock_history
 
 plt.switch_backend('TkAgg')  # 弹出显示
 
-symbol = "600519"
+symbol = "605288.SH"
 
-count = 200
 
-stock_name = "贵州茅台"
-
-# 1. 获取股票数据（示例：贵州茅台 sh600519）
-stock_data = get_recent_trade_data(symbol, count)
+stock_data = get_stock_history(symbol)
+print(stock_data)
 if not stock_data.empty:
     # 2. 数据清洗与格式化
     # 重命名列名，使其符合 mplfinance 的要求
     stock_data = stock_data.rename(columns={
-        '日期': 'Date',
-        '开盘': 'Open',
-        '最高': 'High',
-        '最低': 'Low',
-        '收盘': 'Close',
+        '交易日期': 'Date',
+        '开盘价': 'Open',
+        '最高价': 'High',
+        '最低价': 'Low',
+        '收盘价': 'Close',
         '成交量': 'Volume'
     })
     stock_data.index = pd.to_datetime(stock_data['Date'])  # 将日期设为索引
@@ -51,7 +46,7 @@ if not stock_data.empty:
     kwargs = dict(
         type='candle',
         style=custom_style,
-        title=f'{stock_name}{count}日K线图',
+        title=f'{symbol}日K线图',
         ylabel='价格',
         ylabel_lower='成交量',  # 成交量面板标签
         volume=True,

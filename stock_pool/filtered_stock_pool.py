@@ -2,9 +2,7 @@ from data_source import tushare
 from mongodb import database
 import pandas as pd
 
-# ========================
-# 常量配置
-# ========================
+
 COLUMN_MAP = {
     "ts_code": "股票代码",
     "name": "股票名称",
@@ -15,8 +13,8 @@ COLUMN_MAP = {
     "market_value": "总市值(亿)"
 }
 
-MARKET_CAP_MIN = 50   # 总市值下限（亿）
-MARKET_CAP_MAX = 300  # 总市值上限（亿）
+MARKET_CAP_MIN = 50
+MARKET_CAP_MAX = 80
 
 def rename_columns(df) :
     """将列名替换为中文"""
@@ -26,13 +24,11 @@ def rename_columns(df) :
 
 def filter_by_stock_type(df):
     """过滤股票类型：排除ST股、科创板、北交所"""
-
     # 排除ST股票（名称包含ST、*ST、S*ST等）
     df = df[~df['name'].str.contains('ST|退', na=False)]
-
     # 排除北交所,科创板
+    df = df[~df['ts_code'].str.endswith('.BJ')]
     df = df[~df['ts_code'].str.startswith(('8', '4', '688'))]
-
     return df
 
 
@@ -76,12 +72,12 @@ def get_filtered_stocks():
     print(f"成功获取 {len(filtered_stocks)} 只股票数据")
     return filtered_stocks
 
-def save_to_mongo(df: pd.DataFrame, collection_name: str = "stock_pool") -> None:
+def save_to_mongo(df: pd.DataFrame) -> None:
     """保存结果到 MongoDB"""
     try:
-        database[collection_name].delete_many({})
-        database[collection_name].insert_many(df.to_dict(orient="records"))
-        print(f"✅ 数据已保存到 MongoDB.{collection_name}")
+        database.stock_pool.delete_many({})
+        database.stock_pool.insert_many(df.to_dict(orient="records"))
+        print("✅ 数据已保存到 MongoDB!")
     except Exception as e:
         print(f"❌ 保存到 MongoDB 失败: {e}")
 

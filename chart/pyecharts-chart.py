@@ -1,6 +1,6 @@
 import akshare as ak
 import pandas as pd
-from pyecharts.charts import Kline, Line
+from pyecharts.charts import Kline, Line,Page
 from pyecharts import options as opts
 import datetime
 import os
@@ -216,12 +216,17 @@ def process_single_stock(stock_info, start_date, end_date, output_dir):
 
     # 创建K线图
     print("📊 正在生成K线图...")
-    chart = create_simple_kline_chart(stock_data, stock_code, stock_name)
-
+    chart1 = create_simple_kline_chart(stock_data, stock_code, stock_name)
+    chart2 = create_simple_kline_chart(stock_data, stock_code, stock_name)
+    chart3 = create_simple_kline_chart(stock_data, stock_code, stock_name)
+    page = Page()
+    page.add(chart1, chart2, chart3)
     # 保存图表
     output_file = f"{stock_name}_{stock_code}_kline.html"
     output_path = os.path.join(output_dir, output_file)
-    chart.render(output_path)
+
+
+    page.render(output_path)
     print(f"💾 K线图已保存为: {output_path}")
 
     # 在浏览器中打开
