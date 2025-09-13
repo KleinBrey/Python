@@ -1,8 +1,11 @@
-import pandas as pd
-from pyecharts.charts import Kline, Line, Bar, Grid, Page
-from pyecharts import options as opts
-from mongodb import database
 import os
+
+import pandas as pd
+from pyecharts import options as opts
+from pyecharts.charts import Kline, Line, Bar, Grid, Page
+from pyecharts.commons.utils import JsCode
+
+from mongodb import database
 from utils.open_file_in_browser import open_file_in_browser
 
 
@@ -21,11 +24,11 @@ def create_kline_chart(stock_data, stock_code, stock_name):
         stock_name: 股票名称
     """
 
-    # 准备K线数据
-    kline_data = []
-
+    # 日期
     dates = []
-
+    # K线
+    kline_data = []
+    # 成交量
     volumes = []
 
     for index, row in stock_data.iterrows():
@@ -36,7 +39,11 @@ def create_kline_chart(stock_data, stock_code, stock_name):
             float(row['最低价']),  # 最低价
             float(row['最高价'])  # 最高价
         ])
-        volumes.append(float(row['成交量']))
+        volumes.append({
+            "value": float(row['成交量']),
+            "open": float(row['开盘价']),
+            "close": float(row['收盘价']),
+        })
 
     # 计算移动平均线
     ma5 = calculate_ma(stock_data, 5)
@@ -45,7 +52,7 @@ def create_kline_chart(stock_data, stock_code, stock_name):
 
     # 创建K线图
     kline = (
-        Kline(init_opts=opts.InitOpts(width="1400px", height="800px"))
+        Kline(init_opts=opts.InitOpts(width="1000px", height="500px"))
         .add_xaxis(dates)
         .add_yaxis(
             series_name="K线",
@@ -59,7 +66,7 @@ def create_kline_chart(stock_data, stock_code, stock_name):
         )
         .set_global_opts(
             title_opts=opts.TitleOpts(
-                title=f"{stock_name}({stock_code}) K线图",
+                title=f"{stock_name} ({stock_code})K线图",
                 subtitle="",
                 pos_left="center"
             ),
@@ -99,7 +106,8 @@ def create_kline_chart(stock_data, stock_code, stock_name):
             ],
             legend_opts=opts.LegendOpts(
                 is_show=True,
-                pos_top=40
+                pos_top=30,
+                pos_bottom=10
             ),
         )
     )
@@ -144,7 +152,21 @@ def create_kline_chart(stock_data, stock_code, stock_name):
     bar = (
         Bar()
         .add_xaxis(dates)
-        .add_yaxis("成交量", volumes, xaxis_index=1, yaxis_index=1, bar_width="60%",label_opts=opts.LabelOpts(is_show=False))
+        .add_yaxis("成交量", volumes, xaxis_index=1, yaxis_index=1, bar_width="60%",
+                   label_opts=opts.LabelOpts(is_show=False), itemstyle_opts=opts.ItemStyleOpts(
+                color=JsCode(
+                    """
+                      function(params) {
+                        var d = params.data;
+                        if (d.close > d.open) {
+                            return '#ef232a';  
+                        } else {
+                            return '#14b143';  
+                        }
+                      }
+                        """
+                )
+            ))
         .set_global_opts(
             xaxis_opts=opts.AxisOpts(type_="category", grid_index=1),
             yaxis_opts=opts.AxisOpts(grid_index=1, split_number=2),
@@ -214,7 +236,9 @@ def main():
     for index, row in stock_filter_result.iterrows():
         stock_code = row["股票代码"]
         stock_name = stock_pool[stock_pool["股票代码"] == stock_code].iloc[0]["股票名称"]
-        stock_data = stock_history_data[stock_history_data["股票代码"] == stock_code].sort_values(by="交易日期",ascending=True).reset_index(drop=True)
+        stock_data = stock_history_data[stock_history_data["股票代码"] == stock_code].sort_values(by="交易日期",
+                                                                                                  ascending=True).reset_index(
+            drop=True)
         chart = process_single_stock(stock_data, stock_name, stock_code)
         page.add(chart)
 
@@ -228,7 +252,6 @@ def main():
     # 在浏览器中打开
     abs_path = os.path.abspath(output_path)
     open_file_in_browser(abs_path)
-
 
 
 if __name__ == "__main__":
