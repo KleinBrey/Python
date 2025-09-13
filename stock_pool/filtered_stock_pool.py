@@ -14,7 +14,7 @@ COLUMN_MAP = {
 }
 
 MARKET_CAP_MIN = 50
-MARKET_CAP_MAX = 300
+MARKET_CAP_MAX = 100
 
 def rename_columns(df) :
     """将列名替换为中文"""
