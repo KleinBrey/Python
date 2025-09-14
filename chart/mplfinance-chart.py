@@ -1,14 +1,25 @@
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import pandas as pd
-from strategy.chartdata import get_stock_history
+from mongodb import database
 
 plt.switch_backend('TkAgg')  # 弹出显示
 
 symbol = "605288.SH"
 
+def get_stock_history(code: str):
+    """获取某个股票代码的所有历史数据"""
+    data = database.stock_daily_data.find_many({})
+    df = pd.DataFrame(list(data))
+    return (
+        df[df["股票代码"] == code]
+        .sort_values(by="交易日期", ascending=True)
+        .reset_index(drop=True)
+    )
+
 
 stock_data = get_stock_history(symbol)
+
 print(stock_data)
 if not stock_data.empty:
     # 2. 数据清洗与格式化

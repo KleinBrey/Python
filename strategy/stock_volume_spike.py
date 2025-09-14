@@ -6,15 +6,10 @@
 """
 import pandas as pd
 from tqdm import tqdm
-
 import mongodb.database as database
+from utils.common import show_all_pandas,save_to_mongo,load_from_mongodb
 
-pd.set_option("display.max_columns", None)  # 显示所有列
-pd.set_option("display.max_rows", None)  # 显示所有行
-pd.set_option("display.width", None)  # 不自动换行
-pd.set_option("display.max_colwidth", None)  # 不截断列内容
-pd.set_option("display.unicode.east_asian_width", True)  # 中英文对齐
-
+show_all_pandas()
 
 def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, window: int = 10,
                        threshold: float = 1.0) -> pd.DataFrame:
@@ -30,7 +25,7 @@ def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, wi
     """
     # 过滤指定股票
     df_stock = stock_data[stock_data["股票代码"] == code].sort_values(by="交易日期", ascending=True).reset_index(
-        drop=True).drop(columns=["_id"])
+        drop=True)
 
     if df_stock.empty:
         print(f"未找到股票 {code} 的历史数据")
@@ -97,22 +92,11 @@ def filter_volume_ratio(df: pd.DataFrame, window: int = 10, threshold: float = 2
         return pd.DataFrame()
 
 
-def save_to_mongo(df: pd.DataFrame) -> None:
-    """保存结果到 MongoDB"""
-    try:
-        database.stock_filter_result.delete_many({})
-        database.stock_filter_result.insert_many(df.to_dict(orient="records"))
-        print("✅ 数据已保存到 MongoDB!")
-    except Exception as e:
-        print(f"❌ 保存到 MongoDB 失败: {e}")
-
-
 def main():
-    stock_history_data = database.stock_history_data.find_many({})
-    data = pd.DataFrame(list(stock_history_data))
-    data = filter_volume_ratio(data, 15, 2.0)
+    stock_history_data = load_from_mongodb(database.stock_history_data)
+    data = filter_volume_ratio(stock_history_data, 15, 2.0)
     if data is not None and not data.empty:
-        save_to_mongo(data)
+        save_to_mongo(data,database.stock_filter_result)
         print(data)
 
 
