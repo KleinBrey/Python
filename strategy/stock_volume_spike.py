@@ -1,27 +1,27 @@
-
 """
 股票筛选策略
 筛选条件：
-1. 今日成交量为过去十日平均成交量的2倍及以上
+今日成交量为过去十日平均成交量的2倍及以上
 
 """
-from tqdm import tqdm
 import pandas as pd
+from tqdm import tqdm
+
 import mongodb.database as database
 
 pd.set_option("display.max_columns", None)  # 显示所有列
-pd.set_option("display.max_rows", None)     # 显示所有行
-pd.set_option("display.width", None)        # 不自动换行
-pd.set_option("display.max_colwidth", None) # 不截断列内容
+pd.set_option("display.max_rows", None)  # 显示所有行
+pd.set_option("display.width", None)  # 不自动换行
+pd.set_option("display.max_colwidth", None)  # 不截断列内容
 pd.set_option("display.unicode.east_asian_width", True)  # 中英文对齐
 
 
-
-def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, window: int = 10, threshold: float = 1.0) -> pd.DataFrame:
+def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, window: int = 10,
+                       threshold: float = 1.0) -> pd.DataFrame:
     """
     检查 target_date 当天成交量是否超过过去 N 日均量的 threshold 倍
 
-    :param stock_data: 包含历史数据的 DataFrame，需包含 ["股票代码", "交易日期", "成交量"]
+    :param stock_data: 包含历史数据的 DataFrame
     :param code: 股票代码
     :param target_date: 目标日期 (格式: 'YYYYMMDD')
     :param window: 回溯天数
@@ -29,7 +29,9 @@ def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, wi
     :return: 符合条件的 DataFrame（可能为空）
     """
     # 过滤指定股票
-    df_stock = stock_data[stock_data["股票代码"] == code].sort_values(by="交易日期", ascending=True).reset_index(drop=True).drop(columns=["_id"])
+    df_stock = stock_data[stock_data["股票代码"] == code].sort_values(by="交易日期", ascending=True).reset_index(
+        drop=True).drop(columns=["_id"])
+
     if df_stock.empty:
         print(f"未找到股票 {code} 的历史数据")
         return pd.DataFrame()
@@ -48,7 +50,6 @@ def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, wi
         print(f"未找到股票 {code} 在 {target_date} 的数据")
         return pd.DataFrame()
 
-
     # 计算均量和量比
     avg_col = f"过去{window}日均量"
     df_target[avg_col] = avg_volume
@@ -59,8 +60,8 @@ def check_volume_ratio(stock_data: pd.DataFrame, code: str, target_date: str, wi
     return df_pass
 
 
-
-def filter_volume_ratio(df: pd.DataFrame, window: int = 10, threshold: float = 2.0, target_date: str = None) -> pd.DataFrame:
+def filter_volume_ratio(df: pd.DataFrame, window: int = 10, threshold: float = 2.0,
+                        target_date: str = None) -> pd.DataFrame:
     """
     筛选出指定日期成交量 / 过去N日平均成交量 >= threshold 的股票
 
@@ -105,14 +106,15 @@ def save_to_mongo(df: pd.DataFrame) -> None:
     except Exception as e:
         print(f"❌ 保存到 MongoDB 失败: {e}")
 
+
 def main():
     stock_history_data = database.stock_history_data.find_many({})
     data = pd.DataFrame(list(stock_history_data))
-    data = filter_volume_ratio(data,15,2.0)
+    data = filter_volume_ratio(data, 15, 2.0)
     if data is not None and not data.empty:
         save_to_mongo(data)
         print(data)
 
+
 if __name__ == "__main__":
     main()
-

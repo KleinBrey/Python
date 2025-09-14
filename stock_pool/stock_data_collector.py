@@ -2,6 +2,8 @@ from mongodb import database
 from data_source import tushare
 import pandas as pd
 from datetime import datetime,timedelta
+from utils.common import rename_columns,save_to_mongo,load_from_mongodb
+from tqdm import tqdm
 
 
 COLUMN_MAP = {
@@ -18,25 +20,21 @@ COLUMN_MAP = {
     "amount": "成交额"
 }
 
-def rename_columns(df) :
-    """将列名替换为中文"""
-    return df.rename(columns=COLUMN_MAP)
-
 
 def get_date_range(days: int = 30):
     """
       获取日期范围，默认是过去 `days` 天到今天
 
       :param days: 回溯天数，默认 30
-      :return: (start_date_str, end_date_str)，格式 YYYYMMDD
+      :return: (start_date, end_date)，格式 YYYYMMDD
       """
     end_date = datetime.today()
     start_date = end_date - timedelta(days=days)
 
-    end_date_str = end_date.strftime("%Y%m%d")
-    start_date_str = start_date.strftime("%Y%m%d")
+    end_date = end_date.strftime("%Y%m%d")
+    start_date = start_date.strftime("%Y%m%d")
 
-    return start_date_str, end_date_str
+    return start_date, end_date
 
 
 def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
@@ -53,9 +51,8 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
 
     codes = df["股票代码"].astype(str).tolist()
     # 分批处理
-    for i in range(0, len(codes), batch_size):
+    for i in tqdm(range(0, len(codes), batch_size), desc="拉取股票数据"):
         batch_codes = ",".join(codes[i:i + batch_size])
-        print(f"🔄 拉取代码: {batch_codes}")
 
         data = tushare.daily(
             **{
@@ -77,6 +74,7 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
                 "amount",
             ]
         )
+
         if data is not None and not data.empty:
             all_data.append(data)
 
@@ -87,29 +85,14 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
         return pd.DataFrame()
 
 
-
-def save_to_mongo(df: pd.DataFrame) -> None:
-    """保存结果到 MongoDB"""
-    try:
-        database.stock_history_data.delete_many({})
-        database.stock_history_data.insert_many(df.to_dict(orient="records"))
-        print("✅ 数据已保存到 MongoDB!")
-    except Exception as e:
-        print(f"❌ 保存到 MongoDB 失败: {e}")
-
-
 def main():
-    print("=" * 60)
-    print("获取股票池股票的历史数据")
-    print("=" * 60)
-    stock_pool = database.stock_pool.find_many({})
-    df = pd.DataFrame(list(stock_pool))
-    start_date_str, end_date_str = get_date_range(60)
-    data = fetch_stock_data(df, start_date=start_date_str, end_date=end_date_str, batch_size=100)
-    data =  rename_columns(data)
+    stock_pool = load_from_mongodb(database.stock_pool)
+    start_date, end_date = get_date_range(60)
+    data = fetch_stock_data(stock_pool, start_date=start_date, end_date=end_date, batch_size=100)
+    data =  rename_columns(data,COLUMN_MAP)
 
     if data is not None and not data.empty:
-        save_to_mongo(data)
+        save_to_mongo(data,database.stock_history_data)
         print(data)
 
 if __name__ == "__main__":
