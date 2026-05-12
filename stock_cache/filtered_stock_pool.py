@@ -62,6 +62,7 @@ def get_filtered_stocks():
     # 根据条件进行过滤
     filtered_stocks = filter_by_stock_type(stock_list)
     filtered_stocks = filter_by_market_cap(filtered_stocks)
+    filtered_stocks = filtered_stocks.drop_duplicates(subset=["ts_code"]).copy()
 
     # 转换标题为中文，使用新索引
     filtered_stocks = rename_columns(filtered_stocks,COLUMN_MAP).reset_index(drop=True)
@@ -81,4 +82,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

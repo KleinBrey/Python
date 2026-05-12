@@ -69,26 +69,37 @@ def filter_volume_ratio(df: pd.DataFrame, window: int = 10, threshold: float = 2
     if df.empty:
         return pd.DataFrame()
 
+    df = df.drop_duplicates(subset=["股票代码", "交易日期"]).copy()
+
     # 默认使用最近交易日
     if target_date is None:
         target_date = df["交易日期"].max()
         print(f"未指定 target_date，自动使用最近交易日 {target_date}")
 
     results = []
+    missing_codes = []
 
     stock_pool = database.stock_pool.find_many({})
     stock_pool = pd.DataFrame(list(stock_pool))
+    unique_codes = stock_pool["股票代码"].dropna().drop_duplicates().tolist()
 
-    for _, row in tqdm(stock_pool.iterrows(), total=len(stock_pool), desc="正在处理股票"):
-        stock_code = row["股票代码"]
+    for stock_code in tqdm(unique_codes, total=len(unique_codes), desc="正在处理股票"):
         df_pass = check_volume_ratio(df, stock_code, target_date, window, threshold)
         if df_pass is not None and not df_pass.empty:
             results.append(df_pass)
+        elif df[df["股票代码"] == stock_code].empty:
+            missing_codes.append(stock_code)
 
     # 合并所有结果
     if results:
-        return pd.concat(results, ignore_index=True)
+        result = pd.concat(results, ignore_index=True)
+        result = result.drop_duplicates(subset=["股票代码", "交易日期"]).reset_index(drop=True)
+        if missing_codes:
+            print(f"⚠️ 有 {len(missing_codes)} 只股票缺少历史数据")
+        return result
     else:
+        if missing_codes:
+            print(f"⚠️ 有 {len(missing_codes)} 只股票缺少历史数据")
         return pd.DataFrame()
 
 

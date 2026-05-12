@@ -11,3 +11,10 @@ stock_history_data = MongoDBHelper(db_name="python", collection_name="stock_hist
 
 # mongoDB 策略筛选结果
 stock_filter_result = MongoDBHelper(db_name="python", collection_name="stock_filter_result")
+
+# mongoDB 每日热股
+stock_hot = MongoDBHelper(db_name="python", collection_name="stock_hot")
+
+
+# mongoDB 每日热股
+stock_hot_dc = MongoDBHelper(db_name="python", collection_name="stock_hot_dc")

@@ -49,7 +49,7 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
     """
     all_data = []
 
-    codes = df["股票代码"].astype(str).tolist()
+    codes = df["股票代码"].dropna().astype(str).drop_duplicates().tolist()
     # 分批处理
     for i in tqdm(range(0, len(codes), batch_size), desc="拉取股票数据"):
         batch_codes = ",".join(codes[i:i + batch_size])
@@ -80,13 +80,18 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
 
     # 合并所有批次结果
     if all_data:
-        return pd.concat(all_data, ignore_index=True)
+        merged = pd.concat(all_data, ignore_index=True)
+        return merged.drop_duplicates(subset=["ts_code", "trade_date"]).reset_index(drop=True)
     else:
         return pd.DataFrame()
 
 
 def main():
     stock_pool = load_from_mongodb(database.stock_pool)
+    if stock_pool.empty:
+        print("❌ 股票池为空，请先生成股票池数据")
+        return
+
     start_date, end_date = get_date_range(60)
     data = fetch_stock_data(stock_pool, start_date=start_date, end_date=end_date, batch_size=100)
     data =  rename_columns(data,COLUMN_MAP)
@@ -97,6 +102,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
