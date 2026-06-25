@@ -1,11 +1,7 @@
 import sys
 
-try:
-    from stock_cache.filtered_stock_pool import main as pool_main
-    from stock_cache.stock_data_collector import main as daily_main
-except ModuleNotFoundError:
-    from filtered_stock_pool import main as pool_main
-    from stock_data_collector import main as daily_main
+from stock_app.pipelines.filtered_stock_pool import main as pool_main
+from stock_app.pipelines.stock_data_collector import main as daily_main
 
 
 def run_step(title: str, func) -> None:

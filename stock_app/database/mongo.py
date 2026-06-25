@@ -10,7 +10,12 @@ class MongoDBHelper:
         :param db_name: 数据库名称，默认为 'python'
         :param collection_name: 集合名称，默认为 'stock'
         """
-        self.client = MongoClient(uri)
+        self.client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=3000,
+            connectTimeoutMS=3000,
+            socketTimeoutMS=3000,
+        )
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
 

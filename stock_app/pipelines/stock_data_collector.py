@@ -1,8 +1,8 @@
-from mongodb import database
-from data_source import tushare
+from stock_app.database import collections as database
+from stock_app.data_sources.tushare_provider import fetch_daily_stock_data
 import pandas as pd
 from datetime import datetime,timedelta
-from utils.common import rename_columns,save_to_mongo,load_from_mongodb
+from stock_app.utils.common import rename_columns,save_to_mongo,load_from_mongodb
 from tqdm import tqdm
 
 
@@ -54,12 +54,10 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
     for i in tqdm(range(0, len(codes), batch_size), desc="拉取股票数据"):
         batch_codes = ",".join(codes[i:i + batch_size])
 
-        data = tushare.daily(
-            **{
-                "ts_code": batch_codes,
-                "start_date": start_date,
-                "end_date": end_date,
-            },
+        data = fetch_daily_stock_data(
+            ts_code=batch_codes,
+            start_date=start_date,
+            end_date=end_date,
             fields=[
                 "ts_code",
                 "trade_date",
@@ -72,7 +70,7 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
                 "pct_chg",
                 "vol",
                 "amount",
-            ]
+            ],
         )
 
         if data is not None and not data.empty:
@@ -102,5 +100,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

@@ -1,0 +1,6 @@
+akshare
+pandas
+pymongo
+pyecharts
+tqdm
+tushare

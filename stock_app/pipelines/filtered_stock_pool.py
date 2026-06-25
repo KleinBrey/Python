@@ -1,6 +1,6 @@
-from data_source import tushare
-from mongodb import database
-from utils.common import show_all_pandas,rename_columns,save_to_mongo
+from stock_app.data_sources.tushare_provider import fetch_basic_stock_pool
+from stock_app.database import collections as database
+from stock_app.utils.common import show_all_pandas,rename_columns,save_to_mongo
 
 show_all_pandas()
 
@@ -37,12 +37,7 @@ def filter_by_market_cap(df):
 
 def get_filtered_stocks():
     # 获取全量A股实时数据
-    stock_list = tushare.bak_basic(**{
-        "trade_date": "",
-        "ts_code": "",
-        "limit": "",
-        "offset": ""
-    }, fields=[
+    stock_list = fetch_basic_stock_pool(fields=[
         "ts_code",
         "name",
         "industry",

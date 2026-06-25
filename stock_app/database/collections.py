@@ -1,4 +1,4 @@
-from mongodb.mongo import MongoDBHelper
+from stock_app.database.mongo import MongoDBHelper
 
 # mongoDB 筛选股票池
 stock_pool = MongoDBHelper(db_name="python", collection_name="stock_pool")
@@ -12,9 +12,5 @@ stock_history_data = MongoDBHelper(db_name="python", collection_name="stock_hist
 # mongoDB 策略筛选结果
 stock_filter_result = MongoDBHelper(db_name="python", collection_name="stock_filter_result")
 
-# mongoDB 每日热股
-stock_hot = MongoDBHelper(db_name="python", collection_name="stock_hot")
-
-
-# mongoDB 每日热股
-stock_hot_dc = MongoDBHelper(db_name="python", collection_name="stock_hot_dc")
+# mongoDB AkShare 股票热度排行榜缓存
+stock_hot_rankings = MongoDBHelper(db_name="python", collection_name="stock_hot_rankings")
