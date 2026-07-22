@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarChart3, Blocks, Database, Loader2, RefreshCcw, Table2 } from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { formatValue, shortTime } from '../utils/formatters.js';
@@ -50,10 +51,10 @@ export default function MongoDashboard({ databaseStatus, loading, onRefreshDatab
             <h2>数据库内容</h2>
             <span>先看连接状态，再看每个集合的记录数量和少量预览</span>
           </div>
-          <button type="button" onClick={onRefreshDatabase} disabled={loading}>
+          <Button type="button" onClick={onRefreshDatabase} disabled={loading}>
             {loading ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
             <span>{loading ? '刷新中' : '刷新状态'}</span>
-          </button>
+          </Button>
         </div>
 
         <div className="collection-grid">

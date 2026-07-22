@@ -1,5 +1,6 @@
 import React from 'react';
 import { Blocks, ChartCandlestick, Database, Loader2, RefreshCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { shortTime, statusLabel } from '../utils/formatters.js';
@@ -49,10 +50,10 @@ export default function DataSourcesDashboard({ dataSources, loading, onCheckSour
             <h2>数据源连接状态</h2>
             <span>AkShare、东方财富、Tushare 的安装、配置和连通情况</span>
           </div>
-          <button type="button" onClick={onCheckSources} disabled={loading}>
+          <Button type="button" onClick={onCheckSources} disabled={loading}>
             {loading ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
             <span>{loading ? '检测中' : '检测连通'}</span>
-          </button>
+          </Button>
         </div>
 
         <div className="source-status-grid">

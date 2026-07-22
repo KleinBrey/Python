@@ -1,101 +1,95 @@
 import React from 'react';
 import {
-  AppstoreOutlined,
-  BarChartOutlined,
-  DatabaseOutlined,
-  FundProjectionScreenOutlined,
-  LineChartOutlined,
-  PieChartOutlined,
-  ReloadOutlined,
-  ThunderboltOutlined,
-} from '@ant-design/icons';
-import { Button, Layout, Menu, Space, Tag, Typography } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+  BarChart3,
+  ChartNoAxesCombined,
+  Database,
+  Gauge,
+  LayoutDashboard,
+  PieChart,
+  RefreshCw,
+  Search,
+  Server,
+  TrendingUp,
+} from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge.jsx';
+import { Button } from '@/components/ui/button.jsx';
 import { dashboardGroups } from '../config/dashboardRegistry.js';
 
-const { Header, Sider, Content } = Layout;
-const { Text, Title } = Typography;
-
 const iconById = {
-  'hot-rankings': <ThunderboltOutlined />,
-  'market-overview': <PieChartOutlined />,
-  'strategy-signals': <LineChartOutlined />,
-  'chart-center': <BarChartOutlined />,
-  'data-sources': <AppstoreOutlined />,
-  database: <DatabaseOutlined />,
+  'hot-rankings': TrendingUp,
+  'market-overview': PieChart,
+  'strategy-signals': ChartNoAxesCombined,
+  'iwencai-selector': Search,
+  'chart-center': BarChart3,
+  'data-sources': LayoutDashboard,
+  database: Database,
 };
 
-function buildMenuItems() {
-  return dashboardGroups.map((group) => ({
-    key: group.title,
-    label: group.title,
-    type: 'group',
-    children: group.items.map((item) => ({
-      key: item.path,
-      icon: iconById[item.id] || <FundProjectionScreenOutlined />,
-      label: (
-        <span className="ant-menu-row">
-          <span>{item.title}</span>
-          <Tag bordered={false}>{item.status}</Tag>
-        </span>
-      ),
-      title: item.description,
-    })),
-  }));
-}
-
 export default function AppLayout({ children, selectedDashboard, refreshingAll, onRefreshAll }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-
   return (
-    <Layout className="stock-app-layout">
-      <Sider className="stock-sider" width={280} breakpoint="lg" collapsedWidth="0">
-        <div className="stock-brand">
-          <div className="stock-brand-mark">
-            <FundProjectionScreenOutlined />
+    <div className="app-frame">
+      <aside className="app-sidebar">
+        <div className="brand">
+          <div className="brand-mark">
+            <Gauge size={18} />
           </div>
           <div>
-            <Title level={4}>Stock Core</Title>
-            <Text>Dashboard</Text>
+            <strong>Stock Core</strong>
+            <span>Dashboard</span>
           </div>
         </div>
 
-        <div className="stock-sider-action">
-          <Button
-            block
-            icon={<ReloadOutlined spin={refreshingAll} />}
-            loading={refreshingAll}
-            onClick={onRefreshAll}
-            size="large"
-            type="primary"
-          >
-            刷新全部
-          </Button>
+        <Button
+          className="quick-action"
+          disabled={refreshingAll}
+          onClick={onRefreshAll}
+          size="lg"
+        >
+          <RefreshCw className={refreshingAll ? 'spin' : ''} size={16} />
+          {refreshingAll ? '正在刷新' : '刷新全部'}
+        </Button>
+
+        <nav className="sidebar-nav" aria-label="股票看板导航">
+          {dashboardGroups.map((group) => (
+            <section key={group.title}>
+              <p>{group.title}</p>
+              {group.items.map((item) => {
+                const Icon = iconById[item.id] || LayoutDashboard;
+                return (
+                  <NavLink
+                    className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                    key={item.path}
+                    title={item.description}
+                    to={item.path}
+                  >
+                    <Icon size={16} />
+                    <span>{item.title}</span>
+                    <Badge className="nav-status" variant="secondary">{item.status}</Badge>
+                  </NavLink>
+                );
+              })}
+            </section>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <Server size={16} />
+          <span>本地数据服务<br />127.0.0.1:8001</span>
         </div>
+      </aside>
 
-        <Menu
-          className="stock-menu"
-          items={buildMenuItems()}
-          mode="inline"
-          onClick={({ key }) => navigate(key)}
-          selectedKeys={[location.pathname]}
-          theme="dark"
-        />
-      </Sider>
-
-      <Layout>
-        <Header className="stock-header">
-          <Space direction="vertical" size={0}>
-            <Title level={2}>股票看板中心</Title>
-            <Text>{selectedDashboard?.title || 'Dashboard'}</Text>
-          </Space>
-        </Header>
-
-        <Content className="stock-content">
-          {children}
-        </Content>
-      </Layout>
-    </Layout>
+      <div className="main-area">
+        <header className="site-header">
+          <div className="header-title">
+            <div>
+              <h1>股票看板中心</h1>
+              <span>{selectedDashboard?.title || 'Dashboard'}</span>
+            </div>
+          </div>
+        </header>
+        <main className="stock-content">{children}</main>
+      </div>
+    </div>
   );
 }

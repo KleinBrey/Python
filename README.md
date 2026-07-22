@@ -8,12 +8,13 @@
 ## 项目结构
 
 - [backend](/Users/kleinbrey/PycharmProjects/stock/backend)：Python HTTP API，当前主要服务 AkShare 热度榜单
-- [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)：React + Vite + Ant Design 前端页面
+- [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)：React + Vite + shadcn/ui + Tailwind CSS 前端页面
 - [stock_core](/Users/kleinbrey/PycharmProjects/stock/stock_core)：Python 业务包
   - `data_sources`：外部数据源适配层，隔离 AkShare / Tushare SDK
   - `database`：MongoDB 简单封装和集合入口
   - `pipelines`：Tushare 股票池与历史行情缓存
-  - `strategies`：策略筛选脚本
+  - `strategies`：策略筛选脚本及统一策略来源
+    - `sources`：把问财结果和 Python 手写策略统一转换成股票列表
   - `charts`：Pyecharts K 线图生成
   - `utils`：通用工具函数
 - [.vscode](/Users/kleinbrey/PycharmProjects/stock/.vscode)：VS Code 启动配置
@@ -21,7 +22,9 @@
 前端核心目录：
 
 - `src/config`：看板菜单、路由路径等配置
-- `src/layouts`：Ant Design 应用布局
+- `src/layouts`：shadcn/ui 应用布局
+- `src/components/ui`：项目内维护的 shadcn/ui 组件源码
+- `src/lib/utils.js`：shadcn/ui className 合并工具
 - `src/routes`：浏览器路由分配
 - `src/pages`：各个看板页面
 - `src/components`：跨页面复用组件
@@ -99,6 +102,8 @@ http://127.0.0.1:5173/
 
 - `/hot-rankings`：股票热度
 - `/market-overview`：市场概览
+- `/strategy-signals`：策略来源和统一股票列表
+- `/iwencai-selector`：自然语言问财选股和动态结果表格
 - `/data-sources`：数据源状态
 - `/database`：MongoDB 状态
 
@@ -123,6 +128,61 @@ PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.data_sources.debug_eastmoney --
 - `GET /api/summary`
 - `GET /api/hot-rankings?limit=80&refresh=false`
 - `GET /api/hot-rankings/{榜单ID}?limit=120&refresh=true`
+- `GET /api/strategy-sources`
+- `GET /api/strategy-stocks?source=all&limit=300`
+- `GET /api/iwencai/status`
+- `GET /api/iwencai/latest`
+- `POST /api/iwencai/query`
+- `GET /api/stocks/history?symbol=000938&period=daily`：通过 `hithink-market-query` 获取不复权历史行情
+
+## 问财选股页面
+
+“问财选股”页面允许直接输入自然语言条件。查询由本机后端调用同花顺问财 OpenAPI，API Key 不会发送到浏览器。后端会自动获取全部分页，并继续写入原问财项目：
+
+- `~/Documents/问财选股/query.txt`
+- `~/Documents/问财选股/results/latest.json`
+- `~/Documents/问财选股/results/latest.csv`
+- `~/Documents/问财选股/results/history/`
+
+后端从环境变量或 `~/.zshrc`、`~/.zprofile`、`~/.profile` 读取：
+
+```bash
+export IWENCAI_API_KEY=your_api_key
+export IWENCAI_BASE_URL=https://openapi.iwencai.com
+```
+
+配置更新后需要重启后端 API。
+
+问财选股结果右侧的个股 K 线也使用同花顺问财行情技能。接口返回每日开高低收和成交量，周线、月线由后端基于日线聚合；当前明确标注为不复权数据。
+
+## 策略来源
+
+策略来源统一放在 [stock_core/strategies/sources](/Users/kleinbrey/PycharmProjects/stock/stock_core/strategies/sources)，最终都输出相同结构的股票列表。
+
+当前来源：
+
+- `iwencai`：默认读取 `~/Documents/问财选股/results/latest.json`
+- `handwritten`：读取项目内注册的 Python 手写策略，当前已注册量能放大策略结果
+
+问财目录可以通过环境变量覆盖：
+
+```bash
+export IWENCAI_PROJECT_DIR=/你的路径/问财选股
+```
+
+也可以直接指定结果文件：
+
+```bash
+export IWENCAI_RESULT_FILE=/你的路径/latest.json
+```
+
+新增手写策略时，在 `stock_core/strategies/sources/handwritten.py` 中注册一个返回字典列表的函数：
+
+```python
+@register_handwritten_strategy("my-strategy", "我的策略")
+def load_my_strategy():
+    return [{"股票代码": "000001", "股票名称": "平安银行"}]
+```
 
 ## Tushare 流水线
 

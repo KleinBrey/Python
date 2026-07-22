@@ -6,7 +6,7 @@ import json
 import math
 import os
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -20,7 +20,10 @@ if str(ROOT_DIR) not in sys.path:
 
 from stock_core.data_sources.hot_rankings import HOT_RANKINGS, fetch_hot_ranking_frame, resolve_params  # noqa: E402
 from stock_core.data_sources.akshare_provider import today_yyyymmdd  # noqa: E402
+from stock_core.data_sources import iwencai_provider  # noqa: E402
+from stock_core.data_sources.market_query_provider import fetch_stock_history  # noqa: E402
 from stock_core.database import collections as database  # noqa: E402
+from stock_core.strategies.sources import load_strategy_sources  # noqa: E402
 
 RANKING_BY_ID = {item["id"]: item for item in HOT_RANKINGS}
 
@@ -393,6 +396,27 @@ def get_hot_ranking(ranking_id: str, refresh: bool, limit: int) -> dict[str, Any
     return cached or empty_payload(config)
 
 
+def parse_strategy_source_ids(value: str | None) -> list[str] | None:
+    if not value or value == "all":
+        return None
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def build_strategy_payload(source_ids: list[str] | None, limit: int) -> dict[str, Any]:
+    sources = load_strategy_sources(source_ids)
+    stocks = [
+        stock.to_dict()
+        for source in sources
+        for stock in source.stocks
+    ]
+    return {
+        "sources": [source.to_dict(include_stocks=False) for source in sources],
+        "items": stocks[:limit],
+        "stockCount": len(stocks),
+        "generatedAt": datetime.now().isoformat(timespec="seconds"),
+    }
+
+
 class StockApiHandler(BaseHTTPRequestHandler):
     server_version = "StockDashboardApi/2.0"
 
@@ -444,6 +468,59 @@ class StockApiHandler(BaseHTTPRequestHandler):
                 self.send_json(build_database_status())
                 return
 
+            if path == "/api/iwencai/status":
+                self.send_json(iwencai_provider.build_status())
+                return
+
+            if path == "/api/iwencai/latest":
+                latest = iwencai_provider.load_latest()
+                self.send_json({"item": latest})
+                return
+
+            if path == "/api/stocks/history":
+                symbol = params.get("symbol", [""])[0]
+                period = params.get("period", ["daily"])[0]
+                adjust = params.get("adjust", ["none"])[0]
+                end_date = params.get("endDate", [datetime.now().strftime("%Y%m%d")])[0]
+                start_date = params.get(
+                    "startDate",
+                    [(datetime.now() - timedelta(days=1095)).strftime("%Y%m%d")],
+                )[0]
+                for value, label in ((start_date, "startDate"), (end_date, "endDate")):
+                    try:
+                        datetime.strptime(value, "%Y%m%d")
+                    except ValueError as exc:
+                        raise ValueError(f"{label} 必须是 YYYYMMDD 格式") from exc
+                self.send_json(
+                    {
+                        "item": fetch_stock_history(
+                            symbol=symbol,
+                            period=period,
+                            start_date=start_date,
+                            end_date=end_date,
+                            adjust=adjust,
+                        )
+                    }
+                )
+                return
+
+            if path == "/api/strategy-sources":
+                source_ids = parse_strategy_source_ids(params.get("source", [None])[0])
+                sources = load_strategy_sources(source_ids)
+                self.send_json(
+                    {
+                        "items": [source.to_dict(include_stocks=False) for source in sources],
+                        "generatedAt": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
+                return
+
+            if path == "/api/strategy-stocks":
+                source_ids = parse_strategy_source_ids(params.get("source", [None])[0])
+                limit = parse_int(params.get("limit", [None])[0], default=300, minimum=1, maximum=2000)
+                self.send_json(build_strategy_payload(source_ids, limit=limit))
+                return
+
             if path == "/api/hot-rankings":
                 refresh = parse_bool(params.get("refresh", [None])[0])
                 limit = parse_int(params.get("limit", [None])[0], default=80, minimum=5, maximum=300)
@@ -473,6 +550,49 @@ class StockApiHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             self.send_json({"error": f"服务处理失败: {exc}"}, status=500)
 
+    def do_POST(self) -> None:
+        try:
+            path = urlparse(self.path).path.rstrip("/") or "/"
+            if path != "/api/iwencai/query":
+                self.send_json({"error": "接口不存在"}, status=404)
+                return
+
+            payload = self.read_json_body()
+            query = payload.get("query")
+            if not isinstance(query, str):
+                raise ValueError("query 必须是字符串")
+            page_size = parse_int(str(payload.get("pageSize", 50)), default=50, minimum=1, maximum=100)
+            max_pages = parse_int(str(payload.get("maxPages", 100)), default=100, minimum=1, maximum=100)
+            timeout = parse_int(str(payload.get("timeout", 60)), default=60, minimum=10, maximum=120)
+            result = iwencai_provider.run_query(
+                query,
+                page_size=page_size,
+                max_pages=max_pages,
+                timeout=timeout,
+            )
+            self.send_json({"item": result})
+        except (ValueError, iwencai_provider.IwencaiError) as exc:
+            self.send_json({"error": str(exc)}, status=400)
+        except Exception as exc:
+            self.send_json({"error": f"问财查询失败: {exc}"}, status=500)
+
+    def read_json_body(self) -> dict[str, Any]:
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+        except ValueError as exc:
+            raise ValueError("Content-Length 无效") from exc
+        if content_length <= 0:
+            raise ValueError("请求内容不能为空")
+        if content_length > 64 * 1024:
+            raise ValueError("请求内容过大")
+        try:
+            payload = json.loads(self.rfile.read(content_length).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("请求 JSON 格式无效") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("请求 JSON 必须是对象")
+        return payload
+
     def send_json(self, payload: dict[str, Any], status: int = 200) -> None:
         body = json.dumps(to_jsonable(payload), ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -484,7 +604,7 @@ class StockApiHandler(BaseHTTPRequestHandler):
 
     def send_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
     def log_message(self, format: str, *args: Any) -> None:

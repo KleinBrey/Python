@@ -4,6 +4,7 @@ import { LineChart } from 'echarts/charts';
 import { GridComponent, LegendComponent, MarkLineComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart3, ChartCandlestick, Clock3, Play, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
 
 echarts.use([CanvasRenderer, GridComponent, LegendComponent, LineChart, MarkLineComponent, TooltipComponent]);
 
@@ -284,14 +285,14 @@ export default function MarketOverview() {
             </div>
             <div className="market-header-controls">
               <div className="segmented-control" aria-label="市场范围">
-                <button type="button" className="active">板块</button>
-                <button type="button">行业</button>
-                <button type="button">概念</button>
+                <Button type="button" size="sm" variant="ghost" className="active">板块</Button>
+                <Button type="button" size="sm" variant="ghost">行业</Button>
+                <Button type="button" size="sm" variant="ghost">概念</Button>
               </div>
-              <button type="button" className="replay-button" onClick={replayMarketFlow} disabled={isReplaying}>
+              <Button type="button" className="replay-button" onClick={replayMarketFlow} disabled={isReplaying}>
                 {isReplaying ? <RotateCcw className="spin" size={15} /> : <Play size={15} />}
                 <span>{isReplaying ? '回放中' : '回放走势'}</span>
-              </button>
+              </Button>
             </div>
           </div>
           <div className="market-chart" ref={chartRef} />

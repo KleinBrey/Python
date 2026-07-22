@@ -20,8 +20,15 @@ export const dashboardGroups = [
         id: 'strategy-signals',
         path: '/strategy-signals',
         title: '策略信号',
-        description: '量能异动、股票池、交易提示',
-        status: '规划中',
+        description: '问财选股、手写策略和统一股票列表',
+        status: '已接入',
+      },
+      {
+        id: 'iwencai-selector',
+        path: '/iwencai-selector',
+        title: '问财选股',
+        description: '自然语言条件查询与股票列表',
+        status: '已接入',
       },
       {
         id: 'chart-center',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Database, LayoutDashboard, Loader2, RefreshCcw, Search, Table2, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import { formatValue, latestRefreshTime, rankingScore, shortTime, trendClass } from '../utils/formatters.js';
 
@@ -37,9 +38,9 @@ function RankingChart({ ranking }) {
           <span>{ranking?.title || '选择一个榜单'}</span>
         </div>
         <div className="segmented-control" aria-label="时间范围">
-          <button type="button">今日</button>
-          <button type="button" className="active">当前</button>
-          <button type="button">缓存</button>
+          <Button type="button" size="sm" variant="ghost">今日</Button>
+          <Button type="button" size="sm" variant="ghost" className="active">当前</Button>
+          <Button type="button" size="sm" variant="ghost">缓存</Button>
         </div>
       </div>
 
@@ -87,9 +88,11 @@ function RankingCards({ rankings, activeRanking, onSelectRanking, onRefreshRanki
                 <span>{ranking.source}</span>
                 <h3>{ranking.title}</h3>
               </div>
-              <button
+              <Button
                 type="button"
                 className="icon-button"
+                size="icon"
+                variant="outline"
                 onClick={(event) => {
                   event.stopPropagation();
                   onRefreshRanking(ranking.id);
@@ -98,7 +101,7 @@ function RankingCards({ rankings, activeRanking, onSelectRanking, onRefreshRanki
                 title="刷新榜单"
               >
                 {refreshingId === ranking.id ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
-              </button>
+              </Button>
             </div>
 
             {ranking.error ? <div className="inline-error">{ranking.error}</div> : null}
@@ -133,15 +136,16 @@ function RankingTable({ activeRanking, onRefreshRanking, refreshingId, refreshin
           <h2>{activeRanking?.title || '热榜详情'}</h2>
           <span>{activeRanking?.source || '-'} · {shortTime(activeRanking?.updatedAt)}</span>
         </div>
-        <button
+        <Button
           type="button"
           className="ghost-button"
+          variant="outline"
           onClick={() => onRefreshRanking(activeRanking?.id)}
           disabled={!activeRanking || refreshingId === activeRanking.id || refreshingAll}
         >
           {refreshingId === activeRanking?.id ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
           <span>{refreshingId === activeRanking?.id ? '更新中' : '刷新当前'}</span>
-        </button>
+        </Button>
       </div>
 
       <div className="table-wrap">
@@ -230,10 +234,10 @@ export default function HotRankingsDashboard({
       {error ? (
         <div className="notice">
           <span>{error}</span>
-          <button type="button" className="ghost-button" onClick={onLoadCache}>
+          <Button type="button" className="ghost-button" onClick={onLoadCache} variant="outline">
             <Search size={15} />
             <span>读取缓存</span>
-          </button>
+          </Button>
         </div>
       ) : null}
 

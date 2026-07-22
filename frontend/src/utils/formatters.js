@@ -35,6 +35,9 @@ export function statusLabel(status, fallback = '未知') {
   const labels = {
     online: '可连接',
     ready: '已就绪',
+    degraded: '部分可用',
+    missing: '未配置',
+    error: '读取失败',
     offline: '不可用',
     blocked: '待配置',
   };
@@ -43,7 +46,7 @@ export function statusLabel(status, fallback = '未知') {
 
 export function statusTone(status) {
   if (status === 'online' || status === 'ready') return 'ok';
-  if (status === 'blocked') return 'warn';
-  if (status === 'offline') return 'bad';
+  if (status === 'blocked' || status === 'degraded' || status === 'missing') return 'warn';
+  if (status === 'offline' || status === 'error') return 'bad';
   return 'idle';
 }
