@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import os
@@ -17,8 +18,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from stock_app.data_sources.akshare_provider import HOT_RANKINGS, fetch_hot_ranking_frame, resolve_params  # noqa: E402
-from stock_app.database import collections as database  # noqa: E402
+from stock_core.data_sources.hot_rankings import HOT_RANKINGS, fetch_hot_ranking_frame, resolve_params  # noqa: E402
+from stock_core.data_sources.akshare_provider import today_yyyymmdd  # noqa: E402
+from stock_core.database import collections as database  # noqa: E402
 
 RANKING_BY_ID = {item["id"]: item for item in HOT_RANKINGS}
 
@@ -86,6 +88,141 @@ def collection_count(collection) -> int | None:
         return collection.collection.count_documents({})
     except Exception:
         return None
+
+
+def collection_preview(collection, limit: int = 5) -> list[dict[str, Any]]:
+    try:
+        records = collection.collection.find({}).sort("_id", -1).limit(limit)
+        return [to_jsonable(record) for record in records]
+    except Exception:
+        return []
+
+
+def package_available(package_name: str) -> bool:
+    return importlib.util.find_spec(package_name) is not None
+
+
+def check_akshare() -> dict[str, Any]:
+    try:
+        from stock_core.data_sources import akshare_provider
+
+        df, _params = akshare_provider.fetch_hot_ranking_frame(
+            {
+                "function": "stock_hot_follow_xq",
+                "params": {"symbol": "最热门"},
+            }
+        )
+        return {
+            "ok": True,
+            "message": f"接口可用，返回 {len(df)} 条",
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "message": str(exc),
+        }
+
+
+def check_tushare() -> dict[str, Any]:
+    token = os.getenv("TUSHARE_TOKEN")
+    if not token:
+        return {
+            "ok": False,
+            "message": "未设置 TUSHARE_TOKEN",
+        }
+
+    try:
+        import tushare as ts
+
+        today = today_yyyymmdd()
+        df = ts.pro_api(token).trade_cal(exchange="", start_date=today, end_date=today)
+        return {
+            "ok": True,
+            "message": f"接口可用，返回 {len(df)} 条",
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "message": str(exc),
+        }
+
+
+def build_data_source_status(check: bool = False) -> list[dict[str, Any]]:
+    sources = [
+        {
+            "id": "akshare",
+            "name": "AkShare",
+            "type": "行情/热榜",
+            "enabled": True,
+            "packageAvailable": package_available("akshare"),
+            "credential": "无需 Token",
+            "status": "ready",
+            "message": "SDK 已安装，可用于雪球、百度等热榜",
+        },
+        {
+            "id": "eastmoney",
+            "name": "东方财富",
+            "type": "自写接口",
+            "enabled": True,
+            "packageAvailable": package_available("requests"),
+            "credential": "无需 Token",
+            "status": "ready",
+            "message": "用于东方财富人气榜和飙升榜",
+        },
+        {
+            "id": "tushare",
+            "name": "Tushare",
+            "type": "基础行情/历史行情",
+            "enabled": bool(os.getenv("TUSHARE_TOKEN")),
+            "packageAvailable": package_available("tushare"),
+            "credential": "已配置 Token" if os.getenv("TUSHARE_TOKEN") else "未配置 Token",
+            "status": "ready" if os.getenv("TUSHARE_TOKEN") else "blocked",
+            "message": "设置 TUSHARE_TOKEN 后可运行股票池和历史行情流水线",
+        },
+    ]
+
+    if check:
+        checks = {
+            "akshare": check_akshare,
+            "tushare": check_tushare,
+        }
+        for source in sources:
+            checker = checks.get(source["id"])
+            if not checker:
+                continue
+            result = checker()
+            source["status"] = "online" if result["ok"] else "offline"
+            source["message"] = result["message"]
+            source["checkedAt"] = datetime.now().isoformat(timespec="seconds")
+
+    return sources
+
+
+def build_database_status() -> dict[str, Any]:
+    collections = [
+        ("stock_hot_rankings", "热榜缓存", database.stock_hot_rankings),
+        ("stock_pool", "股票池", database.stock_pool),
+        ("stock_daily_data", "每日行情", database.stock_daily_data),
+        ("stock_history_data", "历史行情缓存", database.stock_history_data),
+        ("stock_filter_result", "策略筛选结果", database.stock_filter_result),
+    ]
+    available = mongo_available()
+
+    return {
+        "ok": available,
+        "name": "python",
+        "uri": "mongodb://localhost:27017/",
+        "checkedAt": datetime.now().isoformat(timespec="seconds"),
+        "collections": [
+            {
+                "id": collection_id,
+                "title": title,
+                "count": collection_count(collection) if available else None,
+                "preview": collection_preview(collection) if available else [],
+            }
+            for collection_id, title, collection in collections
+        ],
+    }
 
 
 def value_from(record: dict[str, Any], candidates: list[str]) -> Any:
@@ -184,6 +321,7 @@ def empty_payload(config: dict[str, Any], error: str | None = None) -> dict[str,
         "id": config["id"],
         "title": config["title"],
         "source": config["source"],
+        "provider": config.get("provider"),
         "description": config["description"],
         "function": config["function"],
         "params": resolve_params(config["params"]),
@@ -204,6 +342,7 @@ def fetch_hot_ranking(config: dict[str, Any], limit: int) -> dict[str, Any]:
             "id": config["id"],
             "title": config["title"],
             "source": config["source"],
+            "provider": config.get("provider"),
             "description": config["description"],
             "function": config["function"],
             "params": params,
@@ -289,6 +428,20 @@ class StockApiHandler(BaseHTTPRequestHandler):
                         "dataSource": "akshare",
                     }
                 )
+                return
+
+            if path == "/api/data-sources":
+                check = parse_bool(params.get("check", [None])[0])
+                self.send_json(
+                    {
+                        "items": build_data_source_status(check=check),
+                        "checkedAt": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
+                return
+
+            if path == "/api/database":
+                self.send_json(build_database_status())
                 return
 
             if path == "/api/hot-rankings":

@@ -4,15 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5173",
+    "dev": "vite --host 127.0.0.1 --port 5173 --open",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 5173"
+    "preview": "vite preview --host 127.0.0.1 --port 5173 --open"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.2",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7",
+    "antd": "^6.5.0",
+    "echarts": "^6.1.0",
+    "lucide-react": "^1.21.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {}
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.0",
+    "vite": "^6.0.7"
+  }
 }

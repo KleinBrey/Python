@@ -1,4 +1,4 @@
-from stock_app.database.mongo import MongoDBHelper
+from stock_core.database.mongo import MongoDBHelper
 
 # mongoDB 筛选股票池
 stock_pool = MongoDBHelper(db_name="python", collection_name="stock_pool")

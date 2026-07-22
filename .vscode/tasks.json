@@ -66,12 +66,39 @@
       "problemMatcher": []
     },
     {
+      "label": "启动：前端页面",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "启动：完整看板",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "启动：后端 API",
+        "启动：前端页面"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "运行：Tushare 流水线",
       "type": "shell",
       "command": "${workspaceFolder}/.venv/bin/python",
       "args": [
         "-m",
-        "stock_app.pipelines.run_all"
+        "stock_core.pipelines.run_all"
       ],
       "options": {
         "cwd": "${workspaceFolder}",
@@ -92,7 +119,7 @@
       "command": "${workspaceFolder}/.venv/bin/python",
       "args": [
         "-m",
-        "stock_app.strategies.stock_volume_spike"
+        "stock_core.strategies.stock_volume_spike"
       ],
       "options": {
         "cwd": "${workspaceFolder}",
@@ -113,7 +140,30 @@
       "command": "${workspaceFolder}/.venv/bin/python",
       "args": [
         "-m",
-        "stock_app.charts.pyecharts_chart"
+        "stock_core.charts.pyecharts_chart"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "运行：东方财富热榜",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": [
+        "-m",
+        "stock_core.data_sources.debug_eastmoney",
+        "--limit",
+        "20"
       ],
       "options": {
         "cwd": "${workspaceFolder}",

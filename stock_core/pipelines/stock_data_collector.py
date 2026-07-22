@@ -1,8 +1,8 @@
-from stock_app.database import collections as database
-from stock_app.data_sources.tushare_provider import fetch_daily_stock_data
+from stock_core.database import collections as database
+from stock_core.data_sources.tushare_provider import fetch_daily_stock_data
 import pandas as pd
 from datetime import datetime,timedelta
-from stock_app.utils.common import rename_columns,save_to_mongo,load_from_mongodb
+from stock_core.utils.common import rename_columns,save_to_mongo,load_from_mongodb
 from tqdm import tqdm
 
 

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>今日A股投资跟踪报告｜2026-07-10盘前版</title>
+  <style>
+    :root {
+      --ink:#172033; --muted:#667085; --line:#dce2ea; --paper:#fff;
+      --bg:#f3f6fa; --navy:#183153; --blue:#2463eb; --cyan:#0f8b8d;
+      --red:#c0392b; --green:#14804a; --amber:#a35d00; --soft:#edf3fb;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif; line-height:1.65; }
+    a { color:#1b5fcc; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .page { max-width:1180px; margin:0 auto; padding:28px 22px 64px; }
+    header { color:#fff; padding:34px 38px; border-radius:18px; background:linear-gradient(130deg,#11233d 0%,#1f4774 65%,#0d7377 100%); box-shadow:0 12px 32px rgba(18,43,74,.18); }
+    h1 { font-size:34px; line-height:1.25; margin:0 0 9px; letter-spacing:.2px; }
+    .subtitle { color:#dce9f8; font-size:15px; }
+    .kicker { display:inline-block; padding:4px 9px; margin-bottom:12px; border:1px solid rgba(255,255,255,.35); border-radius:999px; color:#eaf4ff; font-size:12px; letter-spacing:.6px; }
+    .hero-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:25px; }
+    .hero-card { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:14px; min-height:112px; }
+    .hero-card .label { color:#c8d8eb; font-size:12px; }
+    .hero-card .value { display:block; margin:5px 0 2px; font-weight:750; font-size:20px; }
+    .hero-card .note { color:#dce7f3; font-size:12px; line-height:1.45; }
+    nav { position:sticky; top:0; z-index:20; display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; padding:10px; border:1px solid var(--line); background:rgba(255,255,255,.93); backdrop-filter:blur(8px); border-radius:12px; }
+    nav a { padding:6px 10px; color:var(--navy); border-radius:8px; font-size:13px; }
+    nav a:hover { background:var(--soft); text-decoration:none; }
+    section { margin:16px 0; padding:28px 32px; border:1px solid var(--line); background:var(--paper); border-radius:16px; box-shadow:0 5px 18px rgba(26,44,67,.045); }
+    h2 { margin:0 0 18px; color:var(--navy); font-size:25px; line-height:1.3; }
+    h3 { margin:24px 0 10px; color:#243b5a; font-size:18px; }
+    p { margin:9px 0; }
+    .lead { font-size:17px; color:#263a55; }
+    .callout { margin:14px 0; padding:15px 17px; border-left:4px solid var(--blue); border-radius:8px; background:#f3f7fd; }
+    .warning { border-left-color:var(--amber); background:#fff8ec; }
+    .positive { border-left-color:var(--green); background:#effaf4; }
+    .negative { border-left-color:var(--red); background:#fff3f1; }
+    .tag { display:inline-block; margin-right:6px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; vertical-align:1px; }
+    .fact { background:#e9f2ff; color:#1857ad; }
+    .infer { background:#fff0d5; color:#8b5100; }
+    .confirm { background:#fde8e5; color:#a73225; }
+    .pm { background:#e9f8ef; color:#157344; }
+    .metric-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:12px 0 18px; }
+    .metric { border:1px solid var(--line); border-radius:11px; padding:14px 15px; background:#fbfcfe; }
+    .metric b { display:block; font-size:22px; line-height:1.25; color:var(--navy); }
+    .metric small { color:var(--muted); }
+    table { width:100%; border-collapse:separate; border-spacing:0; margin:13px 0 18px; font-size:14px; }
+    th { padding:10px 11px; text-align:left; color:#334b69; background:#edf2f8; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    th:first-child { border-left:1px solid var(--line); border-radius:9px 0 0 0; }
+    th:last-child { border-right:1px solid var(--line); border-radius:0 9px 0 0; }
+    td { padding:10px 11px; vertical-align:top; border-bottom:1px solid var(--line); }
+    td:first-child { border-left:1px solid var(--line); }
+    td:last-child { border-right:1px solid var(--line); }
+    tr:last-child td:first-child { border-radius:0 0 0 9px; }
+    tr:last-child td:last-child { border-radius:0 0 9px 0; }
+    .up { color:var(--red); font-weight:700; }
+    .down { color:var(--green); font-weight:700; }
+    .muted { color:var(--muted); }
+    ul { padding-left:21px; }
+    li { margin:7px 0; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .panel { border:1px solid var(--line); border-radius:11px; padding:15px 17px; background:#fbfcfe; }
+    .panel h3 { margin-top:0; }
+    .timeline { border-left:2px solid #c8d5e5; margin-left:8px; padding-left:22px; }
+    .event { position:relative; padding:0 0 18px; }
+    .event:before { content:""; position:absolute; width:11px; height:11px; left:-28.5px; top:7px; border-radius:50%; background:var(--blue); box-shadow:0 0 0 4px #e9f1fd; }
+    .event .date { color:var(--blue); font-weight:800; }
+    .source-list { columns:2; column-gap:30px; font-size:13px; }
+    .source-list li { break-inside:avoid; }
+    footer { padding:18px 8px; color:var(--muted); font-size:12px; }
+    @media (max-width:850px) {
+      .page { padding:12px 10px 40px; }
+      header { padding:25px 20px; border-radius:12px; }
+      h1 { font-size:27px; }
+      .hero-grid,.metric-grid,.two-col { grid-template-columns:1fr; }
+      section { padding:22px 17px; border-radius:12px; overflow-x:auto; }
+      nav { position:static; }
+      table { min-width:720px; }
+      .source-list { columns:1; }
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="kicker">A-SHARE DAILY TRACKER · PRE-MARKET</div>
+    <h1>今日 A 股投资跟踪报告</h1>
+    <div class="subtitle">2026 年 7 月 10 日盘前版｜研究截点：08:47（北京时间）｜行情基准：7 月 9 日收盘 + 7 月 9 日美股收盘</div>
+    <div class="hero-grid">
+      <div class="hero-card"><span class="label">市场状态</span><span class="value">盘前，尚未开市</span><span class="note">今日收盘数据不存在；以下“行情”以昨日收盘为基准，并加入隔夜变量。</span></div>
+      <div class="hero-card"><span class="label">昨日主线</span><span class="value">半导体全链修复</span><span class="note">科创50 +8.41%，先进封装、设备、存储、晶圆代工与 CPO 共振。</span></div>
+      <div class="hero-card"><span class="label">关键背离</span><span class="value">指数强、广度弱</span><span class="note">2483 涨 / 2884 跌；权重科技的贡献显著高于全市场普涨程度。</span></div>
+      <div class="hero-card"><span class="label">今日姿态</span><span class="value">观察确认，不追单日亢奋</span><span class="note">优先验证半导体能否扩散、成交能否维持、上涨家数能否转为多数。</span></div>
+    </div>
+  </header>
+
+  <nav aria-label="报告目录">
+    <a href="#summary">核心结论</a><a href="#sentiment">1. 市场情绪</a><a href="#flows">2. 资金动向</a><a href="#themes">3. 主题板块</a><a href="#macro">4. 经济政策</a><a href="#watch">5. 关注板块</a><a href="#calendar">6. 未来大事</a><a href="#sources">数据与来源</a>
+  </nav>
+
+  <section id="summary">
+    <h2>核心结论</h2>
+    <p class="lead"><span class="tag pm">投资判断</span>7 月 9 日是一次“科技权重驱动的放量反转”，不是已经确认的全面风险偏好反转。沪指重回 4000 点上方，创业板、科创板弹性极强，但收盘仍然跌多涨少；因此最值得跟踪的不是指数还能否高开，而是<strong>半导体能否从大市值核心扩散到有业绩支撑的设备、材料和封测，同时全市场广度能否转正</strong>。</p>
+    <div class="callout warning"><span class="tag infer">推断</span>隔夜美股科技反弹、10 年期美债收益率回落和布伦特油价回吐，给今天成长风格提供正向外部条件；但 SK 海力士巨额 ADR 上市会同时带来“全球半导体资金新增供给”和“AI 存储需求再定价”两股相反力量。若今日半导体高开后成交集中度继续上升、上涨家数仍不过半，应把它理解为拥挤交易延续，而不是健康扩散。</div>
+    <div class="two-col">
+      <div class="panel"><h3>今天最重要的三个确认</h3><ol><li>上午上涨家数能否稳定超过下跌家数，而非只靠科创权重拉指数。</li><li>两市全天成交能否维持约 2.7 万亿元以上，且券商、金融 IT 不冲高回落。</li><li>中芯国际、兆易创新、长电科技、北方华创等核心成交放大时，板块内中位数涨幅是否同步。</li></ol></div>
+      <div class="panel"><h3>主要失效条件</h3><ol><li>科创50高开低走并吞没昨日实体的较大部分。</li><li>锂电、资源、消费继续普跌，市场广度二次恶化。</li><li>布伦特油价因中东冲突重新急升并推高美债收益率，压制高估值成长。</li></ol></div>
+    </div>
+  </section>
+
+  <section id="sentiment">
+    <h2>1. 市场情绪</h2>
+    <div class="metric-grid">
+      <div class="metric"><b class="up">+1.65%</b><small>上证综指 4036.59，重回 4000 点上方</small></div>
+      <div class="metric"><b class="up">+8.41%</b><small>科创50 2185.83，成为风险偏好核心载体</small></div>
+      <div class="metric"><b>2.9137 万亿元</b><small>沪深成交额，较前日增加 3501 亿元（约 +13.7%）</small></div>
+    </div>
+    <table>
+      <thead><tr><th>指数 / 市场</th><th>7月9日收盘</th><th>涨跌幅</th><th>投资含义</th></tr></thead>
+      <tbody>
+        <tr><td>上证综指</td><td>4036.59</td><td class="up">+1.65%</td><td>大盘回到 4000 点上方，但更像科技权重带动的指数修复。</td></tr>
+        <tr><td>深证成指</td><td>15398.73</td><td class="up">+3.07%</td><td>成长与硬件权重明显占优。</td></tr>
+        <tr><td>创业板指</td><td>4018.17</td><td class="up">+4.49%</td><td>宁德时代等权重反弹，成长风险偏好显著回升。</td></tr>
+        <tr><td>科创50</td><td>2185.83</td><td class="up">+8.41%</td><td>半导体龙头集中拉升，是当天最清晰的风格信号。</td></tr>
+        <tr><td>北证50</td><td>1209.37</td><td class="up">+0.44%</td><td>明显落后于科创50，说明小微盘并未同步进入强修复。</td></tr>
+      </tbody>
+    </table>
+    <p><span class="tag fact">事实</span>沪深京三市 2483 只上涨、2884 只下跌、155 只平盘；涨幅 9%以上 187 只、跌幅 9%以上 31 只。指数强度和上涨家数并不匹配，但强势股赚钱效应已经明显改善。数据来自<a href="https://www.thepaper.cn/newsDetail_forward_33548801">澎湃新闻/Wind</a>与<a href="https://finance.jrj.com.cn/2026/07/09151657746762.shtml">交易所数据整理</a>。</p>
+    <h3>情绪拐点与风险偏好</h3>
+    <ul>
+      <li><strong>盘中拐点：</strong>早盘一度超过 4600 股下跌，午后半导体与算力核心带动指数快速反转，收盘下跌家数收窄至约 2900 家。这是“恐慌—核心资产抢筹—指数反转”的日内路径。</li>
+      <li><strong>风险偏好变化：</strong>从前几日对科技拥挤度和海外 AI 资本开支的担忧，切回对晶圆代工涨价、存储景气、先进封装和设备需求的交易；成长显著跑赢价值与小盘。</li>
+      <li><strong>当天市场主线：</strong>半导体是唯一具备“指数贡献、资金成交、产业催化、业绩预告”四项共振的主线；CPO/PCB 属于同一 AI 硬件链的次主线，油气、军工、券商更偏轮动与风险对冲。</li>
+    </ul>
+    <div class="callout negative"><span class="tag pm">判断</span><strong>情绪已经从冰点修复，但尚未完成由“核心抱团”向“全市场扩散”的二次确认。</strong>今日若科创50继续强、北证50和中证2000继续弱，风格仍是大市值高景气抱团，而不是普涨牛市。</div>
+  </section>
+
+  <section id="flows">
+    <h2>2. 资金动向</h2>
+    <table>
+      <thead><tr><th>资金维度</th><th>最新可得信号</th><th>解读</th></tr></thead>
+      <tbody>
+        <tr><td>跨境/北向成交</td><td>7月9日成交 4007.68 亿元，占沪深成交 13.75%</td><td>活跃度高，但该口径是<strong>成交额，不等于净买入</strong>；不能据此直接下结论“外资净流入”。</td></tr>
+        <tr><td>北向高成交股</td><td>宁德时代 54.44 亿、中际旭创 51.87 亿、中国巨石 43.70 亿、北方华创 37.64 亿</td><td>跨境资金注意力集中在成长核心与少数资源龙头。</td></tr>
+        <tr><td>主力资金（午间口径）</td><td>半导体净流入约 95 亿；计算机设备净流入约 18.73 亿</td><td>只代表午间监测口径，不能当成收盘最终值；方向上证明“科技回补”早盘已出现。</td></tr>
+        <tr><td>杠杆资金</td><td>截至7月8日，两融余额 29596.57 亿元，单日减少 193.55 亿元</td><td>反转前杠杆资金仍在降风险；昨日长阳是否触发融资回补，要等今日披露。</td></tr>
+        <tr><td>货币市场</td><td>7月9日央行开展 100 亿7天逆回购，净回笼 2785 亿元</td><td>短端流动性并非当日股市上涨的直接推手，放量更像权益风险偏好与仓位回补。</td></tr>
+      </tbody>
+    </table>
+    <p>北向成交明细来自<a href="https://finance.jrj.com.cn/2026/07/09174157748210.shtml">金融界/巨灵数据</a>；午间行业资金来自<a href="https://www.nbd.com.cn/articles/2026-07-09/4463881.html">每日经济新闻</a>；两融余额来自<a href="https://www.eeo.com.cn/2026/0709/949273.shtml">经济观察网</a>；公开市场操作来自<a href="https://www.eeo.com.cn/2026/0709/949282.shtml">央行操作报道</a>。</p>
+    <h3>抱团与撤退方向</h3>
+    <div class="two-col">
+      <div class="panel"><h3 class="up">资金抱团</h3><ul><li><strong>晶圆代工/设计：</strong>中芯国际、澜起科技、兆易创新、寒武纪。</li><li><strong>设备/材料：</strong>北方华创、中微公司、长川科技。</li><li><strong>封测/PCB/CPO：</strong>长电科技、东山精密、中际旭创、新易盛。</li><li><strong>信号：</strong>上述多只个股同时进入沪深股通成交前列，且出现两位数涨幅或接近涨停。</li></ul></div>
+      <div class="panel"><h3 class="down">资金撤退/规避</h3><ul><li><strong>锂矿与能源金属：</strong>融捷股份二连跌停，盛新锂能、天齐锂业等承压。</li><li><strong>煤炭/钢铁/稀土：</strong>前期商品涨价交易拥挤，7月9日出现获利回吐。</li><li><strong>小微盘：</strong>北证50仅涨0.44%，明显弱于科技宽基。</li><li><strong>风险：</strong>若抱团继续集中在极少数千亿市值标的，指数波动会放大。</li></ul></div>
+    </div>
+    <div class="callout"><span class="tag confirm">待确认</span>7 月 9 日收盘后的全市场“主力净流入”、机构龙虎榜净买卖和当日两融变化，目前未获得同一口径、可交叉验证的完整数据。报告不以未经核验的净流入数字替代事实。</div>
+  </section>
+
+  <section id="themes">
+    <h2>3. 主题板块</h2>
+    <table>
+      <thead><tr><th>板块</th><th>强弱</th><th>催化与代表个股</th><th>持续性判断</th></tr></thead>
+      <tbody>
+        <tr><td><strong>半导体：代工/存储/设备/封测</strong></td><td class="up">最强</td><td>台积电3nm及联电选择性涨价预期、AI存储需求、国产设备订单与中报业绩预告。代表：中芯国际、华虹宏力、兆易创新、澜起科技、北方华创、中微公司、长川科技、长电科技。</td><td><strong>中期高，短期波动高。</strong>产业逻辑最完整，但科创50单日+8.41%已计入大量乐观预期；需等台积电业绩与板块广度验证。</td></tr>
+        <tr><td><strong>CPO / PCB / AI服务器</strong></td><td class="up">强</td><td>算力资本开支未见明确拐点，EML向硅光迁移、单通道速率提升、CPO/NPO并行。代表：中际旭创、新易盛、东山精密、光迅科技、深南电路。</td><td><strong>中等偏高。</strong>更依赖海外AI资本开支与估值；若美股芯片再度转弱，A股高拥挤品种会先放大波动。</td></tr>
+        <tr><td><strong>油气开采/油服</strong></td><td>轮动偏强</td><td>美伊冲突与霍尔木兹海峡通航风险。代表：通源石油、山东墨龙及油服链。</td><td><strong>低到中。</strong>隔夜布伦特回落2.2%至76.30美元，说明该主题仍受新闻驱动；更适合事件对冲观察，不宜按趋势外推。</td></tr>
+        <tr><td><strong>券商/金融IT</strong></td><td>轮动明显</td><td>成交额回到2.9万亿元，交易新规7月6日落地，市场对活跃资本市场的贝塔预期升温。</td><td><strong>中等。</strong>必须以连续高成交与市场广度改善作为确认；单日放量不足以支持趋势行情。</td></tr>
+        <tr><td><strong>锂矿/能源金属</strong></td><td class="down">最弱</td><td>前期涨价交易拥挤、资金向半导体切换。代表：融捷股份、盛新锂能、天齐锂业、永杉锂业。</td><td><strong>短期低。</strong>先看锂价企稳、龙头停止跌停和板块成交缩量；未出现这些信号前只适合观察超跌。</td></tr>
+        <tr><td><strong>煤炭/钢铁/稀土</strong></td><td class="down">偏弱</td><td>PPI同比仍高，但权益端先交易拥挤与获利回吐。代表：昊华能源、晋控煤业、新集能源；稀土与钢铁板块整体低迷。</td><td><strong>中性。</strong>PPI利润逻辑仍在，但股价需要现货价格和库存继续验证；短期是强基本面与弱资金面的冲突。</td></tr>
+      </tbody>
+    </table>
+    <p>板块与个股表现参见<a href="https://stock.jrj.com.cn/2026/07/09150657746676.shtml">7月9日A股收评</a>及<a href="https://www.nbd.com.cn/articles/2026-07-09/4464093.html">每日经济新闻收评</a>。</p>
+    <div class="callout positive"><span class="tag pm">主线判断</span>当天真正可延续的主线不是笼统“科技”，而是<strong>有价格、订单或业绩验证的半导体制造链</strong>。AI应用、机器人等更可能等 7 月17日至20日 WAIC 催化后再由主题交易转向订单验证。</div>
+  </section>
+
+  <section id="macro">
+    <h2>4. 国内外经济政策</h2>
+    <h3>国内：通胀结构、交易制度与产业政策</h3>
+    <table>
+      <thead><tr><th>变量</th><th>已确认事实</th><th>对A股的潜在影响</th></tr></thead>
+      <tbody>
+        <tr><td>6月CPI/PPI</td><td>CPI同比+1.0%、环比-0.3%，核心CPI同比+1.0%；PPI同比+4.1%、环比-0.3%。</td><td>居民端通胀温和，货币政策没有明显需求过热约束；PPI高于CPI说明上游价格强于终端，利好资源品利润但可能压缩中下游毛利。汽车、酒饮料价格仍弱，消费与汽车链需看需求而非只看成本。</td></tr>
+        <tr><td>A股交易新规</td><td>7月6日起，沪市盘后固定价格交易扩展到全部A股和ETF；主板ST/*ST涨跌幅由5%调至10%。</td><td>有利于盘后流动性与价格发现；同时ST波动上限翻倍，尾部风险与隔夜风险增大，题材投机的止损纪律更重要。</td></tr>
+        <tr><td>公开市场与汇率</td><td>7月9日公开市场净回笼2785亿元；美元兑人民币中间价6.8036，较前日调强41个基点。</td><td>流动性边际收敛但人民币偏稳，有利于外资风险偏好和进口成本；对纯出口、美元收入占比高的公司存在折算压力。</td></tr>
+        <tr><td>AI与未来产业</td><td>政策继续强调“人工智能+”、模型/算力/数据关键技术与未来产业；WAIC将于7月17—20日在上海举行。</td><td>利好算力基础设施、机器人、行业大模型、数据要素和AI应用；但主题交易需转向订单、付费率和资本开支，避免只有演示没有收入。</td></tr>
+      </tbody>
+    </table>
+    <p>物价数据来自<a href="https://www.stats.gov.cn/sj/zxfbhjd/202607/t20260709_1964084.html">国家统计局CPI</a>与<a href="https://www.stats.gov.cn/sj/zxfbhjd/202607/t20260709_1964082.html">国家统计局CPI/PPI解读</a>；交易新规见<a href="https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260424_10816474.shtml">上交所</a>；汇率中间价见<a href="https://www.news.cn/20260709/9f0b9edb03dd43ab8a52dea366712b28/c.html">中国外汇交易中心授权公告</a>。</p>
+    <h3>海外：科技反弹、利率缓和，地缘风险未消失</h3>
+    <ul>
+      <li><span class="tag fact">事实</span>7月9日美股标普500 +0.8%、纳指 +1.3%、道指 +0.3%；10年期美债收益率从4.56%降至4.54%。高估值成长的外部贴现率压力边际缓和。</li>
+      <li><span class="tag fact">事实</span>布伦特原油回落2.2%至76.30美元/桶，但仍高于上周末71.80美元；市场仍在对美伊冲突和霍尔木兹通航风险计价。</li>
+      <li><span class="tag infer">推断</span>对A股最直接的传导是：海外芯片回暖 + 油价回落利好半导体、消费电子和航空；若冲突升级导致油价重新突破近期高位，则油服、军工相对受益，但成长估值和运输/化工成本受压。</li>
+      <li><span class="tag confirm">待确认</span>7月14日美国6月CPI是未来一周最重要的贴现率变量。5月CPI同比4.2%，若6月继续偏高，美债收益率可能反弹，A股高估值科技会面临二次估值压力。</li>
+    </ul>
+    <p>海外收盘与油价、美债收益率数据来自<a href="https://apnews.com/article/stock-markets-oil-iran-ai-ebb040b1377034108cfd55adfa94ecd1">AP市场综述</a>。</p>
+  </section>
+
+  <section id="watch">
+    <h2>5. 需要关注的板块</h2>
+    <table>
+      <thead><tr><th>优先级 / 方向</th><th>关注逻辑</th><th>关键催化</th><th>主要风险</th><th>可观察指标</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A｜半导体设备、材料、封测</strong></td><td>国产替代叠加全球存储/先进制程扩产，收入与订单可验证性高于纯概念。</td><td>SK海力士ADR募资投向产能与设备；7月15—17成都半导体展；7月16台积电业绩与资本开支。</td><td>单日涨幅过大、估值拥挤、海外出口限制、客户资本开支后移。</td><td>板块成交集中度；北方华创/中微公司/长电科技相对科创50强弱；台积电资本开支与毛利指引；设备订单和合同负债。</td></tr>
+        <tr><td><strong>A-｜晶圆代工、存储设计</strong></td><td>代工涨价预期与AI存储需求提供价格弹性，核心公司已创阶段或历史新高。</td><td>SK海力士7月10日纳斯达克交易；台积电7月16日法说会；中报业绩预告。</td><td>涨价预期提前透支、ADR巨额供给分流资金、存储供给扩张导致周期见顶预期。</td><td>DRAM/NAND合约价；中芯国际/华虹宏力A-H溢价；兆易创新/澜起科技成交与换手；美光、SK海力士表现。</td></tr>
+        <tr><td><strong>B+｜CPO、PCB、服务器</strong></td><td>AI资本开支仍是硬件订单核心，且与昨日半导体主线共振。</td><td>海外云厂商资本开支评论、台积电先进封装产能、WAIC产业发布。</td><td>海外AI投资回报质疑、客户集中、估值高、前期拥挤度仍高。</td><td>中际旭创/新易盛/东山精密相对强弱；订单能见度；800G/1.6T出货；毛利率与应收账款。</td></tr>
+        <tr><td><strong>B｜AI应用、机器人、数据要素</strong></td><td>WAIC带来密集产品与政策催化，是硬件之后最可能轮动的方向。</td><td>7月17—20日WAIC；“人工智能+”行业应用方案；企业级智能体订单。</td><td>主题先行、商业化滞后；高研发费用；同质化演示。</td><td>付费客户、ARR/合同额、推理调用量、毛利率；大会后是否有订单而非只有发布会。</td></tr>
+        <tr><td><strong>B｜券商与金融IT</strong></td><td>2.9万亿元成交与制度优化带来交易贝塔，若广度扩散，券商是最直接的情绪确认器。</td><td>连续放量、两融回升、活跃资本市场政策。</td><td>单日脉冲、冲高回落；市场重新缩量；高位股退潮。</td><td>两市成交是否连续高于2.7万亿元；融资买入占比；券商指数能否跑赢沪深300；上涨家数是否超过3200。</td></tr>
+        <tr><td><strong>B-｜油气、油服、军工</strong></td><td>作为中东冲突升级的权益对冲；油服对高油价和资本开支更敏感。</td><td>霍尔木兹通航、美国/伊朗军事行动、IEA与EIA月报。</td><td>停火进展导致油价快速回吐；事件溢价高、盈利兑现慢。</td><td>布伦特76—80美元区间突破方向；油轮通航量；油服订单；军工板块涨幅是否脱离事件新闻。</td></tr>
+        <tr><td><strong>观察｜锂矿、煤炭、稀土</strong></td><td>PPI和部分商品价格仍有支撑，但资金短期明显撤退，适合等“价格稳+股价稳”双确认。</td><td>现货价格、库存、产量约束、半年报。</td><td>拥挤交易出清不足、供给释放、政策压价、下游需求不及预期。</td><td>锂价和稀土报价；融捷股份是否打开跌停并缩量；煤价库存；资源指数相对沪深300。</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><span class="tag pm">行动框架</span>未提供具体持仓，因此本报告只给出<strong>watchlist / wait for proof</strong>姿态：半导体制造链优先跟踪，但不把 7 月 9 日单日涨幅直接外推；券商是市场扩散的确认器；油气是事件对冲；锂矿和资源等待价格与股价共同止跌。</div>
+  </section>
+
+  <section id="calendar">
+    <h2>6. 最近要发生的大事（未来1—2周）</h2>
+    <div class="timeline">
+      <div class="event"><div class="date">7月10日（周五）｜SK海力士ADR开始纳斯达克when-issued交易</div><p>纳斯达克交易员通知显示，SK海力士预计以 SKHYV 开始when-issued交易。关注对全球存储、HBM、设备与先进封装估值的影响，也要关注巨额股票供给对半导体资金的分流。<a href="https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2026-37">Nasdaq官方通知</a></p></div>
+      <div class="event"><div class="date">7月14日（周二）10:00｜中国上半年进出口发布会</div><p>验证一季度高增能否延续，重点看对美出口、东盟/欧盟替代、机电与汽车出口、进口需求。影响出口链、港口航运、工程机械、汽车零部件和人民币预期。<a href="https://stcn.com/article/detail/4008250.html">国新办发布会预告</a></p></div>
+      <div class="event"><div class="date">7月14日（周二）20:30｜美国6月CPI</div><p>5月美国CPI同比4.2%；6月数据将直接影响美债收益率与7月底美联储定价，是A股高估值科技的核心外部变量。<a href="https://www.bls.gov/schedule/news_release/cpi.htm">美国劳工统计局日程</a></p></div>
+      <div class="event"><div class="date">7月15日（周三）10:00｜中国二季度GDP及6月经济数据</div><p>包括工业增加值、社零、固投、房地产、居民收入与产能利用率。关注内需修复、地产拖累、制造业投资和消费分化；这是券商、消费、地产链与周期定价的国内核心事件。<a href="https://www.stats.gov.cn/xw/tjxw/tzgg/202512/t20251224_1962137.html">国家统计局2026发布日程</a></p></div>
+      <div class="event"><div class="date">7月15日（周三）20:30｜美国6月PPI</div><p>决定“能源冲击是否进入生产端通胀”的判断，影响全球利率、美元和成长股贴现率。<a href="https://www.bls.gov/opub/update.htm">BLS近期发布日程</a></p></div>
+      <div class="event"><div class="date">7月15—17日｜成都半导体与集成电路产业博览会</div><p>关注设备、材料、制造、先进封装的新品和地方产业项目。<span class="tag confirm">待确认</span>公开会展信息显示该日期，建议以主办方临近公告核验议程与参会公司。</p></div>
+      <div class="event"><div class="date">7月16日（周四）14:00｜台积电2026年二季度业绩会</div><p>最重要的是3nm/先进制程价格、AI需求、CoWoS等先进封装产能、全年资本开支与2027年能见度；直接影响A股晶圆代工、设备材料、CPO和服务器链。<a href="https://investor.tsmc.com/english/quarterly-results/2026/q2">台积电IR</a></p></div>
+      <div class="event"><div class="date">7月16日（周四）20:30｜美国6月零售销售</div><p>检验高通胀与中东风险下美国消费韧性，对出口链、消费电子和全球增长预期有传导。<a href="https://www.census.gov/economic-indicators/market-prices/">美国人口普查局经济指标日程</a></p></div>
+      <div class="event"><div class="date">7月17—20日｜2026世界人工智能大会（上海）</div><p>关注大模型、智能体、机器人、算力、数据要素和AI治理的新产品/订单/政策。真正有持续性的标的是大会后能披露客户与收入的公司。<a href="https://www.worldaic.com.cn/profile">WAIC官网</a></p></div>
+      <div class="event"><div class="date">7月20日（周一）｜7月LPR报价窗口</div><p><span class="tag confirm">常规窗口，待公告</span>6月LPR为1年期3.0%、5年期以上3.5%。关注是否调整及其对银行息差、地产链和高股息风格的影响；最终以中国货币网当日公告为准。</p></div>
+      <div class="event"><div class="date">7月下旬｜中报业绩预告与政治局经济会议预期升温</div><p><span class="tag infer">推断/无确切日期</span>中报验证将决定科技高景气是否从预期转为盈利；7月政治局会议通常讨论经济形势，但截至研究截点未见权威会议日期，不能当成已确认催化。</p></div>
+    </div>
+  </section>
+
+  <section id="sources">
+    <h2>数据截点、证据状态与主要来源</h2>
+    <p><strong>研究截点：</strong>2026年7月10日 08:47（北京时间）。A股尚未开盘；所有A股价格、涨跌、成交和广度均为7月9日收盘数据，海外市场为7月9日美股收盘附近数据。</p>
+    <p><strong>证据状态：</strong>市场价格与宏观日程为研究级；行业“主力资金”属于第三方算法口径，且仅取得午间数据，已明确限制；龙虎榜与7月9日当日两融尚未取得完整可交叉验证数据，不作为核心结论。</p>
+    <ul class="source-list">
+      <li><a href="https://www.thepaper.cn/newsDetail_forward_33548801">澎湃新闻：7月9日A股收盘与广度</a></li>
+      <li><a href="https://finance.jrj.com.cn/2026/07/09151657746762.shtml">金融界：宽基指数收盘数据</a></li>
+      <li><a href="https://finance.jrj.com.cn/2026/07/09174157748210.shtml">金融界：北向成交明细</a></li>
+      <li><a href="https://www.stats.gov.cn/sj/zxfbhjd/202607/t20260709_1964082.html">国家统计局：6月CPI/PPI解读</a></li>
+      <li><a href="https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260424_10816474.shtml">上交所：2026交易规则修订</a></li>
+      <li><a href="https://apnews.com/article/stock-markets-oil-iran-ai-ebb040b1377034108cfd55adfa94ecd1">AP：7月9日全球市场、油价与美债</a></li>
+      <li><a href="https://www.bls.gov/schedule/news_release/cpi.htm">BLS：美国CPI发布日期</a></li>
+      <li><a href="https://www.stats.gov.cn/xw/tjxw/tzgg/202512/t20251224_1962137.html">国家统计局：2026年发布日程</a></li>
+      <li><a href="https://investor.tsmc.com/english/quarterly-results/2026/q2">台积电：二季度业绩会</a></li>
+      <li><a href="https://www.worldaic.com.cn/profile">WAIC 2026：大会日期</a></li>
+    </ul>
+    <div class="callout warning"><strong>使用限制：</strong>本报告是公开信息基础上的投资跟踪材料，不构成个股推荐或收益承诺。代表个股用于说明传导机制，未完成逐家公司估值、财务和持仓拥挤度核验。</div>
+  </section>
+
+  <footer>© 2026 A股投资跟踪｜盘前版。事实、推断、待确认与投资判断已分开标注。</footer>
+</main>
+</body>
+</html>

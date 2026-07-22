@@ -4,8 +4,8 @@ from pyecharts import options as opts
 from pyecharts.charts import Kline, Line, Bar, Grid, Page
 from pyecharts.commons.utils import JsCode
 from tqdm import tqdm
-from stock_app.database import collections as database
-from stock_app.utils.open_file_in_browser import open_file_in_browser
+from stock_core.database import collections as database
+from stock_core.utils.open_file_in_browser import open_file_in_browser
 
 
 def calculate_ma(data, window):

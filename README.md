@@ -8,8 +8,8 @@
 ## 项目结构
 
 - [backend](/Users/kleinbrey/PycharmProjects/stock/backend)：Python HTTP API，当前主要服务 AkShare 热度榜单
-- [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)：React + Vite 前端页面
-- [stock_app](/Users/kleinbrey/PycharmProjects/stock/stock_app)：Python 业务包
+- [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)：React + Vite + Ant Design 前端页面
+- [stock_core](/Users/kleinbrey/PycharmProjects/stock/stock_core)：Python 业务包
   - `data_sources`：外部数据源适配层，隔离 AkShare / Tushare SDK
   - `database`：MongoDB 简单封装和集合入口
   - `pipelines`：Tushare 股票池与历史行情缓存
@@ -17,6 +17,16 @@
   - `charts`：Pyecharts K 线图生成
   - `utils`：通用工具函数
 - [.vscode](/Users/kleinbrey/PycharmProjects/stock/.vscode)：VS Code 启动配置
+
+前端核心目录：
+
+- `src/config`：看板菜单、路由路径等配置
+- `src/layouts`：Ant Design 应用布局
+- `src/routes`：浏览器路由分配
+- `src/pages`：各个看板页面
+- `src/components`：跨页面复用组件
+- `src/hooks`：页面状态和数据加载逻辑
+- `src/api`：后端 API 请求封装
 
 ## 环境
 
@@ -73,15 +83,39 @@ cd frontend
 npm run dev
 ```
 
-浏览器打开：
+浏览器会自动打开前端页面。如果没有自动打开，看终端里 Vite 输出的 `Local` 地址，例如：
 
 ```text
 http://127.0.0.1:5173/
 ```
 
+在 VS Code 里运行时，使用任务：
+
+- `启动：完整看板`：同时启动后端 API 和前端页面
+- `启动：前端页面`：只启动 React 页面
+- `启动：后端 API`：只启动 Python API
+
+前端看板使用浏览器路由：
+
+- `/hot-rankings`：股票热度
+- `/market-overview`：市场概览
+- `/data-sources`：数据源状态
+- `/database`：MongoDB 状态
+
 页面默认读取 MongoDB 缓存；点击“刷新全部”或单个榜单的“刷新”按钮时才会调用 AkShare 外部接口并更新缓存。
 
-热榜数据源集中在 [stock_app/data_sources/akshare_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_app/data_sources/akshare_provider.py)。后端不会直接调用 `akshare`，后续如果要替换成别的数据源，优先改这个适配文件。
+热榜注册表集中在 [stock_core/data_sources/hot_rankings.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/hot_rankings.py)。后端不会直接调用具体数据源 SDK。
+
+当前热榜数据源：
+
+- [stock_core/data_sources/akshare_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/akshare_provider.py)：雪球、百度股市通等 AkShare 接口
+- [stock_core/data_sources/eastmoney_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/eastmoney_provider.py)：自写东方财富热榜数据源
+
+单独查看东方财富热榜：
+
+```bash
+PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.data_sources.debug_eastmoney --limit 20
+```
 
 主要 API：
 
@@ -101,26 +135,26 @@ export TUSHARE_TOKEN=your_token
 生成股票池并拉取最近约 60 天历史行情：
 
 ```bash
-PYTHONPATH=$(pwd) .venv/bin/python -m stock_app.pipelines.run_all
+PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.pipelines.run_all
 ```
 
 运行量能放大策略：
 
 ```bash
-PYTHONPATH=$(pwd) .venv/bin/python -m stock_app.strategies.stock_volume_spike
+PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.strategies.stock_volume_spike
 ```
 
 生成 K 线图：
 
 ```bash
-PYTHONPATH=$(pwd) .venv/bin/python -m stock_app.charts.pyecharts_chart
+PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.charts.pyecharts_chart
 ```
 
 输出文件：
 
 - [output-chart/stock_result.html](/Users/kleinbrey/PycharmProjects/stock/output-chart/stock_result.html)
 
-Tushare 调用集中在 [stock_app/data_sources/tushare_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_app/data_sources/tushare_provider.py)。股票池和历史行情脚本只依赖这里暴露的方法。
+Tushare 调用集中在 [stock_core/data_sources/tushare_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/tushare_provider.py)。股票池和历史行情脚本只依赖这里暴露的方法。
 
 ## 推荐使用顺序
 
@@ -134,9 +168,9 @@ Tushare 调用集中在 [stock_app/data_sources/tushare_provider.py](/Users/klei
 跑历史行情策略：
 
 1. 设置 `TUSHARE_TOKEN`
-2. 跑 `python -m stock_app.pipelines.run_all`
-3. 跑 `python -m stock_app.strategies.stock_volume_spike`
-4. 跑 `python -m stock_app.charts.pyecharts_chart`
+2. 跑 `python -m stock_core.pipelines.run_all`
+3. 跑 `python -m stock_core.strategies.stock_volume_spike`
+4. 跑 `python -m stock_core.charts.pyecharts_chart`
 
 ## 说明
 

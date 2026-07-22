@@ -1,6 +1,6 @@
-from stock_app.data_sources.tushare_provider import fetch_basic_stock_pool
-from stock_app.database import collections as database
-from stock_app.utils.common import show_all_pandas,rename_columns,save_to_mongo
+from stock_core.data_sources.tushare_provider import fetch_basic_stock_pool
+from stock_core.database import collections as database
+from stock_core.utils.common import show_all_pandas,rename_columns,save_to_mongo
 
 show_all_pandas()
 

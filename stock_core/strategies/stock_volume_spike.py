@@ -6,8 +6,8 @@
 """
 import pandas as pd
 from tqdm import tqdm
-from stock_app.database import collections as database
-from stock_app.utils.common import show_all_pandas,save_to_mongo,load_from_mongodb
+from stock_core.database import collections as database
+from stock_core.utils.common import show_all_pandas,save_to_mongo,load_from_mongodb
 
 show_all_pandas()
 
