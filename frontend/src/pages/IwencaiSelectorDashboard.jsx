@@ -222,6 +222,9 @@ export default function IwencaiSelectorDashboard() {
         timeout: 60,
       });
       setResult(payload.item);
+      if (payload.item.query_rewritten) {
+        setQuery(payload.item.query);
+      }
       setStatus((current) => ({ ...current, latest: payload.item }));
     } catch (err) {
       setError(err.message);
@@ -232,10 +235,23 @@ export default function IwencaiSelectorDashboard() {
 
   const rows = result?.datas || [];
   const reportedCount = result?.code_count ?? rows.length;
+  const queryStatus = status
+    ? (status.configured ? '已配置' : '待配置')
+    : (error ? '后端未连接' : '连接中');
+  const apiKeyBadge = status
+    ? (status.configured ? 'API Key 已配置' : 'API Key 未配置')
+    : (error ? '后端未连接' : '正在连接后端');
 
   useEffect(() => {
     if (!rows.length) {
       setPrefetchStatus(null);
+      return undefined;
+    }
+    if (status?.marketDataConfigured === false) {
+      setPrefetchStatus({
+        state: 'warning',
+        message: '未配置扶摇 API Key，暂不预缓存日线',
+      });
       return undefined;
     }
     const controller = new AbortController();
@@ -270,7 +286,7 @@ export default function IwencaiSelectorDashboard() {
 
     prefetchHistories();
     return () => controller.abort();
-  }, [result]);
+  }, [result, status?.marketDataConfigured]);
 
   useEffect(() => {
     if (!rows.length) {
@@ -287,6 +303,12 @@ export default function IwencaiSelectorDashboard() {
 
     async function loadKline() {
       if (!selectedStock?.股票代码) return;
+      if (status?.marketDataConfigured === false) {
+        setKlineData(null);
+        setKlineLoading(false);
+        setKlineError('未配置 HITHINK_FINANCE_API_KEY，无法读取扶摇历史行情');
+        return;
+      }
       setKlineLoading(true);
       setKlineError('');
       try {
@@ -307,7 +329,7 @@ export default function IwencaiSelectorDashboard() {
     }
     loadKline();
     return () => controller.abort();
-  }, [selectedStock, klinePeriod]);
+  }, [selectedStock, klinePeriod, status?.marketDataConfigured]);
 
   return (
     <div className="dashboard-content iwencai-dashboard">
@@ -315,7 +337,7 @@ export default function IwencaiSelectorDashboard() {
         <MetricCard label="符合条件" value={reportedCount} note="同花顺问财返回的股票总数" icon={ListFilter} tone="teal" />
         <MetricCard label="已获取" value={rows.length} note="当前已完整获取的结果行数" icon={FileJson2} tone="indigo" />
         <MetricCard label="分页数量" value={result?.pages_fetched ?? '-'} note="自动分页获取，无需手工翻页" icon={Search} tone="rose" />
-        <MetricCard label="查询状态" value={status?.configured ? '已配置' : '待配置'} note="API Key 仅保存在本机后端" icon={Sparkles} tone="amber" />
+        <MetricCard label="查询状态" value={queryStatus} note="API Key 仅保存在本机后端" icon={Sparkles} tone="amber" />
       </section>
 
       <section className="panel iwencai-query-panel">
@@ -324,8 +346,8 @@ export default function IwencaiSelectorDashboard() {
             <h2>自然语言问财选股</h2>
             <span>写下行情、技术、财务或行业条件，系统会自动获取全部分页</span>
           </div>
-          <Badge variant={status?.configured ? 'success' : 'warning'}>
-            {status?.configured ? 'API Key 已配置' : 'API Key 未配置'}
+          <Badge variant={status?.configured ? 'success' : status ? 'warning' : 'secondary'}>
+            {apiKeyBadge}
           </Badge>
         </div>
         <div className="iwencai-query-body">
@@ -354,7 +376,7 @@ export default function IwencaiSelectorDashboard() {
               onClick={submitQuery}
               size="lg"
               type="button"
-              disabled={!query.trim() || loading}
+              disabled={!query.trim() || loading || !status?.configured}
             >
               {loading ? <Loader2 className="spin" size={16} /> : <Play size={16} />}
               {loading ? '正在查询并获取全部分页' : '开始选股'}
@@ -395,6 +417,12 @@ export default function IwencaiSelectorDashboard() {
           </div>
         </div>
         {result?.query ? <div className="iwencai-result-query"><strong>查询条件</strong><span>{result.query}</span></div> : null}
+        {result?.query_rewritten ? (
+          <div className="iwencai-result-query">
+            <strong>系统改写</strong>
+            <span>{(result.normalization_notes || []).join('；')}</span>
+          </div>
+        ) : null}
         <div className="iwencai-result-workspace">
           <StockSelectionTable rows={rows} selectedStock={selectedStock} onSelect={setSelectedStock} />
           <StockKlineChart

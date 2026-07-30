@@ -7,7 +7,6 @@ import json
 import os
 import re
 import secrets
-import shlex
 import ssl
 import urllib.error
 import urllib.request
@@ -16,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from data.paths import source_data_dir
+from data.settings import get_setting
 
 DEFAULT_BASE_URL = "https://openapi.iwencai.com"
 SKILL_ID = "hithink-astock-selector"
@@ -26,27 +26,49 @@ class IwencaiError(RuntimeError):
     pass
 
 
-def read_profile_value(name: str) -> str:
-    """只读取 shell profile 中指定变量，不执行 profile。"""
+def normalize_query(query: str) -> tuple[str, list[str]]:
+    """清理明显误输入，并改写成问财更稳定识别的金融表述。"""
 
-    pattern = re.compile(rf"^\s*(?:export\s+)?{re.escape(name)}\s*=\s*(.*?)\s*$")
-    for path in (Path.home() / ".zshrc", Path.home() / ".zprofile", Path.home() / ".profile"):
-        if not path.is_file():
-            continue
-        for line in reversed(path.read_text(encoding="utf-8", errors="replace").splitlines()):
-            match = pattern.match(line)
-            if not match:
-                continue
-            try:
-                parts = shlex.split(match.group(1), posix=True)
-            except ValueError as exc:
-                raise IwencaiError(f"{path} 中 {name} 的引号不完整") from exc
-            return parts[0] if parts else ""
-    return ""
+    normalized = " ".join(query.split())
+    notes: list[str] = []
 
+    without_noise = re.sub(r"([\u4e00-\u9fffA-Za-z])\1{3,}", "", normalized)
+    if without_noise != normalized:
+        normalized = " ".join(without_noise.split())
+        normalized = re.sub(
+            r"(?<=[\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])",
+            "",
+            normalized,
+        )
+        notes.append("已清除连续重复的误输入字符")
 
-def get_setting(name: str, default: str = "") -> str:
-    return os.environ.get(name, "").strip() or read_profile_value(name).strip() or default
+    rewrites = (
+        (
+            re.compile(
+                r"最近5个交易日均成交量\s*/\s*"
+                r"最近5个交易日前20个交易日均成交量大于等于\s*1\.5(?:倍)?"
+            ),
+            "最近5个交易日平均成交量大于此前20个交易日平均成交量的1.5倍",
+            "已将成交量比值改写为标准倍数条件",
+        ),
+        (
+            re.compile(r"最近5日涨幅"),
+            "最近5个交易日涨幅",
+            "已明确涨幅按最近5个交易日计算",
+        ),
+        (
+            re.compile(r"按(?:现在|当前)个股热度排序"),
+            "按最近一个交易日个股热度从高到低排序",
+            "已将当前热度改为最近一个交易日热度",
+        ),
+    )
+    for pattern, replacement, note in rewrites:
+        rewritten = pattern.sub(replacement, normalized)
+        if rewritten != normalized:
+            normalized = rewritten
+            notes.append(note)
+
+    return normalized, notes
 
 
 def resolve_project_dir() -> Path:
@@ -227,7 +249,8 @@ def run_query(
     max_pages: int = 100,
     timeout: int = 60,
 ) -> dict[str, Any]:
-    normalized_query = " ".join(query.split())
+    original_query = " ".join(query.split())
+    normalized_query, normalization_notes = normalize_query(query)
     if not normalized_query:
         raise IwencaiError("查询条件不能为空")
     if len(normalized_query) > 2000:
@@ -241,6 +264,9 @@ def run_query(
     )
     payload = {
         "query": normalized_query,
+        "original_query": original_query,
+        "query_rewritten": normalized_query != original_query,
+        "normalization_notes": normalization_notes,
         "fetched_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "source": "同花顺问财",
         "code_count": first_response.get("code_count", len(rows)),

@@ -22,6 +22,7 @@ from data.hot_rankings import HOT_RANKINGS, fetch_hot_ranking_frame, resolve_par
 from data.providers import hithink_financial  # noqa: E402
 from data.providers import iwencai_api as iwencai_provider  # noqa: E402
 from data.providers.hithink_financial import fetch_stock_history  # noqa: E402
+from data.settings import get_setting  # noqa: E402
 from stock_core.database import collections as database  # noqa: E402
 from stock_core.strategies.sources import load_strategy_sources  # noqa: E402
 from data.registry import list_sources  # noqa: E402
@@ -76,7 +77,7 @@ def resolve_history_dates(
     end_date: str | None = None,
 ) -> tuple[str, str]:
     default_history_days = parse_int(
-        os.getenv("HISTORY_DEFAULT_DAYS"),
+        get_setting("HISTORY_DEFAULT_DAYS"),
         default=550,
         minimum=60,
         maximum=3650,
@@ -484,7 +485,10 @@ class StockApiHandler(BaseHTTPRequestHandler):
                 return
 
             if path == "/api/iwencai/status":
-                self.send_json(iwencai_provider.build_status())
+                status = iwencai_provider.build_status()
+                status["marketDataConfigured"] = hithink_financial.is_configured()
+                status["marketDataSource"] = hithink_financial.SOURCE_NAME
+                self.send_json(status)
                 return
 
             if path == "/api/iwencai/latest":

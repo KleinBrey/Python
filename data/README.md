@@ -23,7 +23,8 @@ data/
 
 结构化数据统一使用 `hithink-financial`，Base URL 默认是
 `https://fuyao.aicubes.cn`，凭证环境变量为
-`HITHINK_FINANCE_API_KEY`。当前已接入：
+`HITHINK_FINANCE_API_KEY`。真实值建议保存在项目根目录
+`config/secrets.local.toml`，该文件已被 Git 忽略。当前已接入：
 
 - A 股代码表与标的检索
 - 全市场或指定股票行情快照

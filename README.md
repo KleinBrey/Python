@@ -31,20 +31,24 @@ Python 3.13、Node.js 22+，本地 MongoDB 默认地址为
 `mongodb://localhost:27017/`。
 
 ```bash
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -e .
 cd frontend && npm install
 ```
 
-配置同花顺扶摇官方 API Key：
+Python 项目元数据和依赖统一维护在
+[pyproject.toml](/Users/kleinbrey/PycharmProjects/stock/pyproject.toml)。
+安装后也可以直接使用 `stock-api` 和 `stock-pipeline` 命令。
+
+项目内的私密配置保存在 `config/secrets.local.toml`。该文件已加入
+`.gitignore`，不会随代码提交；可提交的字段模板是
+`config/secrets.example.toml`。
 
 ```bash
-export HITHINK_FINANCE_API_KEY=your_api_key
-export HITHINK_FINANCE_BASE_URL=https://fuyao.aicubes.cn
-# 可选：K 线首屏自然日范围和内存缓存秒数
-export HISTORY_DEFAULT_DAYS=550
-export HITHINK_HISTORY_CACHE_TTL=1800
-export HITHINK_PREFETCH_WORKERS=4
+cp config/secrets.example.toml config/secrets.local.toml
 ```
+
+然后只在 `config/secrets.local.toml` 中填写 `HITHINK_FINANCE_API_KEY` 和
+`IWENCAI_API_KEY`。项目本地配置优先于环境变量，不需要再向系统环境导出 API Key。
 
 查看不经过项目封装的原始 REST 调用案例：
 
@@ -57,15 +61,8 @@ curl 案例：[examples/fuyao_curl_examples.sh](/Users/kleinbrey/PycharmProjects
 
 Python 案例：[examples/fuyao_api_example.py](/Users/kleinbrey/PycharmProjects/stock/examples/fuyao_api_example.py)
 
-配置问财自然语言选股：
-
-```bash
-export IWENCAI_API_KEY=your_api_key
-export IWENCAI_BASE_URL=https://openapi.iwencai.com
-```
-
-后端也会只读解析 `~/.zshrc`、`~/.zprofile`、`~/.profile` 中的上述变量。
-配置更新后需重启后端。
+环境变量和 `~/.zshrc`、`~/.zprofile`、`~/.profile` 仅作为旧配置兼容回退。
+修改本地配置后需重启后端。
 
 ## 启动
 

@@ -2,7 +2,8 @@
 """同花顺扶摇 Financial API 直接调用案例。
 
 准备：
-    export HITHINK_FINANCE_API_KEY="你的 API Key"
+    cp config/secrets.example.toml config/secrets.local.toml
+    然后在 secrets.local.toml 中填写 HITHINK_FINANCE_API_KEY。
 
 运行全部案例：
     python examples/fuyao_api_example.py --symbol 600519.SH
@@ -10,7 +11,7 @@
 只看历史日线：
     python examples/fuyao_api_example.py --symbol 000001.SZ --api history --days 60
 
-脚本只使用 Python 标准库，展示最底层的 REST 调用方式。项目业务代码应继续通过
+脚本展示最底层的 REST 调用方式。项目业务代码应继续通过
 ``data.providers.hithink_financial`` 和 ``data.service`` 使用统一数据格式。
 """
 
@@ -29,9 +30,15 @@ import urllib.request
 from typing import Any
 from zoneinfo import ZoneInfo
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from data.settings import get_setting  # noqa: E402
+
+
 DEFAULT_BASE_URL = "https://fuyao.aicubes.cn"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
-API_KEY = 'sk-fuyao-ubQXGmGz8oPFVwDZ1wITPlbyTtPJwErA'
 
 
 class FuyaoApiError(RuntimeError):
@@ -92,12 +99,15 @@ def request_api(
 ) -> dict[str, Any]:
     """发送 GET 请求并拆开扶摇统一 ApiResponse 信封。"""
 
-    api_key = os.getenv("HITHINK_FINANCE_API_KEY", API_KEY).strip()
+    api_key = get_setting("HITHINK_FINANCE_API_KEY")
     if not api_key:
         raise FuyaoApiError(
-            "未配置 HITHINK_FINANCE_API_KEY；请先从扶摇 API Key 管理页创建并导出"
+            "未配置 HITHINK_FINANCE_API_KEY；请填写 config/secrets.local.toml"
         )
-    base_url = os.getenv("HITHINK_FINANCE_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    base_url = get_setting(
+        "HITHINK_FINANCE_BASE_URL",
+        DEFAULT_BASE_URL,
+    ).rstrip("/")
     query = urllib.parse.urlencode(
         {key: value for key, value in (params or {}).items() if value is not None}
     )
@@ -139,7 +149,8 @@ def request_api(
         request_id = payload.get("request_id")
         request_suffix = f"，request_id={request_id}" if request_id else ""
         raise FuyaoApiError(
-            f"业务错误 code={payload.get('code')}: {payload.get('message')}{request_suffix}"
+            f"业务错误 code={payload.get('code')}: "
+            f"{payload.get('message')}{request_suffix}"
         )
     data = payload.get("data")
     if not isinstance(data, dict):
@@ -176,8 +187,12 @@ def history_case(symbol: str, days: int) -> None:
         {
             "thscode": symbol,
             "interval": "1d",
-            "start": timestamp_ms(start.replace(hour=0, minute=0, second=0, microsecond=0)),
-            "end": timestamp_ms(end.replace(hour=23, minute=59, second=59, microsecond=999000)),
+            "start": timestamp_ms(
+                start.replace(hour=0, minute=0, second=0, microsecond=0)
+            ),
+            "end": timestamp_ms(
+                end.replace(hour=23, minute=59, second=59, microsecond=999000)
+            ),
             "adjust": "forward",
             "offset": 0,
         },

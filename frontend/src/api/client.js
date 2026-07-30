@@ -3,6 +3,14 @@ const API_BASE_URLS = [
   'http://127.0.0.1:8001',
 ].filter(Boolean);
 
+function networkError(lastError) {
+  const targets = API_BASE_URLS.join('、');
+  const error = new Error(`无法连接后端（${targets}），请确认后端服务已启动`);
+  error.cause = lastError;
+  error.isNetworkError = true;
+  return error;
+}
+
 export async function apiGet(path, options = {}) {
   let lastError = null;
 
@@ -23,7 +31,7 @@ export async function apiGet(path, options = {}) {
     }
   }
 
-  throw lastError || new Error('请求失败');
+  throw networkError(lastError);
 }
 
 export async function apiPost(path, body, options = {}) {
@@ -51,5 +59,5 @@ export async function apiPost(path, body, options = {}) {
     }
   }
 
-  throw lastError || new Error('请求失败');
+  throw networkError(lastError);
 }

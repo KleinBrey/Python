@@ -13,7 +13,6 @@ from datetime import datetime
 from functools import lru_cache
 import json
 import math
-import os
 from threading import RLock
 import time
 import urllib.error
@@ -25,7 +24,8 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from data.normalizers import normalize_market_bars, normalize_stock_master, normalize_symbol
-from data.providers.iwencai_api import build_ssl_context, read_profile_value
+from data.providers.iwencai_api import build_ssl_context
+from data.settings import get_setting
 
 
 SOURCE_ID = "hithink-financial"
@@ -49,7 +49,7 @@ class HiThinkFinancialError(RuntimeError):
 
 
 def _setting(name: str, default: str = "") -> str:
-    return os.getenv(name, "").strip() or read_profile_value(name).strip() or default
+    return get_setting(name, default)
 
 
 def is_configured() -> bool:

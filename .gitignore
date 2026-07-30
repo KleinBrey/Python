@@ -2,6 +2,9 @@ __pycache__/
 *.py[cod]
 .DS_Store
 .venv/
+*.egg-info/
+build/
+dist/
 .idea/
 output-chart/
 data/raw/
@@ -11,3 +14,4 @@ data/exports/
 frontend/node_modules/
 frontend/dist/
 frontend/.npm-cache/
+config/secrets.local.toml

@@ -4,14 +4,29 @@ set -euo pipefail
 # 同花顺扶摇 REST API curl 案例
 #
 # 使用：
-#   export HITHINK_FINANCE_API_KEY="你的 API Key"
+#   在 config/secrets.local.toml 中填写 HITHINK_FINANCE_API_KEY
 #   bash examples/fuyao_curl_examples.sh snapshot 600519.SH
 #   bash examples/fuyao_curl_examples.sh history 000001.SZ 60
 #   bash examples/fuyao_curl_examples.sh valuation 600519.SH
 #   bash examples/fuyao_curl_examples.sh search 贵州茅台
 #   bash examples/fuyao_curl_examples.sh hot
 
-: "${HITHINK_FINANCE_API_KEY:?请先 export HITHINK_FINANCE_API_KEY=\"你的 API Key\"}"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="${PROJECT_ROOT}/.venv/bin/python"
+if [[ ! -x "${PYTHON_BIN}" ]]; then
+  PYTHON_BIN="python3"
+fi
+
+HITHINK_FINANCE_API_KEY="$(
+  PYTHONPATH="${PROJECT_ROOT}" "${PYTHON_BIN}" -c \
+    'from data.settings import get_setting; print(get_setting("HITHINK_FINANCE_API_KEY"))'
+)"
+HITHINK_FINANCE_BASE_URL="$(
+  PYTHONPATH="${PROJECT_ROOT}" "${PYTHON_BIN}" -c \
+    'from data.settings import get_setting; print(get_setting("HITHINK_FINANCE_BASE_URL", "https://fuyao.aicubes.cn"))'
+)"
+
+: "${HITHINK_FINANCE_API_KEY:?请先填写 config/secrets.local.toml 中的 HITHINK_FINANCE_API_KEY}"
 
 FUYAO_BASE_URL="${HITHINK_FINANCE_BASE_URL:-https://fuyao.aicubes.cn}"
 API_NAME="${1:-snapshot}"
