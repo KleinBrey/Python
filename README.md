@@ -1,239 +1,142 @@
 # stock
 
-一个面向 A 股数据的小项目，目前保留两条清晰入口：
+面向 A 股的量化研究与看板项目。系统的结构化证券数据已经统一为
+[同花顺扶摇 Financial API](https://fuyao.aicubes.cn/docs/)；问财 OpenAPI
+只保留为自然语言选股入口，选中股票后的代码解析和 K 线仍由扶摇 API 提供。
 
-1. `AkShare + MongoDB + React` 股票热度排行榜 Web 看板
-2. `Tushare + MongoDB + Pandas + Pyecharts` 历史行情与量能策略流水线
+## 数据架构
 
-## 项目结构
+```text
+同花顺扶摇 REST API ─┐
+                     ├─ data/providers ─ data/service ─ 策略 / MongoDB / 后端 API
+问财自然语言选股 ────┘
+```
 
-- [backend](/Users/kleinbrey/PycharmProjects/stock/backend)：Python HTTP API，当前主要服务 AkShare 热度榜单
-- [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)：React + Vite + shadcn/ui + Tailwind CSS 前端页面
-- [stock_core](/Users/kleinbrey/PycharmProjects/stock/stock_core)：Python 业务包
-  - `data_sources`：外部数据源适配层，隔离 AkShare / Tushare SDK
-  - `database`：MongoDB 简单封装和集合入口
-  - `pipelines`：Tushare 股票池与历史行情缓存
-  - `strategies`：策略筛选脚本及统一策略来源
-    - `sources`：把问财结果和 Python 手写策略统一转换成股票列表
-  - `charts`：Pyecharts K 线图生成
-  - `utils`：通用工具函数
-- [.vscode](/Users/kleinbrey/PycharmProjects/stock/.vscode)：VS Code 启动配置
+- [data](/Users/kleinbrey/PycharmProjects/stock/data)：独立统一数据层
+  - `providers/hithink_financial.py`：代码表、行情快照、日 K、估值、热榜的官方适配器
+  - `providers/iwencai_api.py`：自然语言选股，不提供行情
+  - `service.py`：业务层唯一结构化取数门面
+  - `normalizers.py` / `schemas.py`：供应商字段转换、清洗和系统稳定契约
+  - `raw` / `processed` / `cache` / `exports`：运行时数据
+- [backend](/Users/kleinbrey/PycharmProjects/stock/backend)：Python HTTP API
+- [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)：React + Vite 看板
+- [stock_core](/Users/kleinbrey/PycharmProjects/stock/stock_core)：MongoDB、流水线和策略
 
-前端核心目录：
+策略和业务代码不得直接依赖供应商字段。今后若更换或增加供应商，只在 `data/`
+内增加适配器并转换成系统契约。
 
-- `src/config`：看板菜单、路由路径等配置
-- `src/layouts`：shadcn/ui 应用布局
-- `src/components/ui`：项目内维护的 shadcn/ui 组件源码
-- `src/lib/utils.js`：shadcn/ui className 合并工具
-- `src/routes`：浏览器路由分配
-- `src/pages`：各个看板页面
-- `src/components`：跨页面复用组件
-- `src/hooks`：页面状态和数据加载逻辑
-- `src/api`：后端 API 请求封装
+## 配置
 
-## 环境
-
-- Python 3.13
-- Node.js 22+
-- 本地 MongoDB：`mongodb://localhost:27017/`
-
-安装 Python 依赖：
+Python 3.13、Node.js 22+，本地 MongoDB 默认地址为
+`mongodb://localhost:27017/`。
 
 ```bash
 .venv/bin/python -m pip install -r requirements.txt
+cd frontend && npm install
 ```
 
-安装前端依赖：
+配置同花顺扶摇官方 API Key：
 
 ```bash
-cd frontend
-npm install
+export HITHINK_FINANCE_API_KEY=your_api_key
+export HITHINK_FINANCE_BASE_URL=https://fuyao.aicubes.cn
+# 可选：K 线首屏自然日范围和内存缓存秒数
+export HISTORY_DEFAULT_DAYS=550
+export HITHINK_HISTORY_CACHE_TTL=1800
+export HITHINK_PREFETCH_WORKERS=4
 ```
 
-## MongoDB 集合
-
-默认数据库：`python`
-
-- `stock_hot_rankings`：AkShare 多平台股票热度榜单缓存
-- `stock_pool`：过滤后的股票池
-- `stock_history_data`：历史行情
-- `stock_filter_result`：策略筛选结果
-
-## 股票热度看板
-
-当前覆盖的 AkShare 榜单：
-
-- 雪球关注榜、雪球本周新增关注、雪球讨论榜、雪球交易分享榜
-- 东方财富人气榜、东方财富飙升榜、东方财富港股人气榜
-- 百度股市通 A 股、港股、美股热搜股票
-
-启动 API：
+查看不经过项目封装的原始 REST 调用案例：
 
 ```bash
-PYTHONPATH=$(pwd) .venv/bin/python backend/server.py
+bash examples/fuyao_curl_examples.sh snapshot 600519.SH
+bash examples/fuyao_curl_examples.sh history 000001.SZ 60
 ```
 
-默认地址：
+curl 案例：[examples/fuyao_curl_examples.sh](/Users/kleinbrey/PycharmProjects/stock/examples/fuyao_curl_examples.sh)
 
-```text
-http://127.0.0.1:8001
-```
+Python 案例：[examples/fuyao_api_example.py](/Users/kleinbrey/PycharmProjects/stock/examples/fuyao_api_example.py)
 
-启动前端：
-
-```bash
-cd frontend
-npm run dev
-```
-
-浏览器会自动打开前端页面。如果没有自动打开，看终端里 Vite 输出的 `Local` 地址，例如：
-
-```text
-http://127.0.0.1:5173/
-```
-
-在 VS Code 里运行时，使用任务：
-
-- `启动：完整看板`：同时启动后端 API 和前端页面
-- `启动：前端页面`：只启动 React 页面
-- `启动：后端 API`：只启动 Python API
-
-前端看板使用浏览器路由：
-
-- `/hot-rankings`：股票热度
-- `/market-overview`：市场概览
-- `/strategy-signals`：策略来源和统一股票列表
-- `/iwencai-selector`：自然语言问财选股和动态结果表格
-- `/data-sources`：数据源状态
-- `/database`：MongoDB 状态
-
-页面默认读取 MongoDB 缓存；点击“刷新全部”或单个榜单的“刷新”按钮时才会调用 AkShare 外部接口并更新缓存。
-
-热榜注册表集中在 [stock_core/data_sources/hot_rankings.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/hot_rankings.py)。后端不会直接调用具体数据源 SDK。
-
-当前热榜数据源：
-
-- [stock_core/data_sources/akshare_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/akshare_provider.py)：雪球、百度股市通等 AkShare 接口
-- [stock_core/data_sources/eastmoney_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/eastmoney_provider.py)：自写东方财富热榜数据源
-
-单独查看东方财富热榜：
-
-```bash
-PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.data_sources.debug_eastmoney --limit 20
-```
-
-主要 API：
-
-- `GET /api/health`
-- `GET /api/summary`
-- `GET /api/hot-rankings?limit=80&refresh=false`
-- `GET /api/hot-rankings/{榜单ID}?limit=120&refresh=true`
-- `GET /api/strategy-sources`
-- `GET /api/strategy-stocks?source=all&limit=300`
-- `GET /api/iwencai/status`
-- `GET /api/iwencai/latest`
-- `POST /api/iwencai/query`
-- `GET /api/stocks/history?symbol=000938&period=daily`：通过 `hithink-market-query` 获取不复权历史行情
-
-## 问财选股页面
-
-“问财选股”页面允许直接输入自然语言条件。查询由本机后端调用同花顺问财 OpenAPI，API Key 不会发送到浏览器。后端会自动获取全部分页，并继续写入原问财项目：
-
-- `~/Documents/问财选股/query.txt`
-- `~/Documents/问财选股/results/latest.json`
-- `~/Documents/问财选股/results/latest.csv`
-- `~/Documents/问财选股/results/history/`
-
-后端从环境变量或 `~/.zshrc`、`~/.zprofile`、`~/.profile` 读取：
+配置问财自然语言选股：
 
 ```bash
 export IWENCAI_API_KEY=your_api_key
 export IWENCAI_BASE_URL=https://openapi.iwencai.com
 ```
 
-配置更新后需要重启后端 API。
+后端也会只读解析 `~/.zshrc`、`~/.zprofile`、`~/.profile` 中的上述变量。
+配置更新后需重启后端。
 
-问财选股结果右侧的个股 K 线也使用同花顺问财行情技能。接口返回每日开高低收和成交量，周线、月线由后端基于日线聚合；当前明确标注为不复权数据。
-
-## 策略来源
-
-策略来源统一放在 [stock_core/strategies/sources](/Users/kleinbrey/PycharmProjects/stock/stock_core/strategies/sources)，最终都输出相同结构的股票列表。
-
-当前来源：
-
-- `iwencai`：默认读取 `~/Documents/问财选股/results/latest.json`
-- `handwritten`：读取项目内注册的 Python 手写策略，当前已注册量能放大策略结果
-
-问财目录可以通过环境变量覆盖：
+## 启动
 
 ```bash
-export IWENCAI_PROJECT_DIR=/你的路径/问财选股
+PYTHONPATH=$(pwd) .venv/bin/python backend/server.py
+cd frontend && npm run dev
 ```
 
-也可以直接指定结果文件：
+默认后端地址为 `http://127.0.0.1:8001`，前端通常为
+`http://127.0.0.1:5173/`。
 
-```bash
-export IWENCAI_RESULT_FILE=/你的路径/latest.json
-```
+主要页面：
 
-新增手写策略时，在 `stock_core/strategies/sources/handwritten.py` 中注册一个返回字典列表的函数：
+- `/hot-rankings`：同花顺 24 小时/小时热股榜、飙升榜和涨停池
+- `/market-overview`：市场概览
+- `/strategy-signals`：统一策略来源
+- `/iwencai-selector`：问财自然语言选股
+- `/data-sources`：扶摇 API 配置与连通状态
+- `/database`：MongoDB 集合状态
 
-```python
-@register_handwritten_strategy("my-strategy", "我的策略")
-def load_my_strategy():
-    return [{"股票代码": "000001", "股票名称": "平安银行"}]
-```
+个股 K 线由 `GET /api/stocks/history` 从扶摇历史行情接口获取，前端使用
+TradingView Lightweight Charts 显示；支持日线，以及由后端从日线聚合的周线和月线，
+支持不复权、前复权和后复权。问财筛选完成后，前端会调用
+`POST /api/stocks/history/prefetch`，以有限并发预缓存筛选结果的日线；随后点击股票或
+切换日/周/月周期都会复用缓存。
 
-## Tushare 流水线
-
-Tushare 相关脚本只从环境变量读取 token：
-
-```bash
-export TUSHARE_TOKEN=your_token
-```
-
-生成股票池并拉取最近约 60 天历史行情：
+## 流水线
 
 ```bash
 PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.pipelines.run_all
-```
-
-运行量能放大策略：
-
-```bash
 PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.strategies.stock_volume_spike
 ```
 
-生成 K 线图：
+流水线的股票代码表、估值和历史行情全部走扶摇 API。历史接口一次只接受一个
+`thscode`，统一 service 会将批量股票拆成多个官方请求再合并为相同格式。
+
+扶摇当前文档将“股票基础信息”标为规划中，代码表尚不提供行业、上市状态、总股本和
+总市值。因此这些统一字段会保留为空，股票池会明确提示并跳过原有的市值过滤，
+不会用其他来源补齐或构造虚假值。官方接口上线这些字段后，只需在
+`data/providers/hithink_financial.py` 补映射。
+
+## API
+
+- `GET /api/health`
+- `GET /api/summary`
+- `GET /api/data-sources?check=true`
+- `GET /api/hot-rankings?limit=80&refresh=true`
+- `GET /api/hot-rankings/{榜单ID}?refresh=true`
+- `GET /api/stocks/history?symbol=000938&period=daily&adjust=qfq`
+- `GET /api/strategy-sources`
+- `GET /api/strategy-stocks?source=all&limit=300`
+- `GET /api/iwencai/status`
+- `GET /api/iwencai/latest`
+- `POST /api/iwencai/query`
+
+## 运行时数据
+
+默认数据根目录就是项目的 `data/`。可整体迁移到其他磁盘：
 
 ```bash
-PYTHONPATH=$(pwd) .venv/bin/python -m stock_core.charts.pyecharts_chart
+export STOCK_DATA_DIR=/你的数据磁盘/stock-data
 ```
 
-输出文件：
+问财结果默认写入：
 
-- [output-chart/stock_result.html](/Users/kleinbrey/PycharmProjects/stock/output-chart/stock_result.html)
+```text
+data/raw/iwencai/query.txt
+data/raw/iwencai/results/latest.json
+data/raw/iwencai/results/latest.csv
+data/raw/iwencai/results/history/
+```
 
-Tushare 调用集中在 [stock_core/data_sources/tushare_provider.py](/Users/kleinbrey/PycharmProjects/stock/stock_core/data_sources/tushare_provider.py)。股票池和历史行情脚本只依赖这里暴露的方法。
-
-## 推荐使用顺序
-
-看股票热度：
-
-1. 启动 MongoDB
-2. 启动 [backend/server.py](/Users/kleinbrey/PycharmProjects/stock/backend/server.py)
-3. 启动 [frontend](/Users/kleinbrey/PycharmProjects/stock/frontend)
-4. 在页面点击刷新榜单
-
-跑历史行情策略：
-
-1. 设置 `TUSHARE_TOKEN`
-2. 跑 `python -m stock_core.pipelines.run_all`
-3. 跑 `python -m stock_core.strategies.stock_volume_spike`
-4. 跑 `python -m stock_core.charts.pyecharts_chart`
-
-## 说明
-
-- Web 看板不依赖 Tushare token
-- Tushare 流水线依赖 MongoDB 中间结果串联后续步骤
-- 图表输出、前端构建产物、依赖目录和 IDE 私有配置已加入忽略规则
+可用 `IWENCAI_PROJECT_DIR`、`IWENCAI_OUTPUT_DIR` 或
+`IWENCAI_RESULT_FILE` 覆盖对应路径。

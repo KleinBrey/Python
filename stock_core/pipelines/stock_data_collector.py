@@ -1,24 +1,10 @@
 from stock_core.database import collections as database
-from stock_core.data_sources.tushare_provider import fetch_daily_stock_data
+from data.normalizers import canonical_bars_to_system
+from data.service import OFFICIAL_SOURCE, fetch_daily_bars
 import pandas as pd
 from datetime import datetime,timedelta
-from stock_core.utils.common import rename_columns,save_to_mongo,load_from_mongodb
+from stock_core.utils.common import save_to_mongo,load_from_mongodb
 from tqdm import tqdm
-
-
-COLUMN_MAP = {
-    "ts_code": "股票代码",
-    "trade_date": "交易日期",
-    "open": "开盘价",
-    "high": "最高价",
-    "low": "最低价",
-    "close": "收盘价",
-    "pre_close": "昨收价",
-    "change": "涨跌额",
-    "pct_chg": "涨跌幅",
-    "vol": "成交量",
-    "amount": "成交额"
-}
 
 
 def get_date_range(days: int = 30):
@@ -52,25 +38,13 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
     codes = df["股票代码"].dropna().astype(str).drop_duplicates().tolist()
     # 分批处理
     for i in tqdm(range(0, len(codes), batch_size), desc="拉取股票数据"):
-        batch_codes = ",".join(codes[i:i + batch_size])
+        batch_codes = codes[i:i + batch_size]
 
-        data = fetch_daily_stock_data(
-            ts_code=batch_codes,
+        data = fetch_daily_bars(
+            OFFICIAL_SOURCE,
+            symbols=batch_codes,
             start_date=start_date,
             end_date=end_date,
-            fields=[
-                "ts_code",
-                "trade_date",
-                "open",
-                "high",
-                "low",
-                "close",
-                "pre_close",
-                "change",
-                "pct_chg",
-                "vol",
-                "amount",
-            ],
         )
 
         if data is not None and not data.empty:
@@ -79,7 +53,9 @@ def fetch_stock_data(df, start_date: str, end_date: str, batch_size: int = 10):
     # 合并所有批次结果
     if all_data:
         merged = pd.concat(all_data, ignore_index=True)
-        return merged.drop_duplicates(subset=["ts_code", "trade_date"]).reset_index(drop=True)
+        return merged.drop_duplicates(
+            subset=["symbol", "trade_date", "frequency", "adjustment"]
+        ).reset_index(drop=True)
     else:
         return pd.DataFrame()
 
@@ -92,7 +68,7 @@ def main():
 
     start_date, end_date = get_date_range(60)
     data = fetch_stock_data(stock_pool, start_date=start_date, end_date=end_date, batch_size=100)
-    data =  rename_columns(data,COLUMN_MAP)
+    data = canonical_bars_to_system(data)
 
     if data is not None and not data.empty:
         save_to_mongo(data,database.stock_history_data)

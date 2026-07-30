@@ -7,24 +7,23 @@ import { shortTime, statusLabel } from '../utils/formatters.js';
 
 export default function DataSourcesDashboard({ dataSources, loading, onCheckSources }) {
   const sourceById = Object.fromEntries(dataSources.map((item) => [item.id, item]));
-  const akshare = sourceById.akshare;
-  const tushare = sourceById.tushare;
+  const hithink = sourceById['hithink-financial'];
   const onlineCount = dataSources.filter((item) => ['online', 'ready'].includes(item.status)).length;
 
   return (
     <div className="dashboard-content">
       <section className="metric-grid" aria-label="数据源状态">
         <MetricCard
-          label="AkShare"
-          value={statusLabel(akshare?.status, '-')}
-          note={akshare?.message || '用于雪球、百度等热榜'}
+          label="同花顺扶摇"
+          value={statusLabel(hithink?.status, '-')}
+          note={hithink?.message || '系统唯一结构化证券数据源'}
           icon={Database}
           tone="teal"
         />
         <MetricCard
-          label="Tushare"
-          value={statusLabel(tushare?.status, '-')}
-          note={tushare?.credential || '用于股票池和历史行情'}
+          label="官方 API Key"
+          value={hithink?.credential || '-'}
+          note="仅由后端读取，不发送到浏览器"
           icon={ChartCandlestick}
           tone="indigo"
         />
@@ -48,7 +47,7 @@ export default function DataSourcesDashboard({ dataSources, loading, onCheckSour
         <div className="panel-header">
           <div>
             <h2>数据源连接状态</h2>
-            <span>AkShare、东方财富、Tushare 的安装、配置和连通情况</span>
+            <span>同花顺扶摇官方 API 的配置与连通情况</span>
           </div>
           <Button type="button" onClick={onCheckSources} disabled={loading}>
             {loading ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
@@ -68,8 +67,8 @@ export default function DataSourcesDashboard({ dataSources, loading, onCheckSour
               </div>
               <dl>
                 <div>
-                  <dt>SDK</dt>
-                  <dd>{source.packageAvailable ? '已安装' : '未安装'}</dd>
+                  <dt>接入方式</dt>
+                  <dd>{source.type}</dd>
                 </div>
                 <div>
                   <dt>凭证</dt>

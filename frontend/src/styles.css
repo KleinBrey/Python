@@ -1199,6 +1199,62 @@ h3 {
   width: 100%;
 }
 
+.kline-chart-shell {
+  height: 520px;
+  min-height: 520px;
+  overflow: hidden;
+  position: relative;
+}
+
+.kline-legend {
+  align-items: center;
+  color: #71717a;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  gap: 5px 12px;
+  left: 14px;
+  line-height: 20px;
+  max-width: calc(100% - 88px);
+  pointer-events: none;
+  position: absolute;
+  top: 8px;
+  z-index: 2;
+}
+
+.kline-legend strong {
+  color: #d4d4d8;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.kline-legend strong.rise {
+  color: #ef4444;
+}
+
+.kline-legend strong.fall {
+  color: #22c55e;
+}
+
+.kline-legend-date {
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+
+.kline-ma-key {
+  color: var(--ma-color);
+}
+
+.kline-ma-key::before {
+  background: var(--ma-color);
+  content: "";
+  display: inline-block;
+  height: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+  width: 10px;
+}
+
 .kline-state {
   align-items: center;
   color: #71717a;
@@ -1663,6 +1719,11 @@ h3 {
     width: 100%;
   }
 
+  .kline-legend {
+    gap: 3px 8px;
+    max-width: calc(100% - 64px);
+  }
+
   .strategy-source-filter {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
@@ -1685,4 +1746,11 @@ h3 {
   td {
     padding: 11px 10px;
   }
+}
+.panel-header-badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }

@@ -12,5 +12,5 @@ stock_history_data = MongoDBHelper(db_name="python", collection_name="stock_hist
 # mongoDB 策略筛选结果
 stock_filter_result = MongoDBHelper(db_name="python", collection_name="stock_filter_result")
 
-# mongoDB AkShare 股票热度排行榜缓存
+# mongoDB 同花顺扶摇股票热度排行榜缓存
 stock_hot_rankings = MongoDBHelper(db_name="python", collection_name="stock_hot_rankings")

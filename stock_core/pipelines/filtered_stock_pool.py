@@ -1,18 +1,9 @@
-from stock_core.data_sources.tushare_provider import fetch_basic_stock_pool
+from data.normalizers import canonical_stocks_to_system
+from data.service import OFFICIAL_SOURCE, fetch_stock_master
 from stock_core.database import collections as database
-from stock_core.utils.common import show_all_pandas,rename_columns,save_to_mongo
+from stock_core.utils.common import show_all_pandas,save_to_mongo
 
 show_all_pandas()
-
-COLUMN_MAP = {
-    "ts_code": "股票代码",
-    "name": "股票名称",
-    "industry": "行业",
-    "bvps": "每股净资产",
-    "pb": "市净率",
-    "total_share": "总股本(亿)",
-    "market_value": "总市值(亿)"
-}
 
 MARKET_CAP_MIN = 30
 MARKET_CAP_MAX = 100
@@ -23,48 +14,46 @@ def filter_by_stock_type(df):
     # 排除ST股票（名称包含ST、*ST、S*ST等）
     df = df[~df['name'].str.contains('ST|退', na=True)]
     # 排除北交所,科创板
-    df = df[~df['ts_code'].str.endswith('.BJ')]
-    df = df[~df['ts_code'].str.startswith(('688', '689', '4', '8'))]
+    df = df[df["exchange"] != "BJ"]
+    df = df[~df["code"].str.startswith(("688", "689", "4", "8"))]
     return df
 
 
 def filter_by_market_cap(df):
     """过滤市值范围"""
-    df = df[(df['market_value'] > MARKET_CAP_MIN) & (df['market_value'] < MARKET_CAP_MAX)]
-    return df
+    if "market_cap" not in df or df["market_cap"].isna().all():
+        print(
+            "⚠️ 扶摇股票基础信息接口尚未提供总市值，本次跳过市值过滤；"
+            "统一字段保留为空。"
+        )
+        return df
+    available = df["market_cap"].notna()
+    in_range = (df["market_cap"] > MARKET_CAP_MIN) & (df["market_cap"] < MARKET_CAP_MAX)
+    return df[~available | in_range]
 
 
 
 def get_filtered_stocks():
     # 获取全量A股实时数据
-    stock_list = fetch_basic_stock_pool(fields=[
-        "ts_code",
-        "name",
-        "industry",
-        "total_share",
-        "bvps",
-        "pb"
-    ])
+    stock_list = fetch_stock_master()
     # 验证数据是否存在
     if stock_list.empty:
         print("获取数据失败！")
         return
 
-    # 计算总市值（保留两位小数）
-    stock_list['market_value'] = stock_list['total_share'] * stock_list['pb'] * stock_list['bvps']
-    stock_list['market_value'] = stock_list['market_value'].round(2)
-
     # 根据条件进行过滤
     filtered_stocks = filter_by_stock_type(stock_list)
     filtered_stocks = filter_by_market_cap(filtered_stocks)
-    filtered_stocks = filtered_stocks.drop_duplicates(subset=["ts_code"]).copy()
+    filtered_stocks = filtered_stocks.drop_duplicates(subset=["symbol"]).copy()
 
-    # 转换标题为中文，使用新索引
-    filtered_stocks = rename_columns(filtered_stocks,COLUMN_MAP).reset_index(drop=True)
+    # 统一层内部使用稳定英文契约，写入旧集合前转换为兼容列名。
+    filtered_stocks = canonical_stocks_to_system(filtered_stocks).reset_index(drop=True)
 
     # 按照新列排序
-    filtered_stocks = filtered_stocks[list(COLUMN_MAP.values())]
-    print(f"成功获取 {len(filtered_stocks)} 只股票数据")
+    filtered_stocks = filtered_stocks[
+        ["股票代码", "股票名称", "行业", "每股净资产", "市净率", "总股本(亿)", "总市值(亿)"]
+    ]
+    print(f"成功从 {OFFICIAL_SOURCE} 获取 {len(filtered_stocks)} 只股票数据")
     return filtered_stocks
 
 

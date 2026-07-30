@@ -203,7 +203,7 @@ export default function HotRankingsDashboard({
       <section className="metric-grid" aria-label="热度概览">
         <MetricCard
           label="数据源"
-          value={summary?.dataSource || 'akshare'}
+          value={summary?.dataSource || '同花顺扶摇 Financial API'}
           note="当前后端数据入口"
           icon={Database}
           tone="teal"

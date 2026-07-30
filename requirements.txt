@@ -1,7 +1,3 @@
-akshare
 pandas
 pymongo
-pyecharts
-requests
 tqdm
-tushare

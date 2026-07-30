@@ -3,12 +3,12 @@ const API_BASE_URLS = [
   'http://127.0.0.1:8001',
 ].filter(Boolean);
 
-export async function apiGet(path) {
+export async function apiGet(path, options = {}) {
   let lastError = null;
 
   for (const baseUrl of API_BASE_URLS) {
     try {
-      const response = await fetch(`${baseUrl}${path}`);
+      const response = await fetch(`${baseUrl}${path}`, options);
       const payload = await response.json();
       if (!response.ok) {
         const error = new Error(payload.error || '请求失败');
@@ -17,6 +17,7 @@ export async function apiGet(path) {
       }
       return payload;
     } catch (err) {
+      if (err.name === 'AbortError') throw err;
       if (err.responseReceived) throw err;
       lastError = err;
     }
@@ -25,14 +26,15 @@ export async function apiGet(path) {
   throw lastError || new Error('请求失败');
 }
 
-export async function apiPost(path, body) {
+export async function apiPost(path, body, options = {}) {
   let lastError = null;
 
   for (const baseUrl of API_BASE_URLS) {
     try {
       const response = await fetch(`${baseUrl}${path}`, {
+        ...options,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
         body: JSON.stringify(body),
       });
       const payload = await response.json();
@@ -43,6 +45,7 @@ export async function apiPost(path, body) {
       }
       return payload;
     } catch (err) {
+      if (err.name === 'AbortError') throw err;
       if (err.responseReceived) throw err;
       lastError = err;
     }

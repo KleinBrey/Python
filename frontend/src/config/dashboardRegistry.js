@@ -6,7 +6,7 @@ export const dashboardGroups = [
         id: 'hot-rankings',
         path: '/hot-rankings',
         title: '股票热度',
-        description: '雪球、东方财富、百度热搜榜单',
+        description: '同花顺官方热股、飙升与涨停榜',
         status: '已接入',
       },
       {
@@ -46,7 +46,7 @@ export const dashboardGroups = [
         id: 'data-sources',
         path: '/data-sources',
         title: '数据源',
-        description: 'AkShare、东方财富、Tushare',
+        description: '同花顺扶摇官方 Financial API',
         status: '查看',
       },
       {

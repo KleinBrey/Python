@@ -18,12 +18,13 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from stock_core.data_sources.hot_rankings import HOT_RANKINGS, fetch_hot_ranking_frame, resolve_params  # noqa: E402
-from stock_core.data_sources.akshare_provider import today_yyyymmdd  # noqa: E402
-from stock_core.data_sources import iwencai_provider  # noqa: E402
-from stock_core.data_sources.market_query_provider import fetch_stock_history  # noqa: E402
+from data.hot_rankings import HOT_RANKINGS, fetch_hot_ranking_frame, resolve_params  # noqa: E402
+from data.providers import hithink_financial  # noqa: E402
+from data.providers import iwencai_api as iwencai_provider  # noqa: E402
+from data.providers.hithink_financial import fetch_stock_history  # noqa: E402
 from stock_core.database import collections as database  # noqa: E402
 from stock_core.strategies.sources import load_strategy_sources  # noqa: E402
+from data.registry import list_sources  # noqa: E402
 
 RANKING_BY_ID = {item["id"]: item for item in HOT_RANKINGS}
 
@@ -70,6 +71,30 @@ def parse_int(value: str | None, default: int, minimum: int, maximum: int) -> in
     return max(minimum, min(maximum, parsed))
 
 
+def resolve_history_dates(
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> tuple[str, str]:
+    default_history_days = parse_int(
+        os.getenv("HISTORY_DEFAULT_DAYS"),
+        default=550,
+        minimum=60,
+        maximum=3650,
+    )
+    resolved_end = end_date or datetime.now().strftime("%Y%m%d")
+    resolved_start = start_date or (
+        datetime.now() - timedelta(days=default_history_days)
+    ).strftime("%Y%m%d")
+    for value, label in ((resolved_start, "startDate"), (resolved_end, "endDate")):
+        try:
+            datetime.strptime(value, "%Y%m%d")
+        except ValueError as exc:
+            raise ValueError(f"{label} 必须是 YYYYMMDD 格式") from exc
+    if resolved_start > resolved_end:
+        raise ValueError("startDate 不能晚于 endDate")
+    return resolved_start, resolved_end
+
+
 def mongo_available() -> bool:
     try:
         database.stock_hot_rankings.collection.database.client.admin.command("ping")
@@ -105,44 +130,9 @@ def package_available(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-def check_akshare() -> dict[str, Any]:
+def check_hithink_financial() -> dict[str, Any]:
     try:
-        from stock_core.data_sources import akshare_provider
-
-        df, _params = akshare_provider.fetch_hot_ranking_frame(
-            {
-                "function": "stock_hot_follow_xq",
-                "params": {"symbol": "最热门"},
-            }
-        )
-        return {
-            "ok": True,
-            "message": f"接口可用，返回 {len(df)} 条",
-        }
-    except Exception as exc:
-        return {
-            "ok": False,
-            "message": str(exc),
-        }
-
-
-def check_tushare() -> dict[str, Any]:
-    token = os.getenv("TUSHARE_TOKEN")
-    if not token:
-        return {
-            "ok": False,
-            "message": "未设置 TUSHARE_TOKEN",
-        }
-
-    try:
-        import tushare as ts
-
-        today = today_yyyymmdd()
-        df = ts.pro_api(token).trade_cal(exchange="", start_date=today, end_date=today)
-        return {
-            "ok": True,
-            "message": f"接口可用，返回 {len(df)} 条",
-        }
+        return hithink_financial.check_connection()
     except Exception as exc:
         return {
             "ok": False,
@@ -151,43 +141,43 @@ def check_tushare() -> dict[str, Any]:
 
 
 def build_data_source_status(check: bool = False) -> list[dict[str, Any]]:
-    sources = [
-        {
-            "id": "akshare",
-            "name": "AkShare",
-            "type": "行情/热榜",
-            "enabled": True,
-            "packageAvailable": package_available("akshare"),
-            "credential": "无需 Token",
-            "status": "ready",
-            "message": "SDK 已安装，可用于雪球、百度等热榜",
-        },
-        {
-            "id": "eastmoney",
-            "name": "东方财富",
-            "type": "自写接口",
-            "enabled": True,
-            "packageAvailable": package_available("requests"),
-            "credential": "无需 Token",
-            "status": "ready",
-            "message": "用于东方财富人气榜和飙升榜",
-        },
-        {
-            "id": "tushare",
-            "name": "Tushare",
-            "type": "基础行情/历史行情",
-            "enabled": bool(os.getenv("TUSHARE_TOKEN")),
-            "packageAvailable": package_available("tushare"),
-            "credential": "已配置 Token" if os.getenv("TUSHARE_TOKEN") else "未配置 Token",
-            "status": "ready" if os.getenv("TUSHARE_TOKEN") else "blocked",
-            "message": "设置 TUSHARE_TOKEN 后可运行股票池和历史行情流水线",
-        },
-    ]
+    sources = []
+    for metadata in list_sources():
+        dependency_ready = not metadata.dependency or package_available(metadata.dependency)
+        credential_ready = not metadata.credential_env or bool(
+            iwencai_provider.get_setting(metadata.credential_env)
+        )
+        enabled = dependency_ready and credential_ready
+        if metadata.local_service and dependency_ready:
+            message = "SDK 已安装；运行时还需启动本地服务"
+        elif not dependency_ready:
+            message = f"未安装依赖 {metadata.dependency}"
+        elif not credential_ready:
+            message = f"未配置 {metadata.credential_env}"
+        else:
+            message = metadata.description
+        sources.append(
+            {
+                "id": metadata.source_id,
+                "name": metadata.name,
+                "type": metadata.kind,
+                "enabled": enabled,
+                "packageAvailable": dependency_ready,
+                "credential": (
+                    "无需 Token"
+                    if not metadata.credential_env
+                    else ("已配置" if credential_ready else f"未配置 {metadata.credential_env}")
+                ),
+                "status": "ready" if enabled else "blocked",
+                "message": message,
+                "capabilities": list(metadata.capabilities),
+                "docUrl": metadata.docs_url,
+            }
+        )
 
     if check:
         checks = {
-            "akshare": check_akshare,
-            "tushare": check_tushare,
+            hithink_financial.SOURCE_ID: check_hithink_financial,
         }
         for source in sources:
             checker = checks.get(source["id"])
@@ -254,16 +244,32 @@ def normalize_rows(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         raw_name_code = value_from(record, ["名称/代码"])
         parsed_name, parsed_code = split_name_code(raw_name_code)
         rank = value_from(record, ["当前排名", "排名", "rank"]) or index
-        code = value_from(record, ["股票代码", "代码", "证券代码"]) or parsed_code
-        name = value_from(record, ["股票简称", "股票名称", "名称"]) or parsed_name
+        code = (
+            value_from(record, ["股票代码", "代码", "证券代码", "ticker", "thscode"])
+            or parsed_code
+        )
+        name = value_from(record, ["股票简称", "股票名称", "名称", "name"]) or parsed_name
         rows.append(
             {
                 "rank": rank,
                 "code": code,
                 "name": name,
-                "price": value_from(record, ["最新价", "价格"]),
-                "change": value_from(record, ["涨跌幅", "涨跌幅%", "涨跌额"]),
-                "heat": value_from(record, ["关注", "综合热度", "排名较昨日变动"]),
+                "price": value_from(record, ["最新价", "价格", "last_price"]),
+                "change": value_from(
+                    record,
+                    ["涨跌幅", "涨跌幅%", "涨跌额", "price_change_ratio_pct"],
+                ),
+                "heat": value_from(
+                    record,
+                    [
+                        "关注",
+                        "综合热度",
+                        "排名较昨日变动",
+                        "heat",
+                        "rank_change",
+                        "seal_money",
+                    ],
+                ),
                 "raw": record,
             }
         )
@@ -286,6 +292,15 @@ def build_display_columns(records: list[dict[str, Any]]) -> list[str]:
         "最新价",
         "涨跌额",
         "涨跌幅",
+        "rank",
+        "ticker",
+        "name",
+        "heat",
+        "rank_change",
+        "last_price",
+        "price_change_ratio_pct",
+        "continue_day_text",
+        "limit_up_reason",
     ]
     seen = []
     available = set()
@@ -436,7 +451,7 @@ class StockApiHandler(BaseHTTPRequestHandler):
                     {
                         "ok": True,
                         "service": "stock-dashboard-api",
-                        "dataSource": "akshare",
+                        "dataSource": hithink_financial.SOURCE_NAME,
                         "time": datetime.now().isoformat(timespec="seconds"),
                     }
                 )
@@ -449,7 +464,7 @@ class StockApiHandler(BaseHTTPRequestHandler):
                         "mongoAvailable": hot_count is not None,
                         "hotRankingCount": hot_count,
                         "configuredRankingCount": len(HOT_RANKINGS),
-                        "dataSource": "akshare",
+                        "dataSource": hithink_financial.SOURCE_NAME,
                     }
                 )
                 return
@@ -479,18 +494,13 @@ class StockApiHandler(BaseHTTPRequestHandler):
 
             if path == "/api/stocks/history":
                 symbol = params.get("symbol", [""])[0]
+                name = params.get("name", [""])[0]
                 period = params.get("period", ["daily"])[0]
                 adjust = params.get("adjust", ["none"])[0]
-                end_date = params.get("endDate", [datetime.now().strftime("%Y%m%d")])[0]
-                start_date = params.get(
-                    "startDate",
-                    [(datetime.now() - timedelta(days=1095)).strftime("%Y%m%d")],
-                )[0]
-                for value, label in ((start_date, "startDate"), (end_date, "endDate")):
-                    try:
-                        datetime.strptime(value, "%Y%m%d")
-                    except ValueError as exc:
-                        raise ValueError(f"{label} 必须是 YYYYMMDD 格式") from exc
+                start_date, end_date = resolve_history_dates(
+                    params.get("startDate", [None])[0],
+                    params.get("endDate", [None])[0],
+                )
                 self.send_json(
                     {
                         "item": fetch_stock_history(
@@ -499,6 +509,7 @@ class StockApiHandler(BaseHTTPRequestHandler):
                             start_date=start_date,
                             end_date=end_date,
                             adjust=adjust,
+                            name=name,
                         )
                     }
                 )
@@ -553,6 +564,41 @@ class StockApiHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         try:
             path = urlparse(self.path).path.rstrip("/") or "/"
+            if path == "/api/stocks/history/prefetch":
+                payload = self.read_json_body()
+                stocks = payload.get("stocks")
+                if not isinstance(stocks, list):
+                    raise ValueError("stocks 必须是股票列表")
+                if len(stocks) > 300:
+                    raise ValueError("单次最多预缓存 300 只股票")
+                symbols = []
+                for item in stocks:
+                    if isinstance(item, str):
+                        symbols.append(item)
+                    elif isinstance(item, dict):
+                        symbol = item.get("symbol") or item.get("股票代码")
+                        if symbol:
+                            symbols.append(str(symbol))
+                start_date, end_date = resolve_history_dates(
+                    payload.get("startDate"),
+                    payload.get("endDate"),
+                )
+                workers = parse_int(
+                    str(payload.get("workers", 4)),
+                    default=4,
+                    minimum=1,
+                    maximum=8,
+                )
+                result = hithink_financial.prefetch_stock_histories(
+                    symbols,
+                    start_date,
+                    end_date,
+                    adjust=str(payload.get("adjust") or "none"),
+                    workers=workers,
+                )
+                self.send_json({"item": result})
+                return
+
             if path != "/api/iwencai/query":
                 self.send_json({"error": "接口不存在"}, status=404)
                 return
@@ -574,7 +620,7 @@ class StockApiHandler(BaseHTTPRequestHandler):
         except (ValueError, iwencai_provider.IwencaiError) as exc:
             self.send_json({"error": str(exc)}, status=400)
         except Exception as exc:
-            self.send_json({"error": f"问财查询失败: {exc}"}, status=500)
+            self.send_json({"error": f"请求处理失败: {exc}"}, status=500)
 
     def read_json_body(self) -> dict[str, Any]:
         try:

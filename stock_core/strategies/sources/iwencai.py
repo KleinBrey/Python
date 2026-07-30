@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from data.providers.iwencai_api import resolve_output_dir
 from stock_core.strategies.sources.models import (
     StrategySourceResult,
     StrategyStock,
@@ -15,7 +16,6 @@ from stock_core.strategies.sources.models import (
 
 SOURCE_ID = "iwencai"
 SOURCE_NAME = "同花顺问财选股"
-DEFAULT_PROJECT_DIR = Path.home() / "Documents" / "问财选股"
 
 
 def resolve_result_file() -> Path:
@@ -23,10 +23,7 @@ def resolve_result_file() -> Path:
     if explicit_file:
         return Path(explicit_file).expanduser()
 
-    project_dir = Path(
-        os.getenv("IWENCAI_PROJECT_DIR", str(DEFAULT_PROJECT_DIR))
-    ).expanduser()
-    return project_dir / "results" / "latest.json"
+    return resolve_output_dir() / "latest.json"
 
 
 def _stock_from_row(

@@ -191,6 +191,7 @@ export default function IwencaiSelectorDashboard() {
   const [klineLoading, setKlineLoading] = useState(false);
   const [klineError, setKlineError] = useState('');
   const [klinePeriod, setKlinePeriod] = useState('daily');
+  const [prefetchStatus, setPrefetchStatus] = useState(null);
 
   useEffect(() => {
     async function loadStatus() {
@@ -234,6 +235,45 @@ export default function IwencaiSelectorDashboard() {
 
   useEffect(() => {
     if (!rows.length) {
+      setPrefetchStatus(null);
+      return undefined;
+    }
+    const controller = new AbortController();
+    const stocks = rows.slice(0, 300).map((row) => ({
+      symbol: row.股票代码,
+      name: row.股票简称,
+    }));
+
+    async function prefetchHistories() {
+      setPrefetchStatus({
+        state: 'loading',
+        message: `正在预缓存 ${stocks.length} 只股票日线`,
+      });
+      try {
+        const payload = await apiPost(
+          '/api/stocks/history/prefetch',
+          { stocks, adjust: 'none', workers: 4 },
+          { signal: controller.signal },
+        );
+        const summary = payload.item;
+        setPrefetchStatus({
+          state: summary.failed ? 'warning' : 'success',
+          message: summary.failed
+            ? `已缓存 ${summary.completed} 只，${summary.failed} 只失败`
+            : `已缓存 ${summary.completed} 只股票日线，点击即可显示`,
+        });
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        setPrefetchStatus({ state: 'warning', message: `日线预缓存失败：${err.message}` });
+      }
+    }
+
+    prefetchHistories();
+    return () => controller.abort();
+  }, [result]);
+
+  useEffect(() => {
+    if (!rows.length) {
       setSelectedStock(null);
       return;
     }
@@ -243,22 +283,30 @@ export default function IwencaiSelectorDashboard() {
   }, [rows, selectedStock]);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function loadKline() {
       if (!selectedStock?.股票代码) return;
       setKlineLoading(true);
       setKlineError('');
       try {
         const symbol = String(selectedStock.股票代码).replace(/\.(SZ|SH|BJ)$/i, '');
-        const payload = await apiGet(`/api/stocks/history?symbol=${encodeURIComponent(symbol)}&period=${klinePeriod}`);
+        const name = String(selectedStock.股票简称 || '');
+        const payload = await apiGet(
+          `/api/stocks/history?symbol=${encodeURIComponent(symbol)}&name=${encodeURIComponent(name)}&period=${klinePeriod}`,
+          { signal: controller.signal },
+        );
         setKlineData(payload.item);
       } catch (err) {
+        if (err.name === 'AbortError') return;
         setKlineData(null);
         setKlineError(err.message);
       } finally {
-        setKlineLoading(false);
+        if (!controller.signal.aborted) setKlineLoading(false);
       }
     }
     loadKline();
+    return () => controller.abort();
   }, [selectedStock, klinePeriod]);
 
   return (
@@ -328,7 +376,23 @@ export default function IwencaiSelectorDashboard() {
             <h2>选股结果</h2>
             <span>{result ? `查询于 ${shortTime(result.fetched_at)}，共 ${formatValue(rows.length)} 行` : '输入查询条件后返回股票列表'}</span>
           </div>
-          {result?.source ? <Badge variant="secondary">{result.source}</Badge> : null}
+          <div className="panel-header-badges">
+            {prefetchStatus ? (
+              <Badge
+                variant={
+                  prefetchStatus.state === 'success'
+                    ? 'success'
+                    : prefetchStatus.state === 'warning'
+                      ? 'warning'
+                      : 'secondary'
+                }
+              >
+                {prefetchStatus.state === 'loading' ? <Loader2 className="spin" size={13} /> : null}
+                {prefetchStatus.message}
+              </Badge>
+            ) : null}
+            {result?.source ? <Badge variant="secondary">{result.source}</Badge> : null}
+          </div>
         </div>
         {result?.query ? <div className="iwencai-result-query"><strong>查询条件</strong><span>{result.query}</span></div> : null}
         <div className="iwencai-result-workspace">
