@@ -501,8 +501,10 @@ h3 {
 }
 
 .table-wrap {
-  max-height: 620px;
-  overflow: auto;
+  border-bottom: 1px solid #27272a;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(300px, 1.28fr);
+  min-height: 590px;
 }
 
 .table-panel th:nth-child(1),
