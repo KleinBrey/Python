@@ -30,7 +30,7 @@ import {
   colorSchemeDark,
   themeQuartz,
 } from 'ag-grid-community'
-import StockKlineChart from '../components/StockKlineChart.jsx'
+import StockKlineChart from '../components/TradingView/StockKlineChart.jsx'
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeDark).withParams({
   backgroundColor: '#09090b',
@@ -211,7 +211,10 @@ function RankingTable({
   refreshingId,
   refreshingAll,
 }) {
-  const [selectedStock, setSelectedStock] = useState(null)
+  const [selectedStock, setSelectedStock] = useState({
+    name: '东方财富',
+    code: '453456.SZ',
+  })
   const [klineData, setKlineData] = useState(null)
   const [klineLoading, setKlineLoading] = useState(false)
   const [klineError, setKlineError] = useState('')
@@ -298,11 +301,11 @@ function RankingTable({
           handleRowClick={handleRowClick}
         />
         <StockKlineChart
+          loading={klineLoading}
           data={klineData}
           error={klineError}
-          loading={klineLoading}
-          onPeriodChange={setKlinePeriod}
           period={klinePeriod}
+          onPeriodChange={setKlinePeriod}
           stock={selectedStock}
         />
       </div>

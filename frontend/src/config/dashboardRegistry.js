@@ -58,14 +58,12 @@ export const dashboardGroups = [
       },
     ],
   },
-];
+]
 
-export const defaultDashboardPath = '/hot-rankings';
+export const defaultDashboardPath = '/hot-rankings'
 
-export function getDashboardByPath (pathname) {
-  console.log(dashboardGroups
-    .flatMap((group) => group.items))
+export function getDashboardByPath(pathname) {
   return dashboardGroups
     .flatMap((group) => group.items)
-    .find((item) => item.path === pathname);
+    .find((item) => item.path === pathname)
 }

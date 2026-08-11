@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { apiGet, apiPost } from '../api/client.js'
 import MetricCard from '../components/MetricCard.jsx'
-import StockKlineChart from '../components/StockKlineChart.jsx'
+import StockKlineChart from '../components/TradingView/StockKlineChart.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import {
