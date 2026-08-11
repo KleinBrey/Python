@@ -1,10 +1,26 @@
-import React from 'react';
+import { React, useState, useRef, useEffect } from 'react';
 import { Database, LayoutDashboard, Loader2, RefreshCcw, Search, Table2, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import { formatValue, latestRefreshTime, rankingScore, shortTime, trendClass } from '../utils/formatters.js';
+import { getPriceSnapshotApi, getSkyRocketListApi, getHotStockListApi } from '../api/hot-rank.js';
+import moment from 'moment';
+import { AgGridProvider, AgGridReact } from 'ag-grid-react';
+import {
+  AllCommunityModule,
+  colorSchemeDark,
+  themeQuartz,
+} from "ag-grid-community";
 
-function SourceCards({ sourceStats }) {
+
+const themeDarkBlue = themeQuartz.withPart(colorSchemeDark).withParams({
+  backgroundColor: '#09090b',
+  // accentColor: 'red',
+});
+
+
+
+function SourceCards ({ sourceStats }) {
   return (
     <section className="source-grid" aria-label="数据源统计">
       {sourceStats.map((item) => (
@@ -25,7 +41,7 @@ function SourceCards({ sourceStats }) {
   );
 }
 
-function RankingChart({ ranking }) {
+function RankingChart ({ ranking }) {
   const rows = (ranking?.rows || []).slice(0, 10);
   const values = rows.map((row) => Math.abs(Number(rankingScore(row))) || 0);
   const max = Math.max(...values, 1);
@@ -65,7 +81,7 @@ function RankingChart({ ranking }) {
   );
 }
 
-function RankingCards({ rankings, activeRanking, onSelectRanking, onRefreshRanking, refreshingId, refreshingAll }) {
+function RankingCards ({ rankings, activeRanking, onSelectRanking, onRefreshRanking, refreshingId, refreshingAll }) {
   return (
     <section className="panel rankings-panel">
       <div className="panel-header">
@@ -128,13 +144,51 @@ function RankingCards({ rankings, activeRanking, onSelectRanking, onRefreshRanki
   );
 }
 
-function RankingTable({ activeRanking, onRefreshRanking, refreshingId, refreshingAll }) {
+
+function AgGridTable ({ rowData, colDefs }) {
+  const modules = [AllCommunityModule];
+
+  return (
+    <div className="ag-grid-container">
+      <AgGridProvider modules={modules}>
+        <div className="ag-theme-alpine" style={{ height: '400px', width: '100%' }}>
+          <AgGridReact
+            theme={themeDarkBlue}
+            rowData={rowData}
+            columnDefs={colDefs}
+            defaultColDef={{ resizable: true, sortable: true }}
+          />
+        </div>
+      </AgGridProvider>
+    </div>
+  );
+}
+
+
+
+function RankingTable ({ activeRanking, onRefreshRanking, refreshingId, refreshingAll }) {
+
+  // Row Data: The data to be displayed.
+  const [rowData, setRowData] = useState([
+    { make: "Tesla", model: "Model Y", price: 64950, electric: true },
+    { make: "Ford", model: "F-Series", price: 33850, electric: false },
+    { make: "Toyota", model: "Corolla", price: 29600, electric: false },
+  ]);
+
+  // Column Definitions: Defines the columns to be displayed.
+  const [colDefs, setColDefs] = useState([
+    { headerName: '排名', field: 'rank', flex: 1 },
+    { headerName: '股票', field: 'name', flex: 1 },
+    { headerName: '代码', field: 'thscode', flex: 1 },
+    { headerName: '热度', field: 'heat', flex: 1 },
+  ]);
+
   return (
     <section className="panel table-panel">
       <div className="panel-header">
         <div>
           <h2>{activeRanking?.title || '热榜详情'}</h2>
-          <span>{activeRanking?.source || '-'} · {shortTime(activeRanking?.updatedAt)}</span>
+          <span>{moment(activeRanking?.timestamp).format('YYYY-MM-DD HH:mm:ss') || '-'} · {'5分钟前'}</span>
         </div>
         <Button
           type="button"
@@ -149,41 +203,13 @@ function RankingTable({ activeRanking, onRefreshRanking, refreshingId, refreshin
       </div>
 
       <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>排名</th>
-              <th>股票</th>
-              <th>代码</th>
-              <th>热度</th>
-              <th>最新价</th>
-              <th>涨跌</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(activeRanking?.rows || []).map((row) => (
-              <tr key={`${activeRanking.id}-${row.rank}-${row.code || row.name}`}>
-                <td>{formatValue(row.rank)}</td>
-                <td>{row.name || '-'}</td>
-                <td>{row.code || '-'}</td>
-                <td>{formatValue(row.heat)}</td>
-                <td>{formatValue(row.price)}</td>
-                <td className={trendClass(row.change)}>{formatValue(row.change)}</td>
-              </tr>
-            ))}
-            {!activeRanking?.rows?.length ? (
-              <tr>
-                <td colSpan="6" className="empty">暂无数据，点击刷新当前榜单</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        <AgGridTable rowData={activeRanking?.rows || []} colDefs={colDefs} />
       </div>
     </section>
   );
 }
 
-export default function HotRankingsDashboard({
+export default function HotRankingsDashboard ({
   summary,
   rankings,
   activeRanking,
@@ -196,11 +222,60 @@ export default function HotRankingsDashboard({
   onSelectRanking,
   onRefreshRanking,
 }) {
+  // 重复请求锁
+  const fetchedLock = useRef(false);
+
+
   const topRanking = activeRanking?.rows?.[0];
+
+  const [users, setUsers] = useState([]);
+  const [loadingA, setLoading] = useState(false);
+
+  const [hotStockList, setHotStockList] = useState({
+    title: '同花顺热榜',
+    timestamp: Date.now(),
+    rows: [],
+  });
+
+  // 1. 获取列表示例 (GET)
+  const fetchUsers = async () => {
+    setLoading(true);
+    console.log(loadingA)
+    try {
+      const res = await getPriceSnapshotApi('600519.SH');
+      console.log('时间戳:', res.data.timestamp);
+      console.log('列表项:', res.data.item);
+    } catch (error) {
+      console.error('获取行情快照失败', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSkyRocketList = async () => {
+    const res = await getSkyRocketListApi('hour');
+    console.log(res.data);
+  }
+
+  const getHotStockList = async () => {
+    const res = await getHotStockListApi('hour');
+    setHotStockList((prev) => ({
+      ...prev, // 保留原有的 title 等其他属性
+      timestamp: res.data.timestamp, // 更新时间戳（毫秒）
+      rows: res.data.item, // 更新列表数据
+    }));
+    console.log(hotStockList, res.data);
+  }
+
+  useEffect(() => {
+    // fetchUsers();
+    // getSkyRocketList()
+    getHotStockList()
+  }, []);
 
   return (
     <div className="dashboard-content">
-      <section className="metric-grid" aria-label="热度概览">
+      {/* <section className="metric-grid" aria-label="热度概览">
         <MetricCard
           label="数据源"
           value={summary?.dataSource || '同花顺扶摇 Financial API'}
@@ -229,9 +304,9 @@ export default function HotRankingsDashboard({
           icon={TrendingUp}
           tone="amber"
         />
-      </section>
+      </section> */}
 
-      {error ? (
+      {/* {error ? (
         <div className="notice">
           <span>{error}</span>
           <Button type="button" className="ghost-button" onClick={onLoadCache} variant="outline">
@@ -241,9 +316,9 @@ export default function HotRankingsDashboard({
         </div>
       ) : null}
 
-      <SourceCards sourceStats={sourceStats} />
+      <SourceCards sourceStats={sourceStats} /> */}
 
-      <section className="dashboard-grid">
+      {/* <section className="dashboard-grid">
         <RankingChart ranking={activeRanking} />
         <RankingCards
           rankings={rankings}
@@ -253,10 +328,10 @@ export default function HotRankingsDashboard({
           refreshingId={refreshingId}
           refreshingAll={refreshingAll}
         />
-      </section>
+      </section> */}
 
       <RankingTable
-        activeRanking={activeRanking}
+        activeRanking={hotStockList}
         onRefreshRanking={onRefreshRanking}
         refreshingId={refreshingId}
         refreshingAll={refreshingAll}

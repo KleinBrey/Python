@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme inline {
   --color-background: var(--background);
@@ -48,8 +48,16 @@
   color: #f8fafc;
   background: #09090b;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -106,189 +114,11 @@ h3 {
   letter-spacing: 0;
 }
 
-.stock-content {
-  background: #09090b;
-  min-height: calc(100vh - 72px);
-  min-width: 0;
-}
-
-.app-frame {
-  background: #09090b;
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  min-height: 100vh;
-}
-
-.app-sidebar {
-  background: #121214;
-  border-right: 1px solid #27272a;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 18px 14px;
-  position: sticky;
-  top: 0;
-}
-
-.brand {
-  align-items: center;
-  display: flex;
-  gap: 11px;
-  min-height: 48px;
-  padding: 0 8px;
-}
-
-.brand-mark {
-  align-items: center;
-  background: #f8fafc;
-  border-radius: 8px;
-  color: #09090b;
-  display: inline-flex;
-  height: 32px;
-  justify-content: center;
-  width: 32px;
-}
-
-.brand strong {
-  color: #fafafa;
-  display: block;
-  font-size: 16px;
-  line-height: 1.15;
-}
-
-.brand span {
-  color: #a1a1aa;
-  display: block;
-  font-size: 12px;
-  margin-top: 3px;
-}
-
 .quick-action {
   justify-content: flex-start;
   margin: 18px 0;
   min-height: 42px;
   width: 100%;
-}
-
-.sidebar-nav {
-  display: grid;
-  gap: 22px;
-}
-
-.sidebar-nav section {
-  display: grid;
-  gap: 6px;
-}
-
-.sidebar-nav p {
-  color: #71717a;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 0 10px 4px;
-}
-
-.nav-item {
-  align-items: center;
-  background: transparent;
-  border-color: transparent;
-  border-radius: 7px;
-  border-style: solid;
-  border-width: 1px;
-  color: #d4d4d8;
-  cursor: pointer;
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  justify-content: stretch;
-  min-height: 40px;
-  padding: 0 10px;
-  text-align: left;
-  text-decoration: none;
-  width: 100%;
-}
-
-.nav-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nav-item .nav-status {
-  color: #a1a1aa;
-  font-size: 10px;
-  max-width: none;
-  overflow: visible;
-  padding: 2px 6px;
-}
-
-.nav-item em {
-  color: #a1a1aa;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 800;
-}
-
-.nav-item.active,
-.nav-item:hover {
-  background: #27272a;
-  border-color: #3f3f46;
-  color: #fafafa;
-}
-
-.nav-item.active em {
-  color: #f8fafc;
-}
-
-.sidebar-footer {
-  align-items: center;
-  border: 1px solid #27272a;
-  border-radius: 8px;
-  color: #a1a1aa;
-  display: flex;
-  font-size: 12px;
-  gap: 8px;
-  line-height: 1.4;
-  margin-top: auto;
-  padding: 12px;
-}
-
-.main-area {
-  background: #09090b;
-  min-width: 0;
-}
-
-.site-header {
-  align-items: center;
-  background: #09090b;
-  border-bottom: 1px solid #27272a;
-  display: flex;
-  gap: 18px;
-  justify-content: space-between;
-  min-height: 72px;
-  padding: 0 22px;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-
-.header-title {
-  align-items: center;
-  color: #a1a1aa;
-  display: flex;
-  gap: 10px;
-  min-width: 0;
-}
-
-.header-title h1 {
-  color: #fafafa;
-  font-size: 19px;
-  line-height: 1.2;
-}
-
-.header-title span {
-  color: #71717a;
-  display: block;
-  font-size: 12px;
-  margin-top: 3px;
 }
 
 .sidebar-trigger,
@@ -996,7 +826,7 @@ h3 {
   padding: 18px;
 }
 
-.iwencai-query-body [data-slot="textarea"] {
+.iwencai-query-body [data-slot='textarea'] {
   background: #111114;
   font-size: 14px;
   line-height: 1.7;
@@ -1110,11 +940,11 @@ h3 {
   font-size: 11px;
 }
 
-.iwencai-stock-selector [data-slot="table-row"] {
+.iwencai-stock-selector [data-slot='table-row'] {
   cursor: pointer;
 }
 
-.iwencai-stock-selector [data-state="selected"] > td {
+.iwencai-stock-selector [data-state='selected'] > td {
   background: #172554 !important;
   color: #f8fafc;
 }
@@ -1247,7 +1077,7 @@ h3 {
 
 .kline-ma-key::before {
   background: var(--ma-color);
-  content: "";
+  content: '';
   display: inline-block;
   height: 2px;
   margin-right: 4px;
@@ -1700,7 +1530,7 @@ h3 {
     flex-direction: column;
   }
 
-  .iwencai-query-actions [data-slot="button"] {
+  .iwencai-query-actions [data-slot='button'] {
     width: 100%;
   }
 

@@ -1,6 +1,6 @@
 export const dashboardGroups = [
   {
-    title: '看板',
+    title: '功能',
     items: [
       {
         id: 'hot-rankings',
@@ -62,7 +62,9 @@ export const dashboardGroups = [
 
 export const defaultDashboardPath = '/hot-rankings';
 
-export function getDashboardByPath(pathname) {
+export function getDashboardByPath (pathname) {
+  console.log(dashboardGroups
+    .flatMap((group) => group.items))
   return dashboardGroups
     .flatMap((group) => group.items)
     .find((item) => item.path === pathname);

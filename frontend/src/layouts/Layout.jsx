@@ -1,9 +1,9 @@
-import React from 'react';
+import { React, useContext } from 'react';
 import {
   BarChart3,
   ChartNoAxesCombined,
   Database,
-  Gauge,
+  BadgeDollarSign,
   LayoutDashboard,
   PieChart,
   RefreshCw,
@@ -15,6 +15,9 @@ import { NavLink } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { dashboardGroups } from '../config/dashboardRegistry.js';
+import style from './Layout.module.css';
+import { ThemeContext } from '@/contexts';
+
 
 const iconById = {
   'hot-rankings': TrendingUp,
@@ -23,34 +26,35 @@ const iconById = {
   'iwencai-selector': Search,
   'chart-center': BarChart3,
   'data-sources': LayoutDashboard,
-  database: Database,
+  'database': Database,
 };
 
-export default function AppLayout({ children, selectedDashboard, refreshingAll, onRefreshAll }) {
+
+export default function Layout ({ children, selectedDashboard, refreshingAll, onRefreshAll }) {
+
+  const { theme, toggleTheme } = useContext(ThemeContext)
+
+  console.log(theme, toggleTheme)
+
+
   return (
-    <div className="app-frame">
-      <aside className="app-sidebar">
-        <div className="brand">
-          <div className="brand-mark">
-            <Gauge size={18} />
+    <div className={style.layout}>
+      <aside className={style.sidebar}>
+        <div className={style.logo}>
+          <div className={style.mark}>
+            <BadgeDollarSign size={25} />
           </div>
-          <div>
+          <div className={style.title}>
             <strong>Stock Core</strong>
             <span>Dashboard</span>
           </div>
         </div>
 
-        <Button
-          className="quick-action"
-          disabled={refreshingAll}
-          onClick={onRefreshAll}
-          size="lg"
-        >
-          <RefreshCw className={refreshingAll ? 'spin' : ''} size={16} />
-          {refreshingAll ? '正在刷新' : '刷新全部'}
-        </Button>
+        <button onClick={toggleTheme}>
+          切换主题
+        </button>
 
-        <nav className="sidebar-nav" aria-label="股票看板导航">
+        <nav className={style.sidebarNav} aria-label="股票看板导航">
           {dashboardGroups.map((group) => (
             <section key={group.title}>
               <p>{group.title}</p>
@@ -58,14 +62,14 @@ export default function AppLayout({ children, selectedDashboard, refreshingAll, 
                 const Icon = iconById[item.id] || LayoutDashboard;
                 return (
                   <NavLink
-                    className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                    className={({ isActive }) => `${style.navItem}${isActive ? ` ${style.active}` : ''}`}
                     key={item.path}
                     title={item.description}
                     to={item.path}
                   >
                     <Icon size={16} />
                     <span>{item.title}</span>
-                    <Badge className="nav-status" variant="secondary">{item.status}</Badge>
+                    <Badge className={style.navStatus} variant="secondary">{item.status}</Badge>
                   </NavLink>
                 );
               })}
@@ -73,22 +77,22 @@ export default function AppLayout({ children, selectedDashboard, refreshingAll, 
           ))}
         </nav>
 
-        <div className="sidebar-footer">
+        <div className={style.sidebarFooter}>
           <Server size={16} />
           <span>本地数据服务<br />127.0.0.1:8001</span>
         </div>
       </aside>
 
-      <div className="main-area">
-        <header className="site-header">
-          <div className="header-title">
+      <div className={style.mainArea}>
+        <header className={style.siteHeader}>
+          <div className={style.headerTitle}>
             <div>
               <h1>股票看板中心</h1>
               <span>{selectedDashboard?.title || 'Dashboard'}</span>
             </div>
           </div>
         </header>
-        <main className="stock-content">{children}</main>
+        <main className={style.stockContent}>{children}</main>
       </div>
     </div>
   );
