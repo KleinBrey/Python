@@ -21,6 +21,7 @@ import {
   getPriceSnapshotApi,
   getSkyRocketListApi,
   getHotStockListApi,
+  getHistoricalPriceApi,
 } from '../api/hot-rank.js'
 import moment from 'moment'
 import { AgGridProvider, AgGridReact } from 'ag-grid-react'
@@ -184,21 +185,19 @@ function RankingCards({
   )
 }
 
-function AgGridTable({ rowData, colDefs }) {
+function AgGridTable({ rowData, colDefs, handleRowClick }) {
   const modules = [AllCommunityModule]
 
   return (
     <div className="ag-grid-container">
       <AgGridProvider modules={modules}>
-        <div
-          className="ag-theme-alpine"
-          style={{ height: '400px', width: '100%' }}
-        >
+        <div style={{ height: '100%', width: '100%' }}>
           <AgGridReact
             theme={themeDarkBlue}
             rowData={rowData}
             columnDefs={colDefs}
             defaultColDef={{ resizable: true, sortable: true }}
+            onRowClicked={handleRowClick} // 绑定行单击事件
           />
         </div>
       </AgGridProvider>
@@ -212,156 +211,49 @@ function RankingTable({
   refreshingId,
   refreshingAll,
 }) {
-  // 模拟单个股票的基础信息
-  const mockStock = {
-    股票代码: '000001.SZ',
-    股票简称: '平安银行',
-  }
-
-  // 模拟历史行情 K 线数据 (包含 open, high, low, close, volume, date)
-  const mockKlineData = {
-    dataSource: '同花顺扶摇',
-    adjustLabel: '前复权',
-    rows: [
-      {
-        date: '2026-03-02',
-        open: 11.2,
-        high: 11.45,
-        low: 11.15,
-        close: 11.38,
-        volume: 48520000,
-      },
-      {
-        date: '2026-03-03',
-        open: 11.4,
-        high: 11.6,
-        low: 11.32,
-        close: 11.55,
-        volume: 62100000,
-      },
-      {
-        date: '2026-03-04',
-        open: 11.5,
-        high: 11.52,
-        low: 11.2,
-        close: 11.25,
-        volume: 51200000,
-      },
-      {
-        date: '2026-03-05',
-        open: 11.22,
-        high: 11.38,
-        low: 11.18,
-        close: 11.35,
-        volume: 41000000,
-      },
-      {
-        date: '2026-03-06',
-        open: 11.36,
-        high: 11.75,
-        low: 11.3,
-        close: 11.68,
-        volume: 89000000,
-      },
-      {
-        date: '2026-03-09',
-        open: 11.7,
-        high: 11.88,
-        low: 11.5,
-        close: 11.52,
-        volume: 73000000,
-      },
-      {
-        date: '2026-03-10',
-        open: 11.5,
-        high: 11.65,
-        low: 11.4,
-        close: 11.6,
-        volume: 55000000,
-      },
-      {
-        date: '2026-03-11',
-        open: 11.62,
-        high: 11.95,
-        low: 11.58,
-        close: 11.88,
-        volume: 96000000,
-      },
-      {
-        date: '2026-03-12',
-        open: 11.85,
-        high: 12.1,
-        low: 11.8,
-        close: 12.05,
-        volume: 112000000,
-      },
-      {
-        date: '2026-03-13',
-        open: 12.0,
-        high: 12.08,
-        low: 11.72,
-        close: 11.78,
-        volume: 84000000,
-      },
-      {
-        date: '2026-03-16',
-        open: 11.75,
-        high: 11.9,
-        low: 11.6,
-        close: 11.82,
-        volume: 49000000,
-      },
-      {
-        date: '2026-03-17',
-        open: 11.8,
-        high: 12.25,
-        low: 11.76,
-        close: 12.18,
-        volume: 128000000,
-      },
-      {
-        date: '2026-03-18',
-        open: 12.2,
-        high: 12.35,
-        low: 12.05,
-        close: 12.1,
-        volume: 95000000,
-      },
-      {
-        date: '2026-03-19',
-        open: 12.12,
-        high: 12.28,
-        low: 11.95,
-        close: 12.02,
-        volume: 67000000,
-      },
-      {
-        date: '2026-03-20',
-        open: 12.0,
-        high: 12.4,
-        low: 11.98,
-        close: 12.32,
-        volume: 105000000,
-      },
-    ],
-  }
-
-  const [selectedStock, setSelectedStock] = useState(mockStock)
-  const [klineData, setKlineData] = useState(mockKlineData)
+  const [selectedStock, setSelectedStock] = useState(null)
+  const [klineData, setKlineData] = useState(null)
   const [klineLoading, setKlineLoading] = useState(false)
   const [klineError, setKlineError] = useState('')
   const [klinePeriod, setKlinePeriod] = useState('daily')
   const [prefetchStatus, setPrefetchStatus] = useState(null)
 
-  // Row Data: The data to be displayed.
-  const [rowData, setRowData] = useState([
-    { make: 'Tesla', model: 'Model Y', price: 64950, electric: true },
-    { make: 'Ford', model: 'F-Series', price: 33850, electric: false },
-    { make: 'Toyota', model: 'Corolla', price: 29600, electric: false },
-  ])
+  function transformStockData(itemList) {
+    if (!Array.isArray(itemList)) return []
+
+    return itemList.map((item) => ({
+      date: moment(item.date_ms).format('YYYY-MM-DD'),
+      open: Number(Number(item.open_price).toFixed(2)),
+      high: Number(Number(item.high_price).toFixed(2)),
+      low: Number(Number(item.low_price).toFixed(2)),
+      close: Number(Number(item.close_price).toFixed(2)),
+      volume: Number(item.volume),
+    }))
+  }
+
+  const getStockHistoryData = async (thscode) => {
+    const res = await getHistoricalPriceApi({
+      thscode: thscode,
+      interval: '1d',
+      start: moment().subtract(1, 'year').valueOf(),
+      end: moment().valueOf(),
+    })
+    return res
+  }
+
+  // 行单击事件处理函数
+  const handleRowClick = async (event) => {
+    const value = await getStockHistoryData(event.data.thscode)
+    setKlineData({
+      dataSource: '同花顺扶摇',
+      adjustLabel: '前复权',
+      rows: transformStockData(value.data.item),
+    })
+    console.log(value)
+  }
 
   // Column Definitions: Defines the columns to be displayed.
-  const [colDefs, setColDefs] = useState([
+  const colDefs = useRef([
     { headerName: '排名', field: 'rank', flex: 1 },
     { headerName: '股票', field: 'name', flex: 1 },
     { headerName: '代码', field: 'thscode', flex: 1 },
@@ -400,7 +292,11 @@ function RankingTable({
       </div>
 
       <div className="table-wrap">
-        <AgGridTable rowData={activeRanking?.rows || []} colDefs={colDefs} />
+        <AgGridTable
+          rowData={activeRanking?.rows || []}
+          colDefs={colDefs.current}
+          handleRowClick={handleRowClick}
+        />
         <StockKlineChart
           data={klineData}
           error={klineError}
@@ -442,17 +338,13 @@ export default function HotRankingsDashboard({
   })
 
   // 1. 获取列表示例 (GET)
-  const fetchUsers = async () => {
-    setLoading(true)
-    console.log(loadingA)
+  const getPriceSnapshot = async (codes) => {
     try {
-      const res = await getPriceSnapshotApi('600519.SH')
-      console.log('时间戳:', res.data.timestamp)
-      console.log('列表项:', res.data.item)
+      const res = await getPriceSnapshotApi(codes)
+      console.log(res.data)
     } catch (error) {
       console.error('获取行情快照失败', error)
     } finally {
-      setLoading(false)
     }
   }
 
@@ -462,13 +354,17 @@ export default function HotRankingsDashboard({
   }
 
   const getHotStockList = async () => {
-    const res = await getHotStockListApi('hour')
+    const hotStock = await getHotStockListApi('hour')
+    const priceSnapshots = await getPriceSnapshot(
+      hotStock.data.item.map((item) => item.thscode).join(','),
+    )
+
     setHotStockList((prev) => ({
       ...prev, // 保留原有的 title 等其他属性
-      timestamp: res.data.timestamp, // 更新时间戳（毫秒）
-      rows: res.data.item, // 更新列表数据
+      timestamp: hotStock.data.timestamp, // 更新时间戳（毫秒）
+      rows: hotStock.data.item, // 更新列表数据
     }))
-    console.log(hotStockList, res.data)
+    console.log(hotStockList, priceSnapshots)
   }
 
   useEffect(() => {
