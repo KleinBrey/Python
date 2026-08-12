@@ -46,7 +46,7 @@ export function AppSidebar({ selectedDashboard }) {
       <SidebarHeader>
         <div className={style.logo}>
           <div className={style.mark}>
-            <img src="../../public/static/logo.jpg" alt="Stock Flow Logo" />
+            <img src="../../public/static/logo.png" alt="Stock Flow Logo" />
           </div>
           <div className={style.title}>
             <span>Stock Flow</span>
