@@ -1,14 +1,28 @@
-import React from 'react';
-import { Blocks, ChartCandlestick, Database, Loader2, RefreshCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import MetricCard from '../components/MetricCard.jsx';
-import StatusBadge from '../components/StatusBadge.jsx';
-import { shortTime, statusLabel } from '../utils/formatters.js';
+import React from 'react'
+import {
+  Blocks,
+  ChartCandlestick,
+  Database,
+  Loader2,
+  RefreshCcw,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button.jsx'
+import MetricCard from '../components/MetricCard.jsx'
+import StatusBadge from '../components/StatusBadge.jsx'
+import { shortTime, statusLabel } from '../utils/formatters.js'
 
-export default function DataSourcesDashboard({ dataSources, loading, onCheckSources }) {
-  const sourceById = Object.fromEntries(dataSources.map((item) => [item.id, item]));
-  const hithink = sourceById['hithink-financial'];
-  const onlineCount = dataSources.filter((item) => ['online', 'ready'].includes(item.status)).length;
+export default function DataSourcesDashboard({
+  dataSources,
+  loading,
+  onCheckSources,
+}) {
+  const sourceById = Object.fromEntries(
+    dataSources.map((item) => [item.id, item]),
+  )
+  const hithink = sourceById['hithink-financial']
+  const onlineCount = dataSources.filter((item) =>
+    ['online', 'ready'].includes(item.status),
+  ).length
 
   return (
     <div className="dashboard-content">
@@ -50,7 +64,11 @@ export default function DataSourcesDashboard({ dataSources, loading, onCheckSour
             <span>同花顺扶摇官方 API 的配置与连通情况</span>
           </div>
           <Button type="button" onClick={onCheckSources} disabled={loading}>
-            {loading ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
+            {loading ? (
+              <Loader2 className="spin" size={15} />
+            ) : (
+              <RefreshCcw size={15} />
+            )}
             <span>{loading ? '检测中' : '检测连通'}</span>
           </Button>
         </div>
@@ -82,9 +100,11 @@ export default function DataSourcesDashboard({ dataSources, loading, onCheckSour
               <p>{source.message}</p>
             </article>
           ))}
-          {!dataSources.length ? <div className="empty-state">暂无数据源状态</div> : null}
+          {!dataSources.length ? (
+            <div className="empty-state">暂无数据源状态</div>
+          ) : null}
         </div>
       </section>
     </div>
-  );
+  )
 }
