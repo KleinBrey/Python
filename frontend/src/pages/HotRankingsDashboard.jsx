@@ -22,7 +22,7 @@ import {
   getSkyRocketListApi,
   getHotStockListApi,
   getHistoricalPriceApi,
-} from '../api/hot-rank-api.js'
+} from '../api/THS/api.js'
 import moment from 'moment'
 import { AgGridProvider, AgGridReact } from 'ag-grid-react'
 import {
@@ -343,7 +343,7 @@ export default function HotRankingsDashboard({
   // 1. 获取列表示例 (GET)
   const getPriceSnapshot = async (codes) => {
     try {
-      const res = await getPriceSnapshotApi(codes)
+      const res = await getPriceSnapshotApi({ thscodes: codes })
       console.log(res.data)
     } catch (error) {
       console.error('获取行情快照失败', error)
