@@ -22,7 +22,7 @@ import {
   getSkyRocketListApi,
   getHotStockListApi,
   getHistoricalPriceApi,
-} from '../api/hot-rank.js'
+} from '../api/hot-rank-api.js'
 import moment from 'moment'
 import { AgGridProvider, AgGridReact } from 'ag-grid-react'
 import {

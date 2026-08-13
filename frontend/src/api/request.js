@@ -2,6 +2,8 @@ import axios from 'axios';
 
 // 1. 设置 BaseURL（
 const baseURL = 'https://fuyao.aicubes.cn/api'
+const apiKey = import.meta.env.HITHINK_FINANCE_API_KEY?.trim() || ''
+
 // 2. 创建 Axios 实例
 const service = axios.create({
   baseURL,
@@ -19,12 +21,10 @@ service.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    // 从环境变量中读取 API Key
-    const apiKey = "sk-fuyao-M9qHcQOKssSnsvrjFr-NKzwXUpHakbzc";
-    console.log('API Key:', apiKey); // 调试输出 API Key
-
     if (apiKey) {
       config.headers['X-api-key'] = apiKey;
+    } else {
+      console.warn('未配置 HITHINK_FINANCE_API_KEY，扶摇 API 请求可能失败');
     }
     return config;
   },
