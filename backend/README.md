@@ -32,6 +32,7 @@ FastAPI / 定时任务 / 命令行脚本
 - `duckdb`：本地分析型数据库；
 - `pandas`：行情清洗和 DataFrame 转换；
 - `requests`：调用同花顺 Financial API；
+- `tqdm`：命令行同步进度条；
 - `APScheduler`：每日更新及周期校准；
 - `pydantic-settings`：读取 `.env` 配置；
 - `pytest`、`httpx`：测试工具。
@@ -199,6 +200,7 @@ PYTHONPATH=. .venv/bin/python backend/scripts/init_db.py
 ### `scripts/sync_market_data.py`
 
 手动同步入口。支持指定模式、股票和试跑数量。
+运行时会实时显示完成数量、成功数、失败数、写入行数和当前股票，结束后输出 JSON 汇总。
 
 ```bash
 # 两只股票初始化
@@ -241,6 +243,12 @@ PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py \
 PYTHONPATH=. .venv/bin/python -m pytest
 ```
 
+也可以直接执行测试文件；它会自动启动 pytest 并显示每项测试结果：
+
+```bash
+PYTHONPATH=. .venv/bin/python backend/tests/test_market_data.py
+```
+
 ## 数据文件
 
 实际数据库位于项目根目录：
@@ -262,4 +270,3 @@ data/market.duckdb
 | 增加定时任务 | `app/jobs/` |
 | 增加运维命令 | `scripts/` |
 | 增加自动化验证 | `tests/` |
-

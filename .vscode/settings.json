@@ -6,5 +6,21 @@
   },
   "python.analysis.extraPaths": [
     "${workspaceFolder}"
-  ]
+  ],
+  "cSpell.enabled": false,
+  "workbench.editorAssociations": {
+    "*.parquet": "duckdb.dataFileViewer",
+    "*.csv": "duckdb.dataFileViewer",
+    "*.tsv": "duckdb.dataFileViewer",
+    "*.xlsx": "duckdb.dataFileViewer"
+  },
+  "duckdb.databases": [
+    {
+      "alias": "market",
+      "type": "file",
+      "path": "/Users/kleinbrey/Documents/stock/data/market.duckdb",
+      "attached": true
+    }
+  ],
+  "duckdb.defaultDatabase": "market"
 }

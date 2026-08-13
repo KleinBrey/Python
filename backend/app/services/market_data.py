@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
 from threading import Lock
-from typing import Literal
+from typing import Callable, Literal, TypedDict
 
 import pandas as pd
 
@@ -12,6 +12,18 @@ from backend.app.repositories import MarketDataRepository
 
 
 SyncMode = Literal["initial", "daily", "weekly", "monthly"]
+
+
+class SyncProgress(TypedDict):
+    total: int
+    completed: int
+    succeeded: int
+    failed: int
+    rows_written: int
+    symbol: str | None
+
+
+ProgressCallback = Callable[[SyncProgress], None]
 
 
 class SyncAlreadyRunningError(RuntimeError):
@@ -40,11 +52,18 @@ class MarketDataService:
         symbols: list[str] | None = None,
         limit: int | None = None,
         end_date: date | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> dict:
         if not self._lock.acquire(blocking=False):
             raise SyncAlreadyRunningError("已有行情同步任务正在运行")
         try:
-            return self._sync(mode, symbols=symbols, limit=limit, end_date=end_date)
+            return self._sync(
+                mode,
+                symbols=symbols,
+                limit=limit,
+                end_date=end_date,
+                progress_callback=progress_callback,
+            )
         finally:
             self._lock.release()
 
@@ -55,6 +74,7 @@ class MarketDataService:
         symbols: list[str] | None,
         limit: int | None,
         end_date: date | None,
+        progress_callback: ProgressCallback | None,
     ) -> dict:
         if mode not in {"initial", "daily", "weekly", "monthly"}:
             raise ValueError(f"未知同步模式: {mode}")
@@ -74,6 +94,15 @@ class MarketDataService:
             total = len(universe)
             resolved_end = end_date or date.today()
             starts = self._start_dates(mode, universe, resolved_end)
+            self._report_progress(
+                progress_callback,
+                total=total,
+                completed=0,
+                succeeded=0,
+                failed=0,
+                rows_written=0,
+                symbol=None,
+            )
 
             with ThreadPoolExecutor(max_workers=self.workers, thread_name_prefix="hithink-sync") as executor:
                 futures = {
@@ -95,6 +124,15 @@ class MarketDataService:
                         failed += 1
                         if len(errors) < 20:
                             errors.append(f"{symbol}: {exc}")
+                    self._report_progress(
+                        progress_callback,
+                        total=total,
+                        completed=succeeded + failed,
+                        succeeded=succeeded,
+                        failed=failed,
+                        rows_written=rows_written,
+                        symbol=symbol,
+                    )
 
             status = "success" if failed == 0 else ("partial" if succeeded else "failed")
             message = "; ".join(errors) or None
@@ -128,6 +166,30 @@ class MarketDataService:
                 message=str(exc),
             )
             raise
+
+    @staticmethod
+    def _report_progress(
+        callback: ProgressCallback | None,
+        *,
+        total: int,
+        completed: int,
+        succeeded: int,
+        failed: int,
+        rows_written: int,
+        symbol: str | None,
+    ) -> None:
+        if callback is None:
+            return
+        callback(
+            {
+                "total": total,
+                "completed": completed,
+                "succeeded": succeeded,
+                "failed": failed,
+                "rows_written": rows_written,
+                "symbol": symbol,
+            }
+        )
 
     def _start_dates(self, mode: SyncMode, symbols: list[str], end_date: date) -> dict[str, date]:
         one_year = end_date - timedelta(days=self.history_days)
@@ -176,4 +238,3 @@ class MarketDataService:
             .drop_duplicates(["symbol", "trade_date", "adjustment"], keep="last")
             .reset_index(drop=True)
         )
-

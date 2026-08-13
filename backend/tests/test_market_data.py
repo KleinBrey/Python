@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from pathlib import Path
 
 import pandas as pd
 
@@ -79,3 +80,25 @@ def test_daily_sync_rechecks_recent_window(tmp_path):
     assert provider.requests == [("000001.SZ", "20260807", "20260813")]
     assert len(repo.get_bars("000001.SZ", None, None, 100)) == 1
 
+
+def test_sync_reports_progress(tmp_path):
+    repo = repository(tmp_path)
+    progress = []
+
+    result = MarketDataService(repo, FakeProvider(), workers=2).sync(
+        "initial",
+        end_date=date(2026, 8, 13),
+        progress_callback=progress.append,
+    )
+
+    assert progress[0]["total"] == 2
+    assert progress[0]["completed"] == 0
+    assert progress[-1]["completed"] == 2
+    assert progress[-1]["succeeded"] == 2
+    assert progress[-1]["rows_written"] == result["rows_written"]
+
+
+if __name__ == "__main__":
+    import pytest
+
+    raise SystemExit(pytest.main([str(Path(__file__).resolve()), "-v", "-ra"]))
