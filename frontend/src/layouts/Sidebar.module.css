@@ -16,6 +16,18 @@
   top: 0;
 }
 
+.sidebarContent {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebarContent::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
+}
+
 .logo {
   align-items: center;
   display: flex;
@@ -32,7 +44,16 @@
   display: inline-flex;
   height: 32px;
   justify-content: center;
+  flex: 0 0 32px;
+  overflow: hidden;
   width: 32px;
+}
+
+.mark img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
 }
 
 .title {
@@ -79,6 +100,10 @@
   width: 100%;
 }
 
+.navItem svg {
+  flex: 0 0 auto;
+}
+
 .navItem span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,6 +146,75 @@
   line-height: 1.4;
   margin-top: auto;
   padding: 12px;
+}
+
+.sidebarFooter svg {
+  flex: 0 0 auto;
+}
+
+@keyframes revealSidebarText {
+  from {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+:global([data-state='expanded']) .title,
+:global([data-state='expanded']) .sidebarNav p,
+:global([data-state='expanded']) .navItem span,
+:global([data-state='expanded']) .sidebarFooter span {
+  animation: revealSidebarText 80ms ease-out 140ms both;
+}
+
+:global([data-collapsible='icon']) .logo {
+  justify-content: center;
+  padding: 0;
+}
+
+:global([data-collapsible='icon']) .title,
+:global([data-collapsible='icon']) .sidebarNav p,
+:global([data-collapsible='icon']) .navItem span,
+:global([data-collapsible='icon']) .sidebarFooter span {
+  display: none;
+}
+
+:global([data-collapsible='icon']) .sidebar {
+  padding: 18px 8px;
+}
+
+:global([data-collapsible='icon']) .sidebarNav {
+  gap: 12px;
+}
+
+:global([data-collapsible='icon']) .sidebarNav section {
+  gap: 6px;
+}
+
+:global([data-collapsible='icon']) .sidebarNav section + section {
+  margin-top: 8px;
+}
+
+:global([data-collapsible='icon']) .navItem {
+  gap: 0;
+  grid-template-columns: 18px 0;
+  height: 40px;
+  margin: 0 auto;
+  min-height: 40px;
+  overflow: hidden;
+  padding: 0 14px;
+  width: 100%;
+}
+
+:global([data-collapsible='icon']) .sidebarFooter {
+  border-color: transparent;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
 }
 
 .mainArea {

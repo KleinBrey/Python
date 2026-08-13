@@ -2,29 +2,23 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
 } from '@/components/ui/sidebar'
 
-import { React, useContext } from 'react'
+import React from 'react'
 import {
   BarChart3,
   ChartNoAxesCombined,
   Database,
-  BadgeDollarSign,
   LayoutDashboard,
   PieChart,
-  RefreshCw,
   Search,
   Server,
   TrendingUp,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-import { Badge } from '@/components/ui/badge.jsx'
-import { Button } from '@/components/ui/button.jsx'
 import { dashboardGroups } from '../config/dashboardRegistry.js'
 import style from './Sidebar.module.css'
-import { ThemeContext } from '@/contexts'
 
 const iconById = {
   'hot-rankings': TrendingUp,
@@ -36,24 +30,20 @@ const iconById = {
   database: Database,
 }
 
-export function AppSidebar({ selectedDashboard }) {
-  const { theme, toggleTheme } = useContext(ThemeContext)
-
-  console.log(theme, toggleTheme)
-
+export function AppSidebar() {
   return (
-    <Sidebar className="dark">
+    <Sidebar className="dark overflow-hidden" collapsible="icon">
       <SidebarHeader>
         <div className={style.logo}>
           <div className={style.mark}>
-            <img src="../../public/static/logo.png" alt="Stock Flow Logo" />
+            <img src="/static/logo.png" alt="Stock Flow Logo" />
           </div>
           <div className={style.title}>
             <span>Stock Flow</span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className={style.sidebarContent}>
         <aside className={style.sidebar}>
           <nav className={style.sidebarNav} aria-label="股票看板导航">
             {dashboardGroups.map((group) => (
@@ -67,7 +57,7 @@ export function AppSidebar({ selectedDashboard }) {
                         `${style.navItem}${isActive ? ` ${style.active}` : ''}`
                       }
                       key={item.path}
-                      title={item.description}
+                      title={`${item.title}：${item.description}`}
                       to={item.path}
                     >
                       <Icon size={16} />
@@ -81,7 +71,7 @@ export function AppSidebar({ selectedDashboard }) {
         </aside>
       </SidebarContent>
       <SidebarFooter>
-        <div className={style.sidebarFooter}>
+        <div className={style.sidebarFooter} title="本地数据服务 127.0.0.1:8001">
           <Server size={16} />
           <span>
             本地数据服务
