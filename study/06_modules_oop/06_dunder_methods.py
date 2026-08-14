@@ -9,6 +9,9 @@ class Stock:
         self.symbol = symbol
         self.price = price
 
+    def __len__(self):
+        return 88888
+
     def __str__(self) -> str:
         """面向最终用户的友好文本，print(obj) 优先使用。"""
         return f"股票 {self.symbol}，价格 {self.price:.2f} 元"
@@ -21,6 +24,7 @@ class Stock:
 stock = Stock("600519", 1688.0)
 print(str(stock))
 print(repr(stock))
+print(len(stock))
 print([stock])  # 容器展示成员时通常使用 repr
 
 """

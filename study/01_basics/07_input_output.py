@@ -25,6 +25,8 @@ except ValueError:
 print(f"{name or '匿名用户'} 计划买入 {quantity:,} 股")
 print("数量：{}，状态：{}".format(quantity, "有效" if quantity > 0 else "无效"))
 
+print("A{} B{}".format(1,2))
+
 """
 练习：读取单价和数量，打印保留两位小数的总价。
 

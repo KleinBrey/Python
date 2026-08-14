@@ -24,10 +24,15 @@ class Stock:
     def market_value(self, quantity: int) -> float:
         return self.price * quantity
 
+    @staticmethod
+    def change_value(data:int) -> float:
+        return data * 2
+
 
 maotai = Stock("600519", 1688.0)
 pingan = Stock("000001", 10.5)
 maotai.update_price(1690.0)
+print(maotai.change_value(108))
 print(maotai.symbol, maotai.market_value(100), maotai.market)
 print(pingan.symbol, pingan.price, pingan.market)
 

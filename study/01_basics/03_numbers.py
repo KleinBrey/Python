@@ -9,7 +9,7 @@ from decimal import Decimal
 price = 10.5
 quantity = 200
 amount = price * quantity
-print(f"成交额：{amount:,.2f} 元")
+print(f"成交额：{amount:,.3f} 元")
 
 print(7 / 2)   # / 总是得到浮点结果 3.5
 print(7 // 2)  # // 向下取整得到 3

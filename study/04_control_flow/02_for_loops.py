@@ -20,6 +20,7 @@ print(list(range(0, 10, 2)))
 
 prices = [1688.0, 10.5, 220.0]
 # zip 将多个可迭代对象按位置配对；默认在最短输入耗尽时停止。
+print(list(zip(symbols, prices)))
 for symbol, price in zip(symbols, prices):
     print(f"{symbol}: {price:.2f}")
 

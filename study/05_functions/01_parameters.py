@@ -21,7 +21,10 @@ print(create_order("000001", quantity=200, side="sell", remark="止盈"))
 
 def average(*numbers: float) -> float:
     """*args 把任意数量的位置参数收集为 tuple，类似 JS rest parameters。"""
-    return sum(numbers) / len(numbers) if numbers else 0.0
+    print("收到的数字：", numbers)
+    if not numbers:
+        print("没有提供数字，返回 0.0")
+    return sum(numbers) / len(numbers)
 
 
 print(average(10.2, 10.5, 10.8))
@@ -29,6 +32,7 @@ print(average(10.2, 10.5, 10.8))
 
 def build_query(**filters: object) -> dict[str, object]:
     """**kwargs 把任意关键字参数收集为 dict，这是 Python 很有特色的写法。"""
+    print("收到的过滤条件：", filters)
     return {key: value for key, value in filters.items() if value is not None}
 
 

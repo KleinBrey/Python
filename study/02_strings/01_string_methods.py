@@ -10,6 +10,7 @@ parts = clean_line.split(",")
 print(parts)
 
 symbol, name, price = parts
+print(symbol, name, price)
 print(" | ".join(parts))  # join 由“分隔符”调用，连接一组字符串
 
 message = "Python is friendly"

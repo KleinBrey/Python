@@ -8,8 +8,11 @@ def parse_price(raw: str) -> float | None:
     try:
         price = float(raw)
     except ValueError as error:
-        print("ValueError：文本不能转换为数字：", error)
-        return None
+      print(f"数值转换失败：{error}")
+    except KeyError as error:
+      print(f"字段缺少：{error}")
+    except Exception as error:
+      print(f"其他错误：{error}")
     else:
         # else 只在 try 没有异常时运行；将成功逻辑放这里可缩小 try 范围。
         print("解析成功")

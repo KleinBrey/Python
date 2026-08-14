@@ -21,12 +21,17 @@ raw_age = "二十"
 try:
     age = int(raw_age)
 except ValueError:
+    print(f"{repr(raw_age)} 不是有效整数")
+    # 简写方式
     print(f"{raw_age!r} 不是有效整数")
 
+
+
 # bool("False") 是 True，因为它是非空字符串；不能用它解析文本真假。
-raw_enabled = "false"
+raw_enabled = " TrUe \n"
+# strip 移除字符串两端的空格和换行符
 enabled = raw_enabled.strip().lower() in {"true", "1", "yes"}
-print("是否启用：", enabled)
+print("是否启用：",raw_enabled.strip().lower(), enabled)
 
 """
 本节总结：int/float/str/bool 负责转换；外部输入转换可能抛出 ValueError。
