@@ -8,16 +8,20 @@ import pandas as pd
 from backend.app.database import DuckDBDatabase
 
 
+# 日线行情表的标准字段及入库顺序。
 BAR_COLUMNS = [
     "symbol", "trade_date", "open", "high", "low", "close", "pre_close",
     "change", "pct_change", "volume", "amount", "adjustment", "source", "ingested_at",
 ]
 
 
+# 封装股票目录、日线行情和同步记录的数据库读写操作。
 class MarketDataRepository:
+    # 保存后续读写使用的 DuckDB 数据库实例。
     def __init__(self, database: DuckDBDatabase):
         self.database = database
 
+    # 批量新增或更新股票目录，返回处理的记录数。
     def upsert_stocks(self, frame: pd.DataFrame) -> int:
         if frame.empty:
             return 0
@@ -42,10 +46,12 @@ class MarketDataRepository:
             )
         return len(stocks)
 
+    # 批量新增或更新日线行情，返回处理的记录数。
     def upsert_bars(self, frame: pd.DataFrame) -> int:
         if frame.empty:
             return 0
         bars = frame.copy()
+        # 补齐数据源未提供的可选字段，确保列结构与数据库表一致。
         for column in BAR_COLUMNS:
             if column not in bars:
                 bars[column] = None
@@ -72,6 +78,7 @@ class MarketDataRepository:
             )
         return len(bars)
 
+    # 分页查询股票目录，可按证券代码或名称进行模糊搜索。
     def list_stocks(self, query: str | None, limit: int, offset: int) -> list[dict[str, Any]]:
         parameters: list[Any] = []
         where = ""
@@ -91,6 +98,7 @@ class MarketDataRepository:
             ).fetchdf()
         return self._records(frame)
 
+    # 查询指定证券在日期范围内的未复权日线行情。
     def get_bars(
         self,
         symbol: str,
@@ -120,6 +128,7 @@ class MarketDataRepository:
             ).fetchdf()
         return self._records(frame)
 
+    # 返回各证券已有未复权行情的最新交易日期。
     def latest_dates(self, symbols: list[str]) -> dict[str, date]:
         if not symbols:
             return {}
@@ -137,6 +146,7 @@ class MarketDataRepository:
             ).fetchall()
         return dict(rows)
 
+    # 返回最近若干个交易日中最早的日期。
     def recent_trading_date(self, sessions: int) -> date | None:
         with self.database.connection(read_only=True) as connection:
             row = connection.execute(
@@ -150,6 +160,7 @@ class MarketDataRepository:
             ).fetchone()
         return row[0] if row else None
 
+    # 汇总数据库中的股票、行情及最近一次同步状态。
     def status(self) -> dict[str, Any]:
         with self.database.connection(read_only=True) as connection:
             stock_count = connection.execute("SELECT count(*) FROM stocks").fetchone()[0]
@@ -173,6 +184,7 @@ class MarketDataRepository:
             "latest_sync": self._records(latest_sync)[0] if not latest_sync.empty else None,
         }
 
+    # 创建运行中的同步记录，并返回该记录的 ID。
     def start_sync(self, mode: str) -> int:
         with self.database.write_connection() as connection:
             return connection.execute(
@@ -180,6 +192,7 @@ class MarketDataRepository:
                 [mode],
             ).fetchone()[0]
 
+    # 写入同步任务的最终状态和统计数据。
     def finish_sync(
         self,
         run_id: int,
@@ -202,6 +215,7 @@ class MarketDataRepository:
                 [status, total, succeeded, failed, rows_written, message, run_id],
             )
 
+    # 将 DataFrame 转为可 JSON 序列化的字典列表。
     @staticmethod
     def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
         if frame.empty:
@@ -210,6 +224,7 @@ class MarketDataRepository:
         records = clean.to_dict(orient="records")
         for record in records:
             for key, value in record.items():
+                # 日期统一输出 ISO 字符串，NumPy 标量转换为 Python 原生类型。
                 if isinstance(value, (pd.Timestamp, datetime, date)):
                     record[key] = value.isoformat()
                 elif hasattr(value, "item"):

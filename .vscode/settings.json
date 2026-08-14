@@ -19,7 +19,8 @@
       "alias": "market",
       "type": "file",
       "path": "/Users/kleinbrey/Documents/stock/data/market.duckdb",
-      "attached": true
+      "attached": true,
+      "readOnly": false
     }
   ],
   "duckdb.defaultDatabase": "market"
