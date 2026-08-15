@@ -21,7 +21,14 @@
       "path": "/Users/kleinbrey/Documents/stock/data/market.duckdb",
       "attached": true,
       "readOnly": true
+    },
+    {
+      "alias": "simple",
+      "type": "file",
+      "path": "/Users/kleinbrey/Documents/stock/data/simple.duckdb",
+      "attached": true,
+      "readOnly": true
     }
   ],
-  "duckdb.defaultDatabase": "market"
+  "duckdb.defaultDatabase": "simple"
 }

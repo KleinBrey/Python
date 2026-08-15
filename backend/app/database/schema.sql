@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS stocks (
   type VARCHAR NOT NULL DEFAULT 'a-share',
   source VARCHAR NOT NULL,
   -- 记录更新时间；插入时未指定则使用数据库当前时间。
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 日 K 线表：保存股票在每个交易日、每种复权方式下的行情数据。
