@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
 from threading import RLock
-from typing import Iterator
+from typing import Generator
 
 import duckdb
 
@@ -22,7 +22,9 @@ class DuckDBDatabase:
             connection.execute(schema)
 
     @contextmanager
-    def connection(self, *, read_only: bool = False) -> Iterator[duckdb.DuckDBPyConnection]:
+    def connection(
+        self, *, read_only: bool = False
+    ) -> Generator[duckdb.DuckDBPyConnection, None, None]:
         connection = duckdb.connect(str(self.path), read_only=read_only)
         try:
             yield connection
@@ -30,8 +32,7 @@ class DuckDBDatabase:
             connection.close()
 
     @contextmanager
-    def write_connection(self) -> Iterator[duckdb.DuckDBPyConnection]:
+    def write_connection(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
         with self._write_lock:
             with self.connection() as connection:
                 yield connection
-
