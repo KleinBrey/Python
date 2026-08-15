@@ -1,46 +1,67 @@
-"""
-==================================================
-知识点：上下文管理器、__enter__、__exit__ 与 contextmanager
-==================================================
-"""
+"""学习上下文管理器：让资源在使用后自动清理。"""
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from collections.abc import Iterator
 
+
+# 写法一：在类中实现 __enter__ 和 __exit__。
 class TracedTask:
+    """记录一个任务何时开始、何时结束。"""
+
     def __init__(self, name: str):
         self.name = name
 
     def __enter__(self) -> "TracedTask":
+        """进入 with 代码块时自动调用。"""
+
         print("开始任务：", self.name)
-        return self  # as 后的变量接收这个返回值
+
+        # 返回值会交给 with 后面的 as 变量。
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        """离开 with 代码块时自动调用，即使代码报错也会调用。"""
+
         print("结束任务：", self.name)
-        return False  # False 表示不吞掉异常
+
+        # 返回 False：如果 with 中出现异常，继续把异常抛给外层。
+        return False
 
 
+# 执行顺序：__enter__ -> with 内的代码 -> __exit__。
 with TracedTask("读取行情") as task:
     print("执行中：", task.name)
 
 
+# 写法二：用 @contextmanager 把生成器变成上下文管理器。
 @contextmanager
-def temporary_text(content: str) -> Iterator[Path]:
-    """yield 前相当于 enter，yield 后 finally 相当于 exit。"""
+def temporary_text(content: str) -> Generator[Path, None, None]:
+    """创建临时文本文件，使用结束后自动删除。"""
+
+    # TemporaryDirectory 离开 with 后会自动删除临时文件夹。
     with TemporaryDirectory() as directory:
-        path = Path(directory) / "demo.txt"
-        path.write_text(content, encoding="utf-8")
-        yield path
+        file_path = Path(directory) / "demo.txt"
+        file_path.write_text(content, encoding="utf-8")
+
+        # yield 前面的代码相当于 __enter__。
+        # file_path 会交给 with 后面的 as 变量。
+        yield file_path
+
+        # yield 后面的代码相当于 __exit__。
+        # 本例不需要手动删除，TemporaryDirectory 会负责清理。
 
 
 with temporary_text("Python 上下文管理器") as path:
-    print(path.read_text(encoding="utf-8"))
+    text = path.read_text(encoding="utf-8")
+    print(text)
 
-# with open(...) 会自动关闭，是因为文件对象实现了上下文管理协议；
-# 即使代码块抛异常，__exit__ 仍有机会释放文件句柄。
 
-"""
-本节总结：with 保证成对的获取/释放；类协议或 contextmanager 都可创建管理器。
-"""
+# 常见例子：
+# with open("demo.txt") as file:
+#     content = file.read()
+#
+# 离开 with 后，文件会自动关闭。
+#
+# 总结：with 可以保证“开始时获取资源，结束时释放资源”成对执行。

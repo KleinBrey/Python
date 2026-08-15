@@ -25,9 +25,6 @@ def get(url: str, params: dict) -> dict:
     query_url = f"{BASE_URL}/{url}"
     try:
         response = session.get(query_url, params=params)
-        response.raise_for_status()
-        print(f"接口响应成功，状态码：{response.status_code}")
-        return response.json()
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP 错误：{http_err}")
     except requests.exceptions.ConnectionError as conn_err:
@@ -38,6 +35,11 @@ def get(url: str, params: dict) -> dict:
         print(f"请求异常：{req_err}")
     except ValueError as json_err:
         print(f"JSON 解析错误：{json_err}")
+    else:
+        # try里的代码运行没有问题再走到这一步
+        response.raise_for_status()
+        print(f"接口响应成功，状态码：{response.status_code}")
+        return response.json()
 
 
 # 全市场股票列表获取

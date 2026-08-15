@@ -15,6 +15,7 @@ print("后缀：", current_file.suffix)
 print("是否存在：", current_file.exists())
 
 with TemporaryDirectory() as directory:
+    print(directory)
     data_dir = Path(directory) / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     text_path = data_dir / "prices.txt"  # / 运算符安全拼接路径
