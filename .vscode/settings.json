@@ -20,13 +20,13 @@
       "type": "file",
       "path": "/Users/kleinbrey/Documents/stock/data/market.duckdb",
       "attached": true,
-      "readOnly": true
+      "readOnly": false
     },
     {
       "alias": "simple",
       "type": "file",
       "path": "/Users/kleinbrey/Documents/stock/data/simple.duckdb",
-      "attached": true,
+      "attached": false,
       "readOnly": true
     }
   ],
