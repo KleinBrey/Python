@@ -39,9 +39,6 @@ class Provider:
         except ValueError as json_err:
             print(f"JSON 解析错误：{json_err}")
         else:
-            # try里的代码运行没有问题再走到这一步
-            response.raise_for_status()
-            print(f"接口响应成功，状态码：{response.status_code}")
             return response.json()
 
     # 全市场股票列表获取

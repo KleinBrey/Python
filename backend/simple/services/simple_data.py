@@ -2,6 +2,8 @@ from repository import StockRepository
 from provider import Provider
 import pandas as pd
 from tqdm.auto import tqdm
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class Service:
@@ -35,13 +37,48 @@ class Service:
         self.repository.insert_stocks(stock_list)
 
     def update_daily_bar(self):
+        end = int(time.time() * 1000)
+        start = end - 30 * 24 * 60 * 60 * 1000
+
         stocks_list_from_db = self.repository.get_table_data()
 
-        for stock in tqdm(
-            stocks_list_from_db.itertuples(index=False),
-            total=len(stocks_list_from_db),
-            desc="同步股票",
-        ):
-            print(f"{stock.name}")
+        with ThreadPoolExecutor(
+            max_workers=10,
+            thread_name_prefix="daily-bar",
+        ) as executor:
 
-        print("update daily bar")
+            futures = {}
+
+            # 1. 提交所有任务
+            for stock in stocks_list_from_db.head(10).itertuples(index=False):
+                symbol = f"{stock.symbol}.{stock.exchange}"
+
+                future = executor.submit(
+                    self.provider.fetch_historical,
+                    symbol,
+                    start,
+                    end,
+                )
+
+                futures[future] = symbol
+
+            # 2. 哪个任务先完成，就先处理哪个
+            for future in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                desc="同步股票日线",
+                unit="个",
+            ):
+                symbol = futures[future]
+
+                try:
+                    result = future.result()
+                    print(result)
+
+                    # TODO: 保存数据
+                    # self.repository.save_daily_bar(result)
+
+                except Exception as e:
+                    tqdm.write(f"{symbol} 获取失败: {e}")
+
+        print("update daily bar 完成")
