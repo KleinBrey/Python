@@ -1,5 +1,5 @@
-from database.connection import DuckDBDatabase
-from provider.hithink import Provider
+from database import DuckDBDatabase
+from provider import Provider
 from repository import StockRepository
 
 # 初始化数据库
