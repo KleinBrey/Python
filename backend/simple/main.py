@@ -20,3 +20,6 @@ stock_list = providerInstant.fetch_stock_list()
 # 插入数据
 service.update_stocks_list(stock_list)
 # operate.insert_stocks(stock_list)
+
+# 数据更新完成以后，再启动 DuckDB UI。
+database.start_ui()
