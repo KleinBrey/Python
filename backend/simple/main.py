@@ -8,18 +8,16 @@ database = DuckDBDatabase()
 database.initialize()
 
 # 注册stock表的repository，用来统一处理增删改查
-operate = StockRepository(database)
+repository = StockRepository(database)
+
+# 注册API调用
+provider = Provider()
 
 # 业务逻辑处理
-service = Service(operate)
+service = Service(repository, provider)
 
-# 获取API数据
-providerInstant = Provider()
-stock_list = providerInstant.fetch_stock_list()
+# 插入股票列表数据
+# service.update_stocks_list()
 
-# 插入数据
-service.update_stocks_list(stock_list)
-# operate.insert_stocks(stock_list)
-
-# 数据更新完成以后，再启动 DuckDB UI。
-database.start_ui()
+# 插入股票日线数据
+service.update_daily_bar()

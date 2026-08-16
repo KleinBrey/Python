@@ -44,25 +44,8 @@ class Provider:
             print(f"接口响应成功，状态码：{response.status_code}")
             return response.json()
 
-    # 格式化股票列表数据
-    @staticmethod
-    def format_stock_list(value: list) -> pd.DataFrame:
-        frame = pd.DataFrame(value)
-        columns = ["symbol", "name", "exchange", "type", "source"]
-        # 如果 DataFrame 为空，返回只有列定义的空 DataFrame
-        if frame.empty:
-            return pd.DataFrame(columns=columns)
-        # 格式转换
-        frame["symbol"] = frame["ticker"]
-        # 将提取的代码列添加到 DataFrame
-        frame["type"] = "A股"
-        frame["source"] = "Hithink"
-
-        # 只保留目标列，并按 columns 中的顺序排列
-        return frame[columns].reset_index(drop=True)
-
     # 全市场股票列表获取
-    def fetch_stock_list(self) -> pd.DataFrame:
+    def fetch_stock_list(self) -> dict:
         url = "api/meta/tickers/list"
         # 初始化分页偏移量
         offset = 0
@@ -74,7 +57,7 @@ class Provider:
             "offset": offset,  # 分页偏移
         }
         result = self.get(url, params)
-        return self.format_stock_list(result["data"]["item"])
+        return result
 
     # 获取当前股票快照
     def fetch_snapshot(self, thscode: str, limit: int = 100, offset: int = 0) -> dict:
