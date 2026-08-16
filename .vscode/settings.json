@@ -26,7 +26,7 @@
       "alias": "simple",
       "type": "file",
       "path": "/Users/kleinbrey/Documents/stock/data/simple.duckdb",
-      "attached": false,
+      "attached": true,
       "readOnly": false
     }
   ],
