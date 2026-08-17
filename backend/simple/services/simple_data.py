@@ -59,10 +59,10 @@ class Service:
             .dt.tz_convert("Asia/Shanghai")
             .dt.date
         )
-        frame["open"] = frame["open_price"]
-        frame["high"] = frame["high_price"]
-        frame["low"] = frame["low_price"]
-        frame["close"] = frame["close_price"]
+        frame["open"] = frame["open_price"].round(2)
+        frame["high"] = frame["high_price"].round(2)
+        frame["low"] = frame["low_price"].round(2)
+        frame["close"] = frame["close_price"].round(2)
         frame["volume"] = frame["volume"]
         frame["amount"] = frame["turnover"]
         frame["source"] = "Hithink"
@@ -80,6 +80,7 @@ class Service:
 
     def update_daily_bar(self):
         end = int(time.time() * 1000)
+
         start = end - 30 * 24 * 60 * 60 * 1000
 
         stocks_list_from_db = self.stock_repository.get_table_data()
