@@ -1,5 +1,5 @@
 from repository import StockRepository, DailyBarRepository
-from provider import HithinkProvider
+from provider import HithinkProvider, TushareProvider
 import pandas as pd
 from tqdm.auto import tqdm
 import time
@@ -9,11 +9,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class Service:
     def __init__(
         self,
-        provider: HithinkProvider,
+        hithink_provider: HithinkProvider,
+        tushare_provider: TushareProvider,
         stock_repository: StockRepository,
         daily_repository: DailyBarRepository,
     ):
-        self.provider = provider
+        self.hithink_provider = hithink_provider
+        self.tushare_provider = tushare_provider
         self.stock_repository = stock_repository
         self.daily_repository = daily_repository
 
@@ -76,13 +78,17 @@ class Service:
         # 只保留目标列，并按 columns 中的顺序排列
         return frame[columns].reset_index(drop=True)
 
+    """ 获取股票列表数据 """
+
     def update_stocks_list(self):
         # API 请求数据
-        result = self.provider.fetch_stock_list()
+        result = self.hithink_provider.fetch_stock_list()
         # 格式化清洗数据
         stock_list = self.format_stock_list(result["data"]["item"])
         # 存到数据库
         self.stock_repository.insert_stocks(stock_list)
+
+    """ 获取股票历史日K线数据 """
 
     def update_daily_bar(self):
         end = int(time.time() * 1000)
@@ -103,7 +109,7 @@ class Service:
                 symbol = f"{stock.symbol}.{stock.exchange}"
 
                 future = executor.submit(
-                    self.provider.fetch_historical,
+                    self.hithink_provider.fetch_historical,
                     symbol,
                     start,
                     end,

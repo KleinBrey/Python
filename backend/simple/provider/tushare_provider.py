@@ -8,8 +8,7 @@ Tushare 官方地址。Token 只从构造参数或 ``backend/.env`` / 环境变�
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
+
 
 import pandas as pd
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,42 +16,42 @@ import tushare as ts
 
 from backend.simple.utils.symbol import exchange_for, validate_symbol
 
-DEFAULT_RELAY_URL = "https://t.xiaodefa.top"
-
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
-class TushareSettings(BaseSettings):
-    """从环境变量和 backend/.env 读取 Tushare 配置。"""
+"""从环境变量和 backend/.env 读取 Tushare 配置"""
 
+
+class TushareSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
         env_prefix="TUSHARE_",
         extra="ignore",
     )
-
     private_token: str = ""
     relay_token: str = ""
     use_relay: bool = True
-    relay_url: str = DEFAULT_RELAY_URL
+    relay_url: str = "https://t.xiaodefa.top"
 
 
 def create_tushare_client(
     timeout: int = 30,
 ) -> None:
 
+    # 获取配置
     settings = TushareSettings()
     private_token = settings.private_token
     relay_token = settings.relay_token
-    relay_enabled = settings.use_relay
+    use_relay = settings.use_relay
 
-    # 没有设置中转直接返回官方client
-    if relay_enabled:
+    if use_relay:
+        # 返回中转client
         client = ts.pro_api(relay_token, timeout=timeout)
         client._DataApi__http_url = settings.relay_url
         return client
     else:
+        # 返回官方client
         client = ts.pro_api(private_token, timeout=timeout)
         return client
 
@@ -90,7 +89,7 @@ class TushareProvider:
         timeout: int = 30,
     ) -> None:
 
-        self.pro_api = create_tushare_client(
+        self.pro = create_tushare_client(
             timeout=timeout,
         )
 
@@ -111,7 +110,7 @@ class TushareProvider:
     def fetch_stock_list(self) -> dict:
         """获取沪、深、北交易所当前正常上市的全部 A 股。"""
 
-        frame = self.pro_api.stock_basic(
+        frame = self.pro.stock_basic(
             exchange="",
             list_status="L",
             fields="ts_code,symbol,name,exchange",
@@ -167,7 +166,7 @@ class TushareProvider:
             raise ValueError("offset 不能小于 0")
 
         frame = ts.pro_bar(
-            api=self.pro_api,
+            api=self.pro,
             ts_code=self._ts_code(thscode),
             start_date=self._timestamp_to_date(start),
             end_date=self._timestamp_to_date(end),

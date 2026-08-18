@@ -1,5 +1,5 @@
 from database import DuckDBDatabase
-from provider import HithinkProvider
+from provider import HithinkProvider, TushareProvider
 from repository import StockRepository, DailyBarRepository
 from services import Service
 
@@ -12,10 +12,15 @@ stock_repository = StockRepository(database)
 daily_repository = DailyBarRepository(database)
 
 # 注册API调用
-provider = HithinkProvider()
+hithink_provider = HithinkProvider()
+
+tushare_provider = TushareProvider()
+
 
 # 业务逻辑处理
-service = Service(provider, stock_repository, daily_repository)
+service = Service(
+    hithink_provider, tushare_provider, stock_repository, daily_repository
+)
 
 # 插入股票列表数据
 service.update_stocks_list()
