@@ -54,7 +54,7 @@ class HithinkProvider:
             "offset": offset,  # 分页偏移
         }
         result = self.get(url, params)
-        return result
+        return result["data"]["item"]
 
     # 获取当前股票快照
     def fetch_snapshot(self, thscode: str, limit: int = 100, offset: int = 0) -> dict:
@@ -83,7 +83,7 @@ class HithinkProvider:
             "offset": offset,
         }
         result = self.get(url, params)
-        return result
+        return result["data"]["item"]
 
 
 if __name__ == "__main__":

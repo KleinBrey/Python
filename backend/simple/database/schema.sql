@@ -2,7 +2,8 @@
 CREATE TABLE IF NOT EXISTS stocks (
   symbol VARCHAR PRIMARY KEY,
   name VARCHAR NOT NULL,
-  exchange VARCHAR NOT NULL,
+  exchange VARCHAR NOT NULL, 
+  market VARCHAR NOT NULL, 
   type VARCHAR NOT NULL DEFAULT 'a-share',
   source VARCHAR NOT NULL,
   -- 记录更新时间；插入时未指定则使用数据库当前时间。

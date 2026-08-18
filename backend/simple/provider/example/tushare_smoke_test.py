@@ -1,5 +1,5 @@
 """
-Tushare 中转/官方接口的最小连通性测试。
+Tushare 最小连通性测试。
 """
 
 from backend.simple.provider.tushare_provider import TushareProvider
@@ -9,8 +9,6 @@ def main() -> None:
     provider = TushareProvider()
 
     data = provider.pro.stock_basic(
-        exchange="",
-        list_status="L",
         fields="ts_code,symbol,name,area,industry,market",
     )
 

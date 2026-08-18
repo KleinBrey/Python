@@ -8,7 +8,7 @@ import pandas as pd
 
 from backend.simple.database import DuckDBDatabase
 
-STOCK_COLUMNS = ["symbol", "name", "exchange", "type", "source"]
+STOCK_COLUMNS = ["symbol", "name", "exchange", "market", "type", "source"]
 
 DAILY_BAR_COLUMNS = [
     "symbol",
@@ -66,6 +66,7 @@ class StockRepository(BaseRepository):
                     symbol,
                     name,
                     exchange,
+                    market,
                     type,
                     source
                 )
@@ -73,12 +74,14 @@ class StockRepository(BaseRepository):
                     symbol,
                     name,
                     exchange,
+                    market,
                     type,
                     source
                 FROM incoming_stocks
                 ON CONFLICT (symbol) DO UPDATE SET
                     name = excluded.name,
                     exchange = excluded.exchange,
+                    market = excluded.market,
                     type = excluded.type,
                     source = excluded.source,
                     update_time = now()

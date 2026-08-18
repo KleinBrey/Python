@@ -110,36 +110,14 @@ class TushareProvider:
     def fetch_stock_list(self) -> dict:
         """获取沪、深、北交易所当前正常上市的全部 A 股。"""
 
-        frame = self.pro.stock_basic(
+        # exchange交易所 SSE上交所 SZSE深交所 BSE北交所
+        result = self.pro.stock_basic(
             exchange="",
             list_status="L",
-            fields="ts_code,symbol,name,exchange",
+            fields="symbol,name,exchange,market",
         )
-        if frame is None or frame.empty:
-            return {"data": {"item": []}}
 
-        required_columns = {"symbol", "name", "exchange"}
-        missing_columns = required_columns.difference(frame.columns)
-        if missing_columns:
-            missing_text = ", ".join(sorted(missing_columns))
-            raise ValueError(f"Tushare 股票列表缺少字段: {missing_text}")
-
-        items = []
-        for row in frame.itertuples(index=False):
-            code = validate_symbol(row.symbol)
-            exchange = self._EXCHANGE_MAP.get(str(row.exchange).upper())
-            if exchange is None:
-                exchange = exchange_for(code)
-            items.append(
-                {
-                    "ticker": code,
-                    "name": row.name,
-                    "exchange": exchange,
-                    "source": self.source,
-                }
-            )
-
-        return {"data": {"item": items}}
+        return result
 
     def fetch_historical(
         self,

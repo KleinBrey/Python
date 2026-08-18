@@ -21,20 +21,25 @@ class Service:
 
     # 格式化股票列表数据
     @staticmethod
-    def format_stock_list(value: list) -> pd.DataFrame:
+    def format_stock_list(value: pd.DataFrame) -> pd.DataFrame:
         frame = pd.DataFrame(value)
-        columns = ["symbol", "name", "exchange", "type", "source"]
+        columns = ["symbol", "name", "exchange", "market", "type", "source"]
+        exchange_map = {
+            "SSE": "上交所",
+            "SZSE": "深交所",
+            "BSE": "北交所",
+        }
+
         # 如果 DataFrame 为空，返回只有列定义的空 DataFrame
         if frame.empty:
             return pd.DataFrame(columns=columns)
         # 格式转换
-        frame["symbol"] = frame["ticker"]
+        frame["exchange"] = frame["exchange"].map(exchange_map)
         # 将提取的代码列添加到 DataFrame
         frame["type"] = "A股"
-        if "source" not in frame.columns:
-            frame["source"] = "Hithink"
-        else:
-            frame["source"] = frame["source"].fillna("Hithink")
+        frame["source"] = "Tushare"
+
+        print(frame)
 
         # 只保留目标列，并按 columns 中的顺序排列
         return frame[columns].reset_index(drop=True)
@@ -82,9 +87,9 @@ class Service:
 
     def update_stocks_list(self):
         # API 请求数据
-        result = self.hithink_provider.fetch_stock_list()
+        result = self.tushare_provider.fetch_stock_list()
         # 格式化清洗数据
-        stock_list = self.format_stock_list(result["data"]["item"])
+        stock_list = self.format_stock_list(result)
         # 存到数据库
         self.stock_repository.insert_stocks(stock_list)
 
@@ -130,9 +135,7 @@ class Service:
                     # API 请求数据
                     result = future.result()
                     # 格式化清洗数据
-                    daily_list = self.format_daily_list(
-                        symbol.split(".")[0], result["data"]["item"]
-                    )
+                    daily_list = self.format_daily_list(symbol.split(".")[0], result)
                     # 存到数据库
                     self.daily_repository.upsert_daily_bars(daily_list)
 
