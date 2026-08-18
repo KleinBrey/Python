@@ -1,6 +1,6 @@
 """使用 Tushare Pro 获取 A 股基础信息和历史行情。
 
-默认通过中转地址请求；将 ``TUSHARE_USE_RELAY`` 设为 ``false`` 即可切换到
+默认通过中转地址请求；将 ``use_relay`` 设为 ``false`` 即可切换到
 Tushare 官方地址。Token 只从构造参数或 ``backend/.env`` / 环境变量读取，
 不会硬编码在源码中。
 """
