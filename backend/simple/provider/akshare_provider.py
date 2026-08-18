@@ -22,6 +22,16 @@ class AkShareProvider:
 
     source = "AkShare"
 
+    # AkShare 的 A 股列表会分别请求沪、深、北交所；历史行情会请求
+    # 东方财富，并可能回退到腾讯。本地代理不可用时，这些数据源应直连。
+    _NO_PROXY_DOMAINS = (
+        ".sse.com.cn",
+        ".szse.cn",
+        ".bse.cn",
+        ".eastmoney.com",
+        ".qq.com",
+    )
+
     _INTERVAL_MAP = {
         "1d": "daily",
         "daily": "daily",
@@ -44,15 +54,16 @@ class AkShareProvider:
         self,
         *,
         timeout: float | None = 30,
-        bypass_eastmoney_proxy: bool = True,
+        bypass_data_source_proxy: bool = True,
     ):
         self.timeout = timeout
-        if bypass_eastmoney_proxy:
-            self._add_no_proxy_domain(".eastmoney.com")
+        if bypass_data_source_proxy:
+            for domain in self._NO_PROXY_DOMAINS:
+                self._add_no_proxy_domain(domain)
 
     @staticmethod
     def _add_no_proxy_domain(domain: str) -> None:
-        """让东方财富请求绕过可能不可用的系统代理。"""
+        """将数据源域名加入 requests 识别的代理豁免列表。"""
 
         for variable_name in ("NO_PROXY", "no_proxy"):
             current_value = os.environ.get(variable_name, "")
@@ -196,9 +207,9 @@ def main() -> None:
 
     provider = AkShareProvider()
 
-    stocks = provider.fetch_stock_list()
+    # stocks = provider.fetch_stock_list()
 
-    pprint(pd.DataFrame(stocks["data"]["item"]))
+    # pprint(pd.DataFrame(stocks["data"]["item"]))
 
     # end = int(time.time() * 1000)
     # start = end - 30 * 24 * 60 * 60 * 1000
@@ -209,6 +220,9 @@ def main() -> None:
     #     end,
     # )
     # pprint(result)
+
+    stock_zh_a_spot_em_df = ak.stock_zh_a_spot_em()
+    print(stock_zh_a_spot_em_df)
 
 
 if __name__ == "__main__":

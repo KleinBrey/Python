@@ -17,14 +17,21 @@ def _timestamp_ms(value: str) -> int:
     return int(timestamp.timestamp() * 1000)
 
 
-def test_provider_bypasses_eastmoney_proxy(monkeypatch):
+def test_provider_bypasses_data_source_proxies(monkeypatch):
     monkeypatch.setenv("NO_PROXY", "localhost")
     monkeypatch.setenv("no_proxy", "localhost")
 
     AkShareProvider()
 
-    assert ".eastmoney.com" in os.environ["NO_PROXY"].split(",")
-    assert ".eastmoney.com" in os.environ["no_proxy"].split(",")
+    expected_domains = {
+        ".sse.com.cn",
+        ".szse.cn",
+        ".bse.cn",
+        ".eastmoney.com",
+        ".qq.com",
+    }
+    assert expected_domains.issubset(os.environ["NO_PROXY"].split(","))
+    assert expected_domains.issubset(os.environ["no_proxy"].split(","))
 
 
 def test_fetch_stock_list_adds_exchange_and_source(monkeypatch):
