@@ -17,6 +17,7 @@ dependencies = [
   "tqdm>=4.67,<5",
   "APScheduler>=3.11,<4",
   "pydantic-settings>=2.10,<3",
+  "akshare>=1.18.91,<2",
 ]
 
 [project.optional-dependencies]

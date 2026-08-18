@@ -21,7 +21,7 @@ session.headers.update({"X-api-key": HITHINK_FINANCE_API_KEY})
 """
 
 
-class Provider:
+class HithinkProvider:
 
     @staticmethod
     def get(url: str, params: dict) -> dict:
@@ -89,7 +89,7 @@ class Provider:
 if __name__ == "__main__":
     # 直接运行当前文件时，获取并打印股票列表。
     # 被 main.py 导入时不会执行，避免重复请求接口。
-    providerInstant = Provider()
+    providerInstant = HithinkProvider()
 
     stock_list = providerInstant.fetch_stock_list()
 

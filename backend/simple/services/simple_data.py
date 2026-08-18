@@ -1,5 +1,5 @@
 from repository import StockRepository, DailyBarRepository
-from provider import Provider
+from provider import HithinkProvider
 import pandas as pd
 from tqdm.auto import tqdm
 import time
@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class Service:
     def __init__(
         self,
-        provider: Provider,
+        provider: HithinkProvider,
         stock_repository: StockRepository,
         daily_repository: DailyBarRepository,
     ):
@@ -29,7 +29,10 @@ class Service:
         frame["symbol"] = frame["ticker"]
         # 将提取的代码列添加到 DataFrame
         frame["type"] = "A股"
-        frame["source"] = "Hithink"
+        if "source" not in frame.columns:
+            frame["source"] = "Hithink"
+        else:
+            frame["source"] = frame["source"].fillna("Hithink")
 
         # 只保留目标列，并按 columns 中的顺序排列
         return frame[columns].reset_index(drop=True)
@@ -65,7 +68,10 @@ class Service:
         frame["close"] = frame["close_price"].round(2)
         frame["volume"] = frame["volume"]
         frame["amount"] = frame["turnover"]
-        frame["source"] = "Hithink"
+        if "source" not in frame.columns:
+            frame["source"] = "Hithink"
+        else:
+            frame["source"] = frame["source"].fillna("Hithink")
 
         # 只保留目标列，并按 columns 中的顺序排列
         return frame[columns].reset_index(drop=True)
