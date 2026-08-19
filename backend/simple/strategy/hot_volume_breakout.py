@@ -38,7 +38,7 @@ def select_from_database() -> pd.DataFrame:
         return pd.DataFrame(columns=RESULT_COLUMNS)
 
     latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
-    market_caps = TushareProvider().fetch_market_caps(latest_trade_date)
+    market_caps = TushareProvider().fetch_daily_basic(latest_trade_date)
     stocks = stocks.merge(market_caps, on="symbol", how="left")
 
     return HotVolumeBreakoutStrategy().select(stocks, daily_bars)
