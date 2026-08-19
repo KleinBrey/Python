@@ -1,5 +1,5 @@
-from repository import StockRepository, DailyBarRepository
-from provider import HithinkProvider, TushareProvider
+from ..provider import HithinkProvider, TushareProvider
+from ..repository import DailyBarRepository, StockRepository
 import pandas as pd
 from tqdm.auto import tqdm
 import time
@@ -21,26 +21,22 @@ class Service:
 
     # 格式化股票列表数据
     @staticmethod
-    def format_stock_list(value: pd.DataFrame) -> pd.DataFrame:
+    def format_stock_list(value: pd.DataFrame, source: str) -> pd.DataFrame:
         frame = pd.DataFrame(value)
         columns = ["symbol", "name", "exchange", "market", "type", "source"]
+        # 交易所
         exchange_map = {
             "SSE": "上交所",
             "SZSE": "深交所",
             "BSE": "北交所",
         }
-
         # 如果 DataFrame 为空，返回只有列定义的空 DataFrame
         if frame.empty:
             return pd.DataFrame(columns=columns)
         # 格式转换
         frame["exchange"] = frame["exchange"].map(exchange_map)
-        # 将提取的代码列添加到 DataFrame
         frame["type"] = "A股"
-        frame["source"] = "Tushare"
-
-        print(frame)
-
+        frame["source"] = source
         # 只保留目标列，并按 columns 中的顺序排列
         return frame[columns].reset_index(drop=True)
 
@@ -86,12 +82,18 @@ class Service:
     """ 获取股票列表数据 """
 
     def update_stocks_list(self):
-        # API 请求数据
-        result = self.tushare_provider.fetch_stock_list()
-        # 格式化清洗数据
-        stock_list = self.format_stock_list(result)
-        # 存到数据库
-        self.stock_repository.insert_stocks(stock_list)
+        try:
+            # API 请求数据
+            result = self.tushare_provider.fetch_stock_list()
+            # 格式化清洗数据
+            stock_list = self.format_stock_list(result, "Tushare")
+            # 存到数据库
+            self.stock_repository.insert_stocks(stock_list)
+        except Exception as e:
+            print(f"股票列表更新失败: {e}")
+            raise
+        else:
+            print("股票列表更新成功!")
 
     """ 获取股票历史日K线数据 """
 

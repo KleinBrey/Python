@@ -6,7 +6,7 @@ Repository 只负责数据库读写，不负责调用第三方接口或清洗业
 
 import pandas as pd
 
-from backend.simple.database import DuckDBDatabase
+from ..database import DuckDBDatabase
 
 STOCK_COLUMNS = ["symbol", "name", "exchange", "market", "type", "source"]
 

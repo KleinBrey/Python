@@ -1,6 +1,6 @@
 from backend.simple.database import DuckDBDatabase
 from backend.simple.provider import HithinkProvider, TushareProvider
-from backend.simple.repository import DailyBarRepository, StockRepository
+from backend.simple.repository import StockRepository, DailyBarRepository
 from backend.simple.services import Service
 
 # 初始化数据库
@@ -24,6 +24,3 @@ service = Service(
 
 # 插入股票列表数据
 service.update_stocks_list()
-
-# 插入股票日线数据
-# service.update_daily_bar()

@@ -14,7 +14,7 @@ import pandas as pd
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import tushare as ts
 
-from backend.simple.utils.symbol import exchange_for, validate_symbol
+from ..utils.symbol import exchange_for, validate_symbol
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 

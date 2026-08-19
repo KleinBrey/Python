@@ -14,7 +14,7 @@ import akshare as ak
 import pandas as pd
 import requests
 
-from backend.simple.utils.symbol import validate_symbol, exchange_for
+from ..utils.symbol import exchange_for, validate_symbol
 
 
 class AkShareProvider:

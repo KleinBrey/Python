@@ -16,14 +16,10 @@ hithink_provider = HithinkProvider()
 
 tushare_provider = TushareProvider()
 
-
 # 业务逻辑处理
 service = Service(
     hithink_provider, tushare_provider, stock_repository, daily_repository
 )
 
-# 插入股票列表数据
-service.update_stocks_list()
-
 # 插入股票日线数据
-# service.update_daily_bar()
+service.update_daily_bar()
