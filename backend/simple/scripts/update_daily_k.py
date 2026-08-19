@@ -21,5 +21,8 @@ service = Service(
     hithink_provider, tushare_provider, stock_repository, daily_repository
 )
 
-# 插入股票日线数据
-service.update_daily_bar()
+# 同步Tushare股票日线数据
+# service.update_daily_bar()
+
+# 同步同花顺股票日线数据
+service.update_hithink_daily_bar()

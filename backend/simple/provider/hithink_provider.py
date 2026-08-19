@@ -2,6 +2,8 @@ import requests
 
 import time
 
+import random
+
 import pandas as pd
 
 from pprint import pprint
@@ -82,6 +84,8 @@ class HithinkProvider:
             "adjust": adjust,
             "offset": offset,
         }
+        # 随机延迟0.2～0.4秒
+        time.sleep(random.uniform(0.2, 0.4))
         result = self.get(url, params)
         return result["data"]["item"]
 

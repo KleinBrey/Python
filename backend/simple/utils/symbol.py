@@ -21,3 +21,13 @@ def exchange_for(code: str) -> str:
     if code.startswith(("5", "6", "9")):
         return "SH"
     return "SZ"
+
+
+def chunked(
+    items: list[str],
+    size: int,
+):
+    """把列表按指定数量分批"""
+
+    for i in range(0, len(items), size):
+        yield items[i : i + size]

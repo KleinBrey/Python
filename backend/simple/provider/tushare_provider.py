@@ -15,6 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import tushare as ts
 
 from ..utils.symbol import exchange_for, validate_symbol
+from ..utils.date import timestamp_to_date
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
@@ -94,13 +95,6 @@ class TushareProvider:
         )
 
     @staticmethod
-    def _timestamp_to_date(timestamp_ms: int) -> str:
-        """把毫秒时间戳转换为上海时区的 YYYYMMDD 日期。"""
-
-        timestamp = pd.to_datetime(timestamp_ms, unit="ms", utc=True)
-        return timestamp.tz_convert("Asia/Shanghai").strftime("%Y%m%d")
-
-    @staticmethod
     def _ts_code(value: str) -> str:
         """把 simple 支持的股票代码统一转换为 Tushare TS 代码。"""
 
@@ -124,6 +118,26 @@ class TushareProvider:
         thscode: str,
         start: int,
         end: int,
+    ) -> dict:
+        """获取历史行情，并返回现有 Service 能处理的字段和单位。"""
+
+        result = self.pro.daily(
+            ts_code=thscode,
+            start_date=timestamp_to_date(start),
+            end_date=timestamp_to_date(end),
+        )
+
+        if result is None or result.empty:
+            return pd.DataFrame()
+
+        return result
+
+    # 通用行情接口
+    def fetch_pro_bar(
+        self,
+        thscode: str,
+        start: int,
+        end: int,
         interval: str = "1d",
         adjust: str = "forward",
         offset: int = 0,
@@ -143,46 +157,19 @@ class TushareProvider:
         if offset < 0:
             raise ValueError("offset 不能小于 0")
 
-        frame = ts.pro_bar(
+        result = ts.pro_bar(
             api=self.pro,
             ts_code=self._ts_code(thscode),
-            start_date=self._timestamp_to_date(start),
-            end_date=self._timestamp_to_date(end),
+            start_date=timestamp_to_date(start),
+            end_date=timestamp_to_date(end),
             asset="E",
             freq=frequency,
             adj=adjustment,
         )
-        if frame is None or frame.empty:
-            return {"data": {"item": []}}
 
-        column_map = {
-            "trade_date": "date",
-            "open": "open_price",
-            "high": "high_price",
-            "low": "low_price",
-            "close": "close_price",
-            "vol": "volume",
-            "amount": "turnover",
-        }
-        missing_columns = set(column_map).difference(frame.columns)
-        if missing_columns:
-            missing_text = ", ".join(sorted(missing_columns))
-            raise ValueError(f"Tushare 行情数据缺少字段: {missing_text}")
+        print(result)
 
-        result = frame[list(column_map)].rename(columns=column_map).copy()
-        result["date"] = pd.to_datetime(result["date"], format="%Y%m%d", errors="raise")
-        result = result.sort_values("date").iloc[offset:].reset_index(drop=True)
+        if result is None or result.empty:
+            return pd.DataFrame()
 
-        shanghai_dates = result.pop("date").dt.tz_localize("Asia/Shanghai")
-        result["date_ms"] = shanghai_dates.astype("int64") // 1_000_000
-
-        price_columns = ["open_price", "high_price", "low_price", "close_price"]
-        for column in price_columns:
-            result[column] = pd.to_numeric(result[column], errors="raise")
-
-        # daily/pro_bar 的成交量单位为手、成交额单位为千元；统一换算成股和元。
-        result["volume"] = pd.to_numeric(result["volume"], errors="raise") * 100
-        result["turnover"] = pd.to_numeric(result["turnover"], errors="raise") * 1_000
-        result["source"] = self.source
-
-        return {"data": {"item": result.to_dict(orient="records")}}
+        return result
