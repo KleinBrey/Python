@@ -1,4 +1,9 @@
-"""市值、成交量与涨幅组合选股策略。"""
+"""
+总市值大于100亿,ST股除外,科创板除外,北交所除外，
+最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5,
+最近5日涨幅大于5%,按现在个股热度排序
+
+"""
 
 from __future__ import annotations
 
@@ -9,9 +14,12 @@ import pandas as pd
 from backend.simple.database import DuckDBDatabase
 from backend.simple.provider import TushareProvider
 from backend.simple.repository import DailyBarRepository, StockRepository
+from backend.simple.utils.symbol import validate_symbol
 
 STOCK_COLUMNS = ["symbol", "name", "exchange", "market_cap"]
+
 DAILY_BAR_COLUMNS = ["symbol", "date", "close", "volume"]
+
 RESULT_COLUMNS = [
     "symbol",
     "name",
@@ -31,37 +39,43 @@ def select_from_database() -> pd.DataFrame:
     """读取本地行情，并用最新交易日总市值执行策略。"""
 
     database = DuckDBDatabase()
+
     stocks = StockRepository(database).get_table_data()
+
     daily_bars = DailyBarRepository(database).get_table_data()
 
     if stocks.empty or daily_bars.empty:
         return pd.DataFrame(columns=RESULT_COLUMNS)
 
+    # 最新交易日
     latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
+
     market_caps = TushareProvider().fetch_daily_basic(latest_trade_date)
+
+    # 合并市值字段
     stocks = stocks.merge(market_caps, on="symbol", how="left")
 
     return HotVolumeBreakoutStrategy().select(stocks, daily_bars)
 
 
-def _stock_code(value: object) -> str:
-    """统一股票代码，同时兼容 600519 和 600519.SH。"""
-
-    return str(value).strip().upper().split(".", maxsplit=1)[0]
-
-
 @dataclass(frozen=True, slots=True)
 class HotVolumeBreakoutConfig:
-    """策略参数，市值单位为元。"""
+    """策略参数"""
 
+    # 最小市值 100亿
     min_market_cap: float = 10_000_000_000
+    # 最近5天的成交量
     recent_volume_days: int = 5
+    # 前20天的成交量
     previous_volume_days: int = 20
+    # 最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5
     min_volume_ratio: float = 1.5
+    # 最近5日涨幅大于5%
     min_return_5d_pct: float = 5.0
 
     @property
     def required_trading_days(self) -> int:
+        """请求交易天数"""
         return self.recent_volume_days + self.previous_volume_days
 
 
@@ -92,7 +106,7 @@ class HotVolumeBreakoutStrategy:
         if "heat" not in candidates.columns:
             candidates["heat"] = pd.NA
 
-        candidates["symbol"] = candidates["symbol"].map(_stock_code)
+        candidates["symbol"] = candidates["symbol"].map(validate_symbol)
         candidates["exchange"] = candidates["exchange"].astype(str).str.upper()
         candidates["market_cap"] = pd.to_numeric(
             candidates["market_cap"], errors="coerce"
@@ -119,7 +133,7 @@ class HotVolumeBreakoutStrategy:
             return pd.DataFrame(columns=RESULT_COLUMNS)
 
         bars = daily_bars[DAILY_BAR_COLUMNS].copy()
-        bars["symbol"] = bars["symbol"].map(_stock_code)
+        bars["symbol"] = bars["symbol"].map(validate_symbol)
         bars["date"] = pd.to_datetime(bars["date"], errors="coerce")
         bars["close"] = pd.to_numeric(bars["close"], errors="coerce")
         bars["volume"] = pd.to_numeric(bars["volume"], errors="coerce")
