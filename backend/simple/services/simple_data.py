@@ -5,6 +5,8 @@ from tqdm.auto import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..utils.symbol import chunked
 import time
+import threading
+import random
 
 
 class Service:
@@ -102,7 +104,7 @@ class Service:
         if frame.empty:
             return pd.DataFrame(columns=columns)
         # 格式转换
-        frame["symbol"] = frame["ts_code"]
+        frame["symbol"] = frame["ts_code"].str.split(".").str[0]
         frame["date"] = frame["trade_date"]
         frame["open"] = frame["open"]
         frame["high"] = frame["high"]
@@ -130,12 +132,14 @@ class Service:
         else:
             print("股票列表更新成功!")
 
-    def update_daily_bar(self):
+    def update_daily_bar(self, batch_size: int = 50, lookback_days: int = 30):
         """获取股票历史日K线数据"""
+        # batch_size 请求一次包含50支股票
+        # lookback_days 获取近30日的历史数据
 
         end = int(time.time() * 1000)
 
-        start = end - 30 * 24 * 60 * 60 * 1000
+        start = end - lookback_days * 24 * 60 * 60 * 1000
 
         stocks_list_from_db = self.stock_repository.get_table_data()
 
@@ -147,11 +151,41 @@ class Service:
         batches = list(
             chunked(
                 symbols,
-                50,
+                batch_size,
             )
         )
 
         failed_symbols = []
+
+        """ 控制多个线程之间的请求间隔 """
+        request_lock = threading.Lock()
+
+        last_request_time = 0.0
+
+        def fetch_batch(batch):
+            # 使用外层作用域的变量
+            nonlocal last_request_time
+
+            thscode = ",".join(batch)
+
+            with request_lock:
+                now = time.monotonic()
+
+                # 每次请求至少间隔 0.5 ~ 1 秒
+                interval = random.uniform(0.5, 1.0)
+
+                wait_time = interval - (now - last_request_time)
+
+                if wait_time > 0:
+                    time.sleep(wait_time)
+
+                last_request_time = time.monotonic()
+
+            return self.tushare_provider.fetch_historical(
+                thscode,
+                start,
+                end,
+            )
 
         with ThreadPoolExecutor(
             max_workers=10,
@@ -162,12 +196,9 @@ class Service:
 
             # 1. 提交所有任务
             for batch in batches:
-                thscode = ",".join(batch)
                 future = executor.submit(
-                    self.tushare_provider.fetch_historical,
-                    thscode,
-                    start,
-                    end,
+                    fetch_batch,
+                    batch,
                 )
 
                 futures[future] = batch
@@ -193,7 +224,7 @@ class Service:
                     # 当前整批股票都记录为失败
                     failed_symbols.extend(batch)
 
-                    tqdm.write(f"批次获取失败，共 {len(batch)} 只: {e}")
+                    tqdm.write(f"当前股票批次获取失败，共 {len(batch)} 只: {e}")
 
         print("日线股票列表数据更新完成")
 
@@ -201,9 +232,9 @@ class Service:
         if failed_symbols:
             print(f"获取失败股票数量: {len(failed_symbols)}")
 
-            print("获取失败股票:")
-            for symbol in failed_symbols:
-                print(symbol)
+            # print("获取失败股票:")
+            # for symbol in failed_symbols:
+            #     print(symbol)
         else:
             print("全部股票获取成功")
 
