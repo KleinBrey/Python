@@ -8,8 +8,14 @@ from backend.simple.provider.tushare_provider import TushareProvider
 def main() -> None:
     provider = TushareProvider()
 
-    data = provider.pro.stock_basic(
-        fields="ts_code,symbol,name,area,industry,market",
+    # data = provider.pro.stock_basic(
+    #     fields="ts_code,symbol,name,area,industry,market",
+    # )
+
+    data = provider.pro.daily_basic(
+        ts_code="",
+        trade_date="20180726",
+        fields="ts_code,trade_date,turnover_rate,volume_ratio,pe,pb",
     )
 
     # 提取单个股票，跨时间段的历史日线

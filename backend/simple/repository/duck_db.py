@@ -99,7 +99,7 @@ class DailyBarRepository(BaseRepository):
     """负责 daily_bars 表的读写。"""
 
     def get_table_data(self) -> pd.DataFrame:
-        """获取全部日线数据。"""
+        """获取全部日线数据"""
 
         with self.db.connection(read_only=True) as connection:
             return connection.execute(
