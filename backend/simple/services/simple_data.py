@@ -217,6 +217,12 @@ class Service:
                     result = future.result()
                     # 格式化清洗数据
                     daily_list = self.format_daily_list(result)
+
+                    # 过滤掉volumn = 0 的数据
+                    daily_list = daily_list[
+                        daily_list["volume"].notna() & (daily_list["volume"] != 0)
+                    ]
+
                     # 存到数据库
                     self.daily_repository.upsert_daily_bars(daily_list)
 
