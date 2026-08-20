@@ -14,7 +14,7 @@ import pandas as pd
 from rich.console import Console
 
 from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import TushareProvider
+from backend.simple.provider import TushareProvider, IwencaiProvider
 from backend.simple.repository import DailyBarRepository, StockRepository
 from backend.simple.utils.symbol import validate_symbol
 
@@ -120,6 +120,10 @@ class HotVolumeBreakoutStrategy:
         )
 
         daily_basic = TushareProvider().fetch_daily_basic(latest_trade_date)
+
+        hot_rank = IwencaiProvider().fetch_hot_rank()
+
+        print(hot_rank)
 
         # 合并股票动态字段
         stocks = stocks.merge(daily_basic, on="symbol", how="left")

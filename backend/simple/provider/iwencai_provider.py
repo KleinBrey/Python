@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import secrets
+
 from pathlib import Path
+
 from typing import Any
 
-import requests
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import pandas as pd
 
+import requests
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
@@ -120,6 +124,11 @@ class IwencaiProvider:
             )
             response.raise_for_status()
             result = response.json()
+        except requests.HTTPError as exc:
+            detail = exc.response.text.strip()
+            raise IwencaiError(
+                f"问财请求失败（HTTP {exc.response.status_code}）：{detail}"
+            ) from exc
         except requests.RequestException as exc:
             raise IwencaiError(f"问财请求失败：{exc}") from exc
         except ValueError as exc:
@@ -128,3 +137,26 @@ class IwencaiProvider:
         if not isinstance(result, dict):
             raise IwencaiError("问财返回格式异常")
         return result
+
+    def fetch_hot_rank(self) -> pd.DataFrame:
+        """股票热度列表"""
+        data = self.query(
+            "个股热度从高到低排序前1000，返回原始字段",
+            page_size=50,
+        )
+
+        frame = pd.DataFrame(data)
+
+        hot_col = next(col for col in frame.columns if col.startswith("个股热度"))
+
+        frame = frame.rename(
+            columns={
+                "股票代码": "symbol",
+                "股票简称": "name",
+                "最新价": "price",
+                "最新涨跌幅": "change_pct",
+                hot_col: "hot_rank",
+            }
+        )
+
+        return frame
