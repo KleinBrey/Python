@@ -1,7 +1,5 @@
 """同花顺问财最小连通性测试。"""
 
-from pprint import pprint
-
 from backend.simple.provider.iwencai_provider import IwencaiProvider
 
 import pandas as pd
@@ -15,8 +13,21 @@ def main() -> None:
         page_size=50,
     )
 
-    print(f"共返回 {len(data)} 条结果，以下展示前 50 条：")
-    pprint(pd.DataFrame(data[:50]))
+    frame = pd.DataFrame(data)
+
+    hot_col = next(col for col in frame.columns if col.startswith("个股热度"))
+
+    frame = frame.rename(
+        columns={
+            "股票代码": "symbol",
+            "股票简称": "name",
+            "最新价": "price",
+            "最新涨跌幅": "change_pct",
+            hot_col: "hot_rank",
+        }
+    )
+
+    print(f"共返回 {len(frame)} 条结果，以下展示前 20 条：\n{frame.head(20)}")
 
 
 if __name__ == "__main__":
