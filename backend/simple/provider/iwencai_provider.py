@@ -1,0 +1,130 @@
+"""同花顺问财自然语言选股的简单 Provider。"""
+
+from __future__ import annotations
+
+import secrets
+from pathlib import Path
+from typing import Any
+
+import requests
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+
+class IwencaiSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
+        env_prefix="IWENCAI_",
+        extra="ignore",
+    )
+
+    api_key: str = ""
+    base_url: str = "https://openapi.iwencai.com"
+
+
+class IwencaiError(RuntimeError):
+    """问财请求失败或返回格式异常。"""
+
+
+class IwencaiProvider:
+    """使用自然语言条件查询问财选股结果。"""
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        timeout: int = 60,
+    ) -> None:
+        settings = IwencaiSettings()
+        self.api_key = (api_key if api_key is not None else settings.api_key).strip()
+        self.base_url = (base_url or settings.base_url).rstrip("/")
+        self.timeout = max(1, timeout)
+        self.session = requests.Session()
+
+    def query(
+        self,
+        query: str,
+        page_size: int = 50,
+        max_pages: int = 100,
+    ) -> list[dict[str, Any]]:
+        """分页查询问财，并返回全部选股记录。"""
+
+        normalized_query = " ".join(query.split())
+        if not normalized_query:
+            raise ValueError("查询条件不能为空")
+        if not self.api_key:
+            raise IwencaiError("未配置 IWENCAI_API_KEY")
+        if page_size < 1 or max_pages < 1:
+            raise ValueError("page_size 和 max_pages 必须大于 0")
+
+        rows: list[dict[str, Any]] = []
+        expected_total: int | None = None
+
+        for page in range(1, max_pages + 1):
+            response = self._request_page(normalized_query, page, page_size)
+            if page == 1:
+                try:
+                    expected_total = int(response.get("code_count", 0))
+                except (TypeError, ValueError):
+                    expected_total = None
+
+            page_rows = response.get("datas") or []
+            if not isinstance(page_rows, list):
+                raise IwencaiError(f"第 {page} 页 datas 字段不是列表")
+            rows.extend(item for item in page_rows if isinstance(item, dict))
+
+            if not page_rows:
+                break
+            if expected_total is not None and len(rows) >= expected_total:
+                break
+            if len(page_rows) < page_size:
+                break
+        else:
+            if expected_total is None or len(rows) < expected_total:
+                raise IwencaiError(f"达到最大分页数 {max_pages}，结果尚未获取完整")
+
+        return rows
+
+    def _request_page(
+        self,
+        query: str,
+        page: int,
+        page_size: int,
+    ) -> dict[str, Any]:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "X-Claw-Call-Type": "normal",
+            "X-Claw-Skill-Id": "hithink-astock-selector",
+            "X-Claw-Skill-Version": "1.0.0",
+            "X-Claw-Plugin-Id": "none",
+            "X-Claw-Plugin-Version": "none",
+            "X-Claw-Trace-Id": secrets.token_hex(32),
+        }
+        payload = {
+            "query": query,
+            "page": str(page),
+            "limit": str(page_size),
+            "is_cache": "1",
+            "expand_index": "true",
+        }
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/v1/query2data",
+                json=payload,
+                headers=headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            result = response.json()
+        except requests.RequestException as exc:
+            raise IwencaiError(f"问财请求失败：{exc}") from exc
+        except ValueError as exc:
+            raise IwencaiError("问财返回了无法解析的内容") from exc
+
+        if not isinstance(result, dict):
+            raise IwencaiError("问财返回格式异常")
+        return result
