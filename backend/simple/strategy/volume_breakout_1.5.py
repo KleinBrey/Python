@@ -11,12 +11,16 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from rich.console import Console
+
 from backend.simple.database import DuckDBDatabase
 from backend.simple.provider import TushareProvider
 from backend.simple.repository import DailyBarRepository, StockRepository
 from backend.simple.utils.symbol import validate_symbol
 
-STOCK_COLUMNS = ["symbol", "name", "exchange", "market_cap"]
+console = Console()
+
+STOCK_COLUMNS = ["symbol", "name", "exchange", "market", "market_cap"]
 
 DAILY_BAR_COLUMNS = ["symbol", "date", "close", "volume"]
 
@@ -36,7 +40,7 @@ RESULT_COLUMNS = [
 
 
 def select_from_database() -> pd.DataFrame:
-    """读取本地行情，并用最新交易日总市值执行策略。"""
+    """读取本地数据"""
 
     database = DuckDBDatabase()
 
@@ -46,14 +50,6 @@ def select_from_database() -> pd.DataFrame:
 
     if stocks.empty or daily_bars.empty:
         return pd.DataFrame(columns=RESULT_COLUMNS)
-
-    # 最新交易日
-    latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
-
-    market_caps = TushareProvider().fetch_daily_basic(latest_trade_date)
-
-    # 合并市值字段
-    stocks = stocks.merge(market_caps, on="symbol", how="left")
 
     return HotVolumeBreakoutStrategy().select(stocks, daily_bars)
 
@@ -80,7 +76,6 @@ class HotVolumeBreakoutConfig:
 
 
 class HotVolumeBreakoutStrategy:
-    """筛选大市值、近 5 日放量上涨的非 ST 普通 A 股。"""
 
     def __init__(self, config: HotVolumeBreakoutConfig | None = None):
         self.config = config or HotVolumeBreakoutConfig()
@@ -95,23 +90,48 @@ class HotVolumeBreakoutStrategy:
         if stocks.empty or daily_bars.empty:
             return pd.DataFrame(columns=RESULT_COLUMNS)
 
-        candidate_columns = STOCK_COLUMNS.copy()
-        for optional_column in ("market", "heat"):
-            if optional_column in stocks.columns:
-                candidate_columns.append(optional_column)
+        candidates = self._prepare_candidates(stocks, daily_bars)
+        candidates = self._exclude_special_stocks(candidates)
+        candidates = self._filter_market_cap(candidates)
+        if candidates.empty:
+            return pd.DataFrame(columns=RESULT_COLUMNS)
 
-        candidates = stocks[candidate_columns].copy()
-        if "market" not in candidates.columns:
-            candidates["market"] = ""
-        if "heat" not in candidates.columns:
-            candidates["heat"] = pd.NA
+        bars = self._prepare_bars(daily_bars, candidates["symbol"])
+        indicators = self._calculate_indicators(bars)
+        if indicators.empty:
+            return pd.DataFrame(columns=RESULT_COLUMNS)
 
-        candidates["symbol"] = candidates["symbol"].map(validate_symbol)
-        candidates["exchange"] = candidates["exchange"].astype(str).str.upper()
-        candidates["market_cap"] = pd.to_numeric(
-            candidates["market_cap"], errors="coerce"
+        result = candidates.merge(indicators, on="symbol", how="inner")
+        result = self._filter_volume_ratio(result)
+        result = self._filter_return(result)
+        return self._sort_results(result)
+
+    @staticmethod
+    def _prepare_candidates(
+        stocks: pd.DataFrame, daily_bars: pd.DataFrame
+    ) -> pd.DataFrame:
+        """整理股票字段，并补齐可选字段。"""
+
+        # 最新交易日
+        latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
+
+        console.rule(
+            f"最新交易日:{pd.to_datetime(daily_bars["date"]).max().strftime("%Y-%m-%d")}"
         )
-        candidates["heat"] = pd.to_numeric(candidates["heat"], errors="coerce")
+
+        daily_basic = TushareProvider().fetch_daily_basic(latest_trade_date)
+
+        # 合并股票动态字段
+        stocks = stocks.merge(daily_basic, on="symbol", how="left")
+
+        # 股票热度字段
+        stocks["heat"] = 100
+
+        return stocks
+
+    @staticmethod
+    def _exclude_special_stocks(candidates: pd.DataFrame) -> pd.DataFrame:
+        """排除 ST、科创板和北交所股票。"""
 
         names = candidates["name"].fillna("").astype(str).str.upper()
         markets = candidates["market"].fillna("").astype(str)
@@ -123,14 +143,19 @@ class HotVolumeBreakoutStrategy:
             "symbol"
         ].str.startswith(("4", "8", "92"))
 
-        candidates = candidates.loc[
-            (candidates["market_cap"] > self.config.min_market_cap)
-            & ~is_st
-            & ~is_star_market
-            & ~is_beijing
-        ]
-        if candidates.empty:
-            return pd.DataFrame(columns=RESULT_COLUMNS)
+        return candidates.loc[~is_st & ~is_star_market & ~is_beijing]
+
+    def _filter_market_cap(self, candidates: pd.DataFrame) -> pd.DataFrame:
+        """保留总市值大于配置阈值的股票。"""
+
+        return candidates.loc[candidates["market_cap"] > self.config.min_market_cap]
+
+    @staticmethod
+    def _prepare_bars(
+        daily_bars: pd.DataFrame,
+        symbols: pd.Series,
+    ) -> pd.DataFrame:
+        """整理行情字段，并只保留候选股票的有效行情。"""
 
         bars = daily_bars[DAILY_BAR_COLUMNS].copy()
         bars["symbol"] = bars["symbol"].map(validate_symbol)
@@ -139,18 +164,22 @@ class HotVolumeBreakoutStrategy:
         bars["volume"] = pd.to_numeric(bars["volume"], errors="coerce")
         bars = bars.dropna(subset=["date", "close", "volume"])
         bars = bars.loc[(bars["close"] > 0) & (bars["volume"] > 0)]
-        bars = bars.loc[bars["symbol"].isin(candidates["symbol"])]
+        return bars.loc[bars["symbol"].isin(symbols)]
 
-        indicators = self._calculate_indicators(bars)
-        if indicators.empty:
-            return pd.DataFrame(columns=RESULT_COLUMNS)
+    def _filter_volume_ratio(self, result: pd.DataFrame) -> pd.DataFrame:
+        """保留最近 5 日均量至少是此前 20 日均量 1.5 倍的股票。"""
 
-        result = candidates.merge(indicators, on="symbol", how="inner")
+        return result.loc[result["volume_ratio"] >= self.config.min_volume_ratio]
+
+    def _filter_return(self, result: pd.DataFrame) -> pd.DataFrame:
+        """保留最近 5 日涨幅超过配置阈值的股票。"""
+
         comparable_return = result["return_5d_pct"].round(10)
-        result = result.loc[
-            (result["volume_ratio"] >= self.config.min_volume_ratio)
-            & (comparable_return > self.config.min_return_5d_pct)
-        ]
+        return result.loc[comparable_return > self.config.min_return_5d_pct]
+
+    @staticmethod
+    def _sort_results(result: pd.DataFrame) -> pd.DataFrame:
+        """按热度和策略指标排序，并返回标准字段。"""
 
         sort_columns = ["volume_ratio", "return_5d_pct", "market_cap", "symbol"]
         ascending = [False, False, False, True]
@@ -206,11 +235,13 @@ class HotVolumeBreakoutStrategy:
 
 
 if __name__ == "__main__":
-    selected_stocks = select_from_database()
+    with console.status("[bold green]正在请求股票数据..."):
+        selected_stocks = select_from_database()
+    console.print("[green]✓ 请求完成[/green]")
     if selected_stocks.empty:
         print("没有股票符合策略条件")
     else:
         # 不显示整列为空的可选字段（例如当前数据没有 heat）。
         display = selected_stocks.dropna(axis="columns", how="all")
-        print(display)
+        console.print(display)
         print(f"\n共筛选出 {len(display)} 只股票")
