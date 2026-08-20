@@ -121,9 +121,9 @@ class HotVolumeBreakoutStrategy:
 
         daily_basic = TushareProvider().fetch_daily_basic(latest_trade_date)
 
-        hot_rank = IwencaiProvider().fetch_hot_rank()
+        # hot_rank = IwencaiProvider().fetch_hot_rank()
 
-        print(hot_rank)
+        # print(hot_rank)
 
         # 合并股票动态字段
         stocks = stocks.merge(daily_basic, on="symbol", how="left")

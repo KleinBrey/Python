@@ -132,7 +132,11 @@ class Service:
         else:
             print("股票列表更新成功!")
 
-    def update_daily_bar(self, batch_size: int = 50, lookback_days: int = 60):
+    def update_daily_bar(
+        self,
+        lookback_days: int = 60,
+        batch_size: int = 50,
+    ):
         """获取股票历史日K线数据"""
         # batch_size 请求一次包含50支股票
         # 60 个自然日用于覆盖策略所需的至少 25 个交易日，并为节假日留余量。
