@@ -13,9 +13,15 @@ import pandas as pd
 
 from rich.console import Console
 
+from datetime import date
+
 from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import TushareProvider, IwencaiProvider
-from backend.simple.repository import DailyBarRepository, StockRepository
+from backend.simple.provider import TushareProvider
+from backend.simple.repository import (
+    DailyBarRepository,
+    StockRepository,
+    StockHotDailyRepository,
+)
 from backend.simple.utils.symbol import validate_symbol
 
 console = Console()
@@ -29,7 +35,6 @@ RESULT_COLUMNS = [
     "name",
     "exchange",
     "market_cap",
-    "heat",
     "latest_date",
     "latest_close",
     "recent_5d_avg_volume",
@@ -42,16 +47,30 @@ RESULT_COLUMNS = [
 def select_from_database() -> pd.DataFrame:
     """读取本地数据"""
 
+    today = date.today().strftime("%Y-%m-%d")
+
+    print(today)
+
     database = DuckDBDatabase()
 
     stocks = StockRepository(database).get_table_data()
 
     daily_bars = DailyBarRepository(database).get_table_data()
 
+    # 最新交易日
+
+    latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
+
+    console.rule(
+        f"最新交易日:{pd.to_datetime(daily_bars["date"]).max().strftime("%Y-%m-%d")}\n今日:{today}"
+    )
+
+    hot_stocks = StockHotDailyRepository(database).get_by_trade_date(latest_trade_date)
+
     if stocks.empty or daily_bars.empty:
         return pd.DataFrame(columns=RESULT_COLUMNS)
 
-    return HotVolumeBreakoutStrategy().select(stocks, daily_bars)
+    return HotVolumeBreakoutStrategy().select(stocks, daily_bars, hot_stocks)
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,9 +100,7 @@ class HotVolumeBreakoutStrategy:
         self.config = config or HotVolumeBreakoutConfig()
 
     def select(
-        self,
-        stocks: pd.DataFrame,
-        daily_bars: pd.DataFrame,
+        self, stocks: pd.DataFrame, daily_bars: pd.DataFrame, hot_stocks: pd.DataFrame
     ) -> pd.DataFrame:
         """计算指标并返回符合全部条件的股票。"""
 
@@ -104,7 +121,7 @@ class HotVolumeBreakoutStrategy:
         result = candidates.merge(indicators, on="symbol", how="inner")
         result = self._filter_volume_ratio(result)
         result = self._filter_return(result)
-        return self._sort_results(result)
+        return self._sort_filter_by_hot(result, hot_stocks)
 
     @staticmethod
     def _prepare_candidates(
@@ -115,23 +132,10 @@ class HotVolumeBreakoutStrategy:
         # 最新交易日
         latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
 
-        console.rule(
-            f"最新交易日:{pd.to_datetime(daily_bars["date"]).max().strftime("%Y-%m-%d")}"
-        )
-
         daily_basic = TushareProvider().fetch_daily_basic(latest_trade_date)
-
-        # hot_rank = IwencaiProvider().fetch_hot_rank()
-
-        # hot_rank["symbol"] = hot_rank["symbol"].str.partition(".")[0]
-
-        # print(hot_rank)
 
         # 合并股票动态字段
         stocks = stocks.merge(daily_basic, on="symbol", how="left")
-
-        # 股票热度字段
-        stocks["heat"] = 100
 
         return stocks
 
@@ -184,19 +188,21 @@ class HotVolumeBreakoutStrategy:
         return result.loc[comparable_return > self.config.min_return_5d_pct]
 
     @staticmethod
-    def _sort_results(result: pd.DataFrame) -> pd.DataFrame:
-        """按热度和策略指标排序，并返回标准字段。"""
+    def _sort_filter_by_hot(
+        result: pd.DataFrame, hot_stocks: pd.DataFrame
+    ) -> pd.DataFrame:
+        """按热度进行筛选和排序"""
 
-        sort_columns = ["volume_ratio", "return_5d_pct", "market_cap", "symbol"]
-        ascending = [False, False, False, True]
-        if result["heat"].notna().any():
-            sort_columns.insert(0, "heat")
-            ascending.insert(0, False)
+        # 获取hot_stocks排序
+        symbol_order = {
+            symbol: index for index, symbol in enumerate(hot_stocks["symbol"])
+        }
+
+        # 数字小的靠前
+        result["order"] = result["symbol"].map(symbol_order)
 
         return (
-            result[RESULT_COLUMNS]
-            .sort_values(sort_columns, ascending=ascending)
-            .reset_index(drop=True)
+            result[result["order"].notna()].sort_values("order").reset_index(drop=True)
         )
 
     def _calculate_indicators(self, bars: pd.DataFrame) -> pd.DataFrame:
@@ -249,5 +255,5 @@ if __name__ == "__main__":
     else:
         # 不显示整列为空的可选字段（例如当前数据没有 heat）。
         display = selected_stocks.dropna(axis="columns", how="all")
-        console.print(display)
+        console.print(display[["symbol", "name", "market", "type", "order"]])
         print(f"\n共筛选出 {len(display)} 只股票")

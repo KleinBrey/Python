@@ -27,10 +27,10 @@
       "type": "file",
       "path": "/Users/kleinbrey/Documents/stock/data/simple.duckdb",
       "attached": false,
-      "readOnly": false
+      "readOnly": true
     }
   ],
-  "duckdb.defaultDatabase": "simple",
+  "duckdb.defaultDatabase": "memory",
   "[sql]": {
     "editor.formatOnSave": false
   }
