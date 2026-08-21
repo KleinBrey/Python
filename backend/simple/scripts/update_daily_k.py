@@ -11,6 +11,7 @@ def main() -> None:
 
     # 注册stock表的repository，用来统一处理增删改查
     stock_repository = StockRepository(database)
+
     daily_repository = DailyBarRepository(database)
 
     # 注册API调用

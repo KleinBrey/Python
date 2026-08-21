@@ -4,14 +4,15 @@ from pathlib import Path
 
 import pandas as pd
 
-
 csv_path = Path(__file__).parent / "data" / "daily_bars.csv"
+
 
 bars = pd.read_csv(
     csv_path,
     dtype={"symbol": "string"},  # 股票代码必须是字符串，保留开头的 0
     parse_dates=["date"],  # 读取时直接把日期转为日期类型
 )
+
 
 print("=== 前 5 行 ===")
 print(bars.head())
