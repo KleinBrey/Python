@@ -99,8 +99,8 @@ class IwencaiProvider:
         page_size: int,
     ) -> dict[str, Any]:
         headers = {
-            # "Authorization": f"Bearer {self.api_key}",
-            "Authorization": f"Bearer {self.api_key_backup}",
+            "Authorization": f"Bearer {self.api_key}",
+            # "Authorization": f"Bearer {self.api_key_backup}",
             "X-Claw-Call-Type": "normal",
             "X-Claw-Skill-Id": "hithink-astock-selector",
             "X-Claw-Skill-Version": "1.0.0",

@@ -22,6 +22,16 @@ DAILY_BAR_COLUMNS = [
     "source",
 ]
 
+STOCK_HOT_DAILY_COLUMNS = [
+    "trade_date",
+    "symbol",
+    "name",
+    "price",
+    "change_pct",
+    "hot_value",
+    "source",
+]
+
 
 def _require_columns(rows: pd.DataFrame, required_columns: list[str]) -> None:
     """检查入库数据是否包含指定字段。"""
@@ -165,3 +175,88 @@ class DailyBarRepository(BaseRepository):
         """兼容 insert 风格命名；实际执行新增或更新。"""
 
         return self.upsert_daily_bars(rows)
+
+
+class StockHotDailyRepository(BaseRepository):
+    """负责 stock_hot_daily 表的读写。"""
+
+    def get_by_trade_date(self, trade_date: object) -> pd.DataFrame:
+        """按交易日获取股票热度列表，并按热度从高到低排列。"""
+
+        normalized_date = pd.to_datetime(trade_date, errors="raise").date()
+
+        with self.db.connection(read_only=True) as connection:
+            return connection.execute(
+                """
+                SELECT
+                    trade_date,
+                    symbol,
+                    name,
+                    price,
+                    change_pct,
+                    hot_value,
+                    source,
+                    update_time
+                FROM stock_hot_daily
+                WHERE trade_date = ?
+                ORDER BY hot_value DESC, symbol
+                """,
+                [normalized_date],
+            ).df()
+
+    def upsert_stock_hot_daily(self, rows: pd.DataFrame) -> int:
+        """新增或更新每日股票热度，返回实际处理的行数。"""
+
+        if rows.empty:
+            return 0
+
+        hot_rows = rows.copy()
+        if "source" not in hot_rows.columns:
+            hot_rows["source"] = "Iwencai"
+
+        _require_columns(hot_rows, STOCK_HOT_DAILY_COLUMNS)
+        hot_rows = hot_rows[STOCK_HOT_DAILY_COLUMNS]
+        hot_rows["trade_date"] = pd.to_datetime(
+            hot_rows["trade_date"], errors="raise"
+        ).dt.date
+        hot_rows = hot_rows.drop_duplicates(
+            subset=["trade_date", "symbol"], keep="last"
+        )
+
+        with self.db.connection() as connection:
+            connection.register("incoming_stock_hot_daily", hot_rows)
+            connection.execute("""
+                INSERT INTO stock_hot_daily (
+                    trade_date,
+                    symbol,
+                    name,
+                    price,
+                    change_pct,
+                    hot_value,
+                    source
+                )
+                SELECT
+                    trade_date,
+                    symbol,
+                    name,
+                    price,
+                    change_pct,
+                    hot_value,
+                    source
+                FROM incoming_stock_hot_daily
+                ON CONFLICT (trade_date, symbol)
+                DO UPDATE SET
+                    name = excluded.name,
+                    price = excluded.price,
+                    change_pct = excluded.change_pct,
+                    hot_value = excluded.hot_value,
+                    source = excluded.source,
+                    update_time = now()
+                """)
+
+        return len(hot_rows)
+
+    def insert_stock_hot_daily(self, rows: pd.DataFrame) -> int:
+        """兼容 insert 风格命名；实际执行新增或更新。"""
+
+        return self.upsert_stock_hot_daily(rows)
