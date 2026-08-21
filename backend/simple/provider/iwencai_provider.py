@@ -26,6 +26,7 @@ class IwencaiSettings(BaseSettings):
     )
 
     api_key: str = ""
+    api_key_backup: str = ""
     base_url: str = "https://openapi.iwencai.com"
 
 
@@ -38,13 +39,12 @@ class IwencaiProvider:
 
     def __init__(
         self,
-        api_key: str | None = None,
-        base_url: str | None = None,
         timeout: int = 60,
     ) -> None:
         settings = IwencaiSettings()
-        self.api_key = (api_key if api_key is not None else settings.api_key).strip()
-        self.base_url = (base_url or settings.base_url).rstrip("/")
+        self.api_key = settings.api_key.strip()
+        self.api_key_backup = settings.api_key_backup.strip()
+        self.base_url = settings.base_url
         self.timeout = max(1, timeout)
         self.session = requests.Session()
 
@@ -99,7 +99,8 @@ class IwencaiProvider:
         page_size: int,
     ) -> dict[str, Any]:
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            # "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self.api_key_backup}",
             "X-Claw-Call-Type": "normal",
             "X-Claw-Skill-Id": "hithink-astock-selector",
             "X-Claw-Skill-Version": "1.0.0",
