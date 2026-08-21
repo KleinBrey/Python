@@ -47,18 +47,16 @@ RESULT_COLUMNS = [
 def select_from_database() -> pd.DataFrame:
     """读取本地数据"""
 
-    today = date.today().strftime("%Y-%m-%d")
-
-    print(today)
-
     database = DuckDBDatabase()
 
     stocks = StockRepository(database).get_table_data()
 
     daily_bars = DailyBarRepository(database).get_table_data()
 
-    # 最新交易日
+    # 今日日期
+    today = date.today().strftime("%Y-%m-%d")
 
+    # 数据库最新交易日
     latest_trade_date = pd.to_datetime(daily_bars["date"]).max().strftime("%Y%m%d")
 
     console.rule(
@@ -107,17 +105,16 @@ class HotVolumeBreakoutStrategy:
         if stocks.empty or daily_bars.empty:
             return pd.DataFrame(columns=RESULT_COLUMNS)
 
+        # 候选池
         candidates = self._prepare_candidates(stocks, daily_bars)
         candidates = self._exclude_special_stocks(candidates)
         candidates = self._filter_market_cap(candidates)
-        if candidates.empty:
-            return pd.DataFrame(columns=RESULT_COLUMNS)
 
+        # 指标计算池
         bars = self._prepare_bars(daily_bars, candidates["symbol"])
         indicators = self._calculate_indicators(bars)
-        if indicators.empty:
-            return pd.DataFrame(columns=RESULT_COLUMNS)
 
+        # 筛选过滤排序
         result = candidates.merge(indicators, on="symbol", how="inner")
         result = self._filter_volume_ratio(result)
         result = self._filter_return(result)
@@ -176,35 +173,6 @@ class HotVolumeBreakoutStrategy:
         bars = bars.loc[(bars["close"] > 0) & (bars["volume"] > 0)]
         return bars.loc[bars["symbol"].isin(symbols)]
 
-    def _filter_volume_ratio(self, result: pd.DataFrame) -> pd.DataFrame:
-        """保留最近 5 日均量至少是此前 20 日均量 1.5 倍的股票。"""
-
-        return result.loc[result["volume_ratio"] >= self.config.min_volume_ratio]
-
-    def _filter_return(self, result: pd.DataFrame) -> pd.DataFrame:
-        """保留最近 5 日涨幅超过配置阈值的股票。"""
-
-        comparable_return = result["return_5d_pct"].round(10)
-        return result.loc[comparable_return > self.config.min_return_5d_pct]
-
-    @staticmethod
-    def _sort_filter_by_hot(
-        result: pd.DataFrame, hot_stocks: pd.DataFrame
-    ) -> pd.DataFrame:
-        """按热度进行筛选和排序"""
-
-        # 获取hot_stocks排序
-        symbol_order = {
-            symbol: index for index, symbol in enumerate(hot_stocks["symbol"])
-        }
-
-        # 数字小的靠前
-        result["order"] = result["symbol"].map(symbol_order)
-
-        return (
-            result[result["order"].notna()].sort_values("order").reset_index(drop=True)
-        )
-
     def _calculate_indicators(self, bars: pd.DataFrame) -> pd.DataFrame:
         """按股票计算最近 5 日/此前 20 日均量比和 5 日涨幅。"""
 
@@ -245,6 +213,35 @@ class HotVolumeBreakoutStrategy:
 
         return pd.DataFrame(rows)
 
+    def _filter_volume_ratio(self, result: pd.DataFrame) -> pd.DataFrame:
+        """保留最近 5 日均量至少是此前 20 日均量 1.5 倍的股票。"""
+
+        return result.loc[result["volume_ratio"] >= self.config.min_volume_ratio]
+
+    def _filter_return(self, result: pd.DataFrame) -> pd.DataFrame:
+        """保留最近 5 日涨幅大于 5% 的股票"""
+
+        comparable_return = result["return_5d_pct"].round(10)
+        return result.loc[comparable_return > self.config.min_return_5d_pct]
+
+    @staticmethod
+    def _sort_filter_by_hot(
+        result: pd.DataFrame, hot_stocks: pd.DataFrame
+    ) -> pd.DataFrame:
+        """按热度进行筛选和排序"""
+
+        # 获取hot_stocks排序
+        symbol_order = {
+            symbol: index for index, symbol in enumerate(hot_stocks["symbol"])
+        }
+
+        # 数字小的靠前
+        result["order"] = result["symbol"].map(symbol_order)
+
+        return (
+            result[result["order"].notna()].sort_values("order").reset_index(drop=True)
+        )
+
 
 if __name__ == "__main__":
     with console.status("[bold green]正在请求股票数据..."):
@@ -255,5 +252,15 @@ if __name__ == "__main__":
     else:
         # 不显示整列为空的可选字段（例如当前数据没有 heat）。
         display = selected_stocks.dropna(axis="columns", how="all")
-        console.print(display[["symbol", "name", "market", "type", "order"]])
+        console.print(
+            display[["symbol", "name", "market", "type", "order"]].rename(
+                columns={
+                    "symbol": "股票代码",
+                    "name": "股票名称",
+                    "market": "市场",
+                    "type": "类型",
+                    "order": "热度排名",
+                }
+            )
+        )
         print(f"\n共筛选出 {len(display)} 只股票")
