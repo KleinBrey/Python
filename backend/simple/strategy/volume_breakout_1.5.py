@@ -123,6 +123,8 @@ class HotVolumeBreakoutStrategy:
 
         # hot_rank = IwencaiProvider().fetch_hot_rank()
 
+        # hot_rank["symbol"] = hot_rank["symbol"].str.partition(".")[0]
+
         # print(hot_rank)
 
         # 合并股票动态字段
