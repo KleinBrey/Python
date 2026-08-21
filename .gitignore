@@ -16,3 +16,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/.npm-cache/
 config/secrets.local.toml
+data/market.duckdb
+data/simple.duckdb
+data/market.duckdb.wal
+data/simple.duckdb.wal
+
