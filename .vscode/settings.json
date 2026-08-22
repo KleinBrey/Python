@@ -27,7 +27,7 @@
       "type": "file",
       "path": "/Users/kleinbrey/Documents/stock/data/simple.duckdb",
       "attached": false,
-      "readOnly": true
+      "readOnly": false
     }
   ],
   "duckdb.defaultDatabase": "memory",

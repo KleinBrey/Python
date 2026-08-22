@@ -21,11 +21,12 @@ quant-platform/
 │   │   └── main.py
 │   ├── scripts/
 │   ├── tests/
-│   ├── requirements.txt
 │   └── .env
 ├── frontend/                # 原 React + Vite 前端，本次未修改
 ├── data/
 │   └── market.duckdb
+├── pyproject.toml           # Python 依赖与项目配置的唯一来源
+├── uv.lock                  # uv 生成的可复现依赖锁文件
 └── README.md
 ```
 
@@ -39,33 +40,40 @@ quant-platform/
 
 ## 安装
 
-要求 Python 3.11+。
+要求 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
 
 ```bash
-python -m venv .venv
-.venv/bin/python -m pip install -r backend/requirements.txt
+cd 当前项目地址
+rm -rf .venv
+uv sync
 ```
 
-在 `backend/.env` 中填写从同花顺官网获取的 API Key：
+运行依赖和开发依赖统一在根目录 `pyproject.toml` 中声明，精确版本由 `uv.lock` 锁定。`uv sync` 会创建 `.venv` 并默认安装 `dev` 依赖组。
 
-```dotenv
-HITHINK_FINANCE_API_KEY=your-api-key
+如果你还想手动激活，重新生成后：
+
+```bash
+source .venv/bin/activate
 ```
 
-真实 `.env` 与 `data/market.duckdb` 已加入 `.gitignore`。
+再：
+
+```bash
+echo $VIRTUAL_ENV
+```
 
 ## 初始化与同步
 
 ```bash
 # 创建 market.duckdb 和表
-PYTHONPATH=. .venv/bin/python backend/scripts/init_db.py
+uv run python backend/scripts/init_db.py
 
 # 小批量试跑
-PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py \
+uv run quant-sync \
   --mode initial --symbols 000001,600519
 
 # 初始化全市场最近一年日 K
-PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py --mode initial
+uv run quant-sync --mode initial
 ```
 
 全市场任务逐只写入，单只失败不会回滚其他股票。重新执行会幂等覆盖，可安全断点续跑。可用 `--limit 20` 限制试跑数量。
@@ -90,7 +98,7 @@ FastAPI 默认内置 APScheduler：
 ## 启动 API
 
 ```bash
-PYTHONPATH=. .venv/bin/uvicorn backend.app.main:app \
+uv run uvicorn backend.app.main:app \
   --host 127.0.0.1 --port 8001 --reload
 ```
 
@@ -104,7 +112,7 @@ PYTHONPATH=. .venv/bin/uvicorn backend.app.main:app \
 ## 验证
 
 ```bash
-PYTHONPATH=. .venv/bin/python -m pytest
+uv run pytest
 ```
 
 数据仅用于研究，不构成投资建议。
