@@ -21,7 +21,7 @@ Repository = Annotated[StockRepository, Depends(get_repository)]
 Service = Annotated[Service, Depends(get_service)]
 
 
-@router.get("/stocks", response_model=list[Stock])
+@router.get("/stocks-list", response_model=list[Stock])
 def stocks(
     repository: Repository,
     query: str | None = None,
@@ -32,7 +32,7 @@ def stocks(
     print(query, limit, offset)
 
     # Repository 返回的是 Pandas DataFrame（表格对象）。
-    stock_table = repository.get_table_data()
+    stock_table = repository.get_table_data().head(100)
 
     # FastAPI 不能直接把 DataFrame 当成“股票列表”返回。
     # orient="records" 会把每一行转换成一个字典，最终得到：
