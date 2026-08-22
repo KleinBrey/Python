@@ -1,19 +1,17 @@
 from __future__ import annotations
-
-
-from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import HithinkProvider, TushareProvider
-from backend.simple.repository import DailyBarRepository, StockRepository
-from backend.simple.services import Service
-
 from contextlib import asynccontextmanager
 
 import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.simple.api import router
 from backend.simple.config.config import get_settings
+from backend.simple.database import DuckDBDatabase
+from backend.simple.provider import HithinkProvider, TushareProvider
+from backend.simple.repository import DailyBarRepository, StockRepository
+from backend.simple.services import Service
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s"
