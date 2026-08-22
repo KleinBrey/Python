@@ -36,6 +36,7 @@ quant-platform/
 
 ```bash
 cd 当前项目地址
+# 删除旧的虚拟环境
 rm -rf .venv
 uv sync
 ```
