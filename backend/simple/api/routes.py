@@ -18,7 +18,7 @@ router = APIRouter()
 
 # 使用 Annotated 封装依赖声明，避免每个接口重复书写 Depends。
 Repository = Annotated[StockRepository, Depends(get_repository)]
-Service = Annotated[Service, Depends(get_service)]
+dbService = Annotated[Service, Depends(get_service)]
 
 
 @router.get("/stocks-list", response_model=list[Stock])
@@ -39,3 +39,20 @@ def stocks(
     # [{"symbol": "000001.SZ", "name": "平安银行", ...}, ...]
     stock_list = stock_table.to_dict(orient="records")
     return stock_list
+
+
+@router.post("/stocks-list")
+def update_stocks_list(service: dbService) -> dict[str, str]:
+    """从数据源获取最新股票列表，并保存到本地数据库。"""
+
+    # Service 会依次完成以下工作：
+    # 1. 从 Tushare 获取最新股票列表；
+    # 2. 将数据整理成数据库需要的格式；
+    # 3. 新增股票，或者更新数据库中已经存在的股票。
+    service.update_stocks_list()
+
+    # 只有上面的更新操作没有抛出异常时，才会执行到这里。
+    return {
+        "status": "success",
+        "message": "股票列表更新成功",
+    }
