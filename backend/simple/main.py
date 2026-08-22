@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.simple.api import router
 from backend.simple.config.config import get_settings
 from backend.simple.database import DuckDBDatabase
+from backend.simple.jobs import create_scheduler
 from backend.simple.provider import HithinkProvider, TushareProvider
 from backend.simple.repository import DailyBarRepository, StockRepository
 from backend.simple.services import Service
@@ -20,6 +21,8 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
+    settings = get_settings()
 
     # 初始化数据库
     database = DuckDBDatabase()
@@ -43,11 +46,20 @@ async def lifespan(app: FastAPI):
     app.state.stock_repository = stock_repository
     app.state.service = service
 
+    # 工作日 18:00 同步当日热门股数据。
+    scheduler = create_scheduler(settings)
+    app.state.scheduler = scheduler
+    if settings.scheduler_enabled:
+        scheduler.start()
+
     # yield 之前的代码会在应用启动时执行。
     # 执行到 yield 后，FastAPI 开始正常接收和处理请求。
     # 当应用关闭时，程序会从 yield 后面继续执行清理代码。
-    # 当前没有需要手动关闭的资源，所以 yield 后暂时不需要其他代码。
-    yield
+    try:
+        yield
+    finally:
+        if scheduler.running:
+            scheduler.shutdown(wait=False)
 
 
 settings = get_settings()
