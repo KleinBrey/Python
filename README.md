@@ -2,7 +2,6 @@
 
 本地 A 股行情数据底座。第一阶段只维护全市场最近一年的**不复权日 K**，为后续可视化、因子计算、量化选股和回测提供统一数据入口。
 
-股票数据来自同花顺官方 [HiThink Financial API Python 项目](https://github.com/HiThink-Tech/Financial-API/tree/main/python)。本项目采用其 Python client 的认证、分页、历史日线与重试语义，通过 `providers` 层接入；不使用 Parquet，也不接真实交易。
 
 ## 结构
 
@@ -30,13 +29,6 @@ quant-platform/
 └── README.md
 ```
 
-## 数据模型
-
-- `stocks`：A 股证券主数据；
-- `daily_bars`：不复权日 K，唯一键为 `(symbol, trade_date, adjustment)`；
-- `sync_runs`：同步运行记录、成功/失败股票数与写入行数。
-
-日 K 表对 OHLC 关系和非负成交量设有数据库约束。写入采用 upsert，重复初始化或校准不会制造重复行。
 
 ## 安装
 
