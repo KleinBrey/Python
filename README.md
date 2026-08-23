@@ -1,11 +1,11 @@
-# quant-platform
+# QuantTide（量潮）
 
-本地 A 股数据平台，使用 FastAPI、DuckDB、Pandas 和 APScheduler，提供股票基础信息、日 K、股票热度同步以及量化策略实验能力。
+QuantTide 是一个本地 A 股量化投研平台，使用 FastAPI、DuckDB、Pandas 和 APScheduler，提供股票基础信息、日 K、股票热度同步、自然语言选股以及量化策略实验能力。
 
 ## 项目结构
 
 ```text
-quant-platform/
+quanttide/
 ├── backend/
 │   ├── app/
 │   │   ├── api/             # FastAPI 路由和依赖
@@ -38,22 +38,18 @@ quant-platform/
 uv sync
 ```
 
-Tushare 配置从 `backend/.env` 或环境变量读取：
+运行依赖和开发依赖统一在根目录 `pyproject.toml` 中声明，精确版本由 `uv.lock` 锁定。`uv sync` 会创建 `.venv` 并默认安装 `dev` 依赖组。
 
-```dotenv
-TUSHARE_PRIVATE_TOKEN=
-TUSHARE_RELAY_TOKEN=
-TUSHARE_USE_RELAY=true
-TUSHARE_RELAY_URL=https://t.xiaodefa.top
+如果你还想手动激活，重新生成后：
+
+```bash
+source .venv/bin/activate
 ```
 
-调度器可通过以下配置调整：
+再：
 
-```dotenv
-SCHEDULER_ENABLED=true
-SCHEDULER_TIMEZONE=Asia/Shanghai
-DAILY_UPDATE_HOUR=18
-DAILY_UPDATE_MINUTE=0
+```bash
+echo $VIRTUAL_ENV
 ```
 
 ## 初始化和同步
