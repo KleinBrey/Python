@@ -18,12 +18,11 @@
     {
       "alias": "market",
       "type": "file",
-      "path": "/Users/kleinbrey/Documents/stock/data/market.duckdb",
-      "attached": false,
-      "readOnly": false
+      "path": "/Users/kleinbrey/Documents/QuantTide/data/market.duckdb",
+      "attached": true
     }
   ],
-  "duckdb.defaultDatabase": "memory",
+  "duckdb.defaultDatabase": "market",
   "[sql]": {
     "editor.formatOnSave": false
   }
