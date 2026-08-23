@@ -23,6 +23,7 @@ import {
   getHotStockListApi,
   getHistoricalPriceApi,
 } from '../api/THS/api.js'
+import { getStocksListApi ,updateStocksListApi} from '@/api/Quant/api.js'
 import moment from 'moment'
 import { AgGridProvider, AgGridReact } from 'ag-grid-react'
 import {
@@ -244,6 +245,15 @@ function RankingTable({
     return res
   }
 
+    const updateStocksList = async () => {
+    try {
+      const res = await updateStocksListApi()
+      console.log(res,"更新数据库Stocks数据")
+    } catch (error) {
+      console.error('更新数据库Stocks数据失败', error)
+    } 
+  }
+
   // 行单击事件处理函数
   const handleRowClick = async (event) => {
     const value = await getStockHistoryData(event.data.thscode)
@@ -290,6 +300,16 @@ function RankingTable({
           )}
           <span>
             {refreshingId === activeRanking?.id ? '更新中' : '刷新当前'}
+          </span>
+        </Button>
+        <Button
+          type="button"
+          className="ghost-button"
+          variant="outline"
+          onClick={() => updateStocksList()}
+        >
+          <span>
+            更新数据库Stocks数据
           </span>
         </Button>
       </div>
@@ -351,6 +371,18 @@ export default function HotRankingsDashboard({
     }
   }
 
+   const getStocksList = async () => {
+    try {
+      const res = await getStocksListApi()
+      console.log(res,"数据库Stocks数据")
+    } catch (error) {
+      console.error('获取数据库Stocks数据失败', error)
+    } 
+  }
+
+ 
+
+  
   const getSkyRocketList = async () => {
     const res = await getSkyRocketListApi('hour')
     console.log(res.data)
@@ -373,6 +405,7 @@ export default function HotRankingsDashboard({
   useEffect(() => {
     // fetchUsers();
     // getSkyRocketList()
+    getStocksList()
     getHotStockList()
   }, [])
 

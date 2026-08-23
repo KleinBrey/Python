@@ -1,10 +1,11 @@
 from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import HithinkProvider, TushareProvider
+from backend.simple.provider import TushareProvider
 from backend.simple.repository import DailyBarRepository, StockRepository
 from backend.simple.services import Service
 
 
-def main() -> None:
+def sync_daily_k(lookback_days: int, batch_size: int) -> None:
+    """更新最近指定自然日范围内的日 K 数据。"""
     # 初始化数据库
     database = DuckDBDatabase()
     database.initialize()
@@ -15,14 +16,20 @@ def main() -> None:
     daily_repository = DailyBarRepository(database)
 
     # 注册API调用
-    hithink_provider = HithinkProvider()
 
     tushare_provider = TushareProvider()
 
     # 业务逻辑处理
     service = Service(
-        hithink_provider, tushare_provider, stock_repository, daily_repository
+        tushare_provider=tushare_provider,
+        stock_repository=stock_repository,
+        daily_repository=daily_repository,
     )
+
+    service.update_daily_bar(lookback_days, batch_size)
+
+
+def main() -> None:
 
     print("""
             请选择要执行的任务：
@@ -38,16 +45,13 @@ def main() -> None:
 
     match choice:
         case "1":
-            service.update_daily_bar(3, 100)
+            sync_daily_k(3, 100)
 
         case "2":
-            service.update_daily_bar(60, 50)
+            sync_daily_k(60, 50)
 
         case "3":
-            service.update_daily_bar(365, 10)
-
-        case "4":
-            service.update_hithink_daily_bar()
+            sync_daily_k(365, 10)
 
         case "e":
             print("退出")

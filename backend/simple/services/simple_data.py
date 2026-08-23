@@ -1,5 +1,12 @@
-from ..provider import HithinkProvider, TushareProvider
-from ..repository import DailyBarRepository, StockRepository
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+from ..provider import HithinkProvider, IwencaiProvider, TushareProvider
+from ..repository import (
+    DailyBarRepository,
+    StockHotDailyRepository,
+    StockRepository,
+)
 import pandas as pd
 from tqdm.auto import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -12,15 +19,19 @@ import random
 class Service:
     def __init__(
         self,
-        hithink_provider: HithinkProvider,
-        tushare_provider: TushareProvider,
-        stock_repository: StockRepository,
-        daily_repository: DailyBarRepository,
+        hithink_provider: HithinkProvider | None = None,
+        tushare_provider: TushareProvider | None = None,
+        stock_repository: StockRepository | None = None,
+        daily_repository: DailyBarRepository | None = None,
+        iwencai_provider: IwencaiProvider | None = None,
+        stock_hot_repository: StockHotDailyRepository | None = None,
     ):
         self.hithink_provider = hithink_provider
         self.tushare_provider = tushare_provider
         self.stock_repository = stock_repository
         self.daily_repository = daily_repository
+        self.iwencai_provider = iwencai_provider
+        self.stock_hot_repository = stock_hot_repository
 
     @staticmethod
     def format_stock_list(value: pd.DataFrame, source: str) -> pd.DataFrame:
@@ -116,6 +127,75 @@ class Service:
 
         # 只保留目标列，并按 columns 中的顺序排列
         return frame[columns].reset_index(drop=True)
+
+    @staticmethod
+    def format_stock_hot_daily(
+        value: pd.DataFrame,
+        trade_date: date | datetime | str,
+    ) -> pd.DataFrame:
+        """把问财热度结果格式化为 stock_hot_daily 表结构。"""
+
+        columns = [
+            "trade_date",
+            "symbol",
+            "name",
+            "price",
+            "change_pct",
+            "hot_value",
+            "source",
+        ]
+        frame = pd.DataFrame(value).copy()
+        if frame.empty:
+            return pd.DataFrame(columns=columns)
+
+        if "hot_value" not in frame.columns and "hot_rank" in frame.columns:
+            frame = frame.rename(columns={"hot_rank": "hot_value"})
+
+        required_columns = ["symbol", "name", "price", "change_pct", "hot_value"]
+        missing_columns = [
+            column for column in required_columns if column not in frame.columns
+        ]
+        if missing_columns:
+            raise ValueError(f"股票热度数据缺少字段：{', '.join(missing_columns)}")
+
+        normalized_date = pd.to_datetime(trade_date, errors="raise").date()
+        frame["trade_date"] = normalized_date
+        frame["symbol"] = (
+            frame["symbol"].astype("string").str.partition(".")[0].str.zfill(6)
+        )
+        frame["name"] = frame["name"].astype("string").str.strip()
+        for column in ["price", "change_pct", "hot_value"]:
+            frame[column] = pd.to_numeric(
+                frame[column].astype("string").str.rstrip("%"), errors="coerce"
+            )
+        frame["source"] = "Iwencai"
+
+        frame = frame.dropna(subset=["symbol", "name", "hot_value"])
+        frame = frame.drop_duplicates(subset=["trade_date", "symbol"], keep="last")
+        return frame[columns].reset_index(drop=True)
+
+    def update_stock_hot_daily(
+        self,
+        trade_date: date | datetime | str | None = None,
+    ) -> int:
+        """获取并保存指定交易日的问财股票热度榜。"""
+
+        if self.iwencai_provider is None or self.stock_hot_repository is None:
+            raise RuntimeError("未配置问财 Provider 或股票热度 Repository")
+
+        if trade_date is None:
+            trade_date = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+
+        try:
+            result = self.iwencai_provider.fetch_hot_rank()
+            hot_rows = self.format_stock_hot_daily(result, trade_date)
+            affected_rows = self.stock_hot_repository.upsert_stock_hot_daily(hot_rows)
+        except Exception as error:
+            print(f"股票热度更新失败: {error}")
+            raise
+
+        print(f"股票热度更新成功，共写入 {affected_rows} 条")
+        return affected_rows
 
     def update_stocks_list(self):
         """获取股票列表数据"""

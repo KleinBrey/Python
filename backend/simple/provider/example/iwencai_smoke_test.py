@@ -9,7 +9,7 @@ def main() -> None:
     provider = IwencaiProvider()
 
     data = provider.query(
-        "当前个股热度前500，返回原始字段",
+        "当前个股热度前1000，返回原始字段",
         page_size=50,
     )
 
@@ -27,7 +27,7 @@ def main() -> None:
         }
     )
 
-    print(f"共返回 {len(frame)} 条结果，以下展示前 20 条：\n{frame.head(20)}")
+    print(f"共返回 {len(frame)} 条结果，以下展示前 500 条：\n{frame.head(500)}")
 
 
 if __name__ == "__main__":

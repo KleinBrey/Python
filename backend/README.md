@@ -21,11 +21,11 @@ FastAPI / 定时任务 / 命令行脚本
 
 依赖方向应保持单向：API 和任务调用 service，service 调用 provider 与 repository。API、任务和业务代码不应直接编写 DuckDB SQL，也不应直接处理同花顺原始字段。
 
-## 根目录文件
+## 项目依赖
 
-### `requirements.txt`
+### `../pyproject.toml`
 
-后端 Python 依赖清单，包括：
+根目录 `pyproject.toml` 是 Python 版本约束、运行依赖和开发依赖的唯一声明入口，`uv.lock` 记录可复现的精确版本。主要依赖包括：
 
 - `fastapi`：HTTP API 框架；
 - `uvicorn`：ASGI 服务器；
@@ -40,8 +40,12 @@ FastAPI / 定时任务 / 命令行脚本
 安装命令：
 
 ```bash
-.venv/bin/python -m pip install -r backend/requirements.txt
+uv sync
 ```
+
+`dev` 依赖组包含 `pytest` 和 `httpx`，`uv sync` 会默认安装该组。增加运行依赖使用 `uv add <package>`，增加开发依赖使用 `uv add --dev <package>`，两者都会同步更新 `pyproject.toml` 和 `uv.lock`。
+
+## 根目录文件
 
 ### `.env`
 
@@ -65,7 +69,7 @@ FastAPI / 定时任务 / 命令行脚本
 后端快捷启动入口，使用 Uvicorn 在 `127.0.0.1:8001` 启动 FastAPI。
 
 ```bash
-PYTHONPATH=. .venv/bin/python backend/run.py
+uv run quant-api
 ```
 
 ## `app/`：后端应用
@@ -84,7 +88,7 @@ FastAPI 应用入口，负责：
 开发模式启动：
 
 ```bash
-PYTHONPATH=. .venv/bin/uvicorn backend.app.main:app \
+uv run uvicorn backend.app.main:app \
   --host 127.0.0.1 --port 8001 --reload
 ```
 
@@ -194,7 +198,7 @@ schemas 用于稳定 API 契约，不负责数据库写入或 Pandas 清洗。
 创建 `data/market.duckdb` 并执行 `schema.sql`。重复执行是安全的。
 
 ```bash
-PYTHONPATH=. .venv/bin/python backend/scripts/init_db.py
+uv run python backend/scripts/init_db.py
 ```
 
 ### `scripts/sync_market_data.py`
@@ -204,14 +208,14 @@ PYTHONPATH=. .venv/bin/python backend/scripts/init_db.py
 
 ```bash
 # 两只股票初始化
-PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py \
+uv run quant-sync \
   --mode initial --symbols 000001,600519
 
 # 全市场每日增量
-PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py --mode daily
+uv run quant-sync --mode daily
 
 # 前 20 只股票试跑
-PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py \
+uv run quant-sync \
   --mode initial --limit 20
 ```
 
@@ -240,13 +244,13 @@ PYTHONPATH=. .venv/bin/python backend/scripts/sync_market_data.py \
 运行测试：
 
 ```bash
-PYTHONPATH=. .venv/bin/python -m pytest
+uv run pytest
 ```
 
 也可以直接执行测试文件；它会自动启动 pytest 并显示每项测试结果：
 
 ```bash
-PYTHONPATH=. .venv/bin/python backend/tests/test_market_data.py
+uv run python backend/tests/test_market_data.py
 ```
 
 ## 数据文件
