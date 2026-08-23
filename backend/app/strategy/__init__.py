@@ -1,5 +1,11 @@
 """股票策略模块。"""
 
-from .hot_volume_breakout import HotVolumeBreakoutConfig, HotVolumeBreakoutStrategy
+from .volume_surge import HotVolumeBreakoutConfig, HotVolumeBreakoutStrategy
+from .panic_reversal import PanicReversalConfig, PanicReversalStrategy
 
-__all__ = ["HotVolumeBreakoutConfig", "HotVolumeBreakoutStrategy"]
+__all__ = [
+    "HotVolumeBreakoutConfig",
+    "HotVolumeBreakoutStrategy",
+    "PanicReversalConfig",
+    "PanicReversalStrategy",
+]

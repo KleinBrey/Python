@@ -73,7 +73,7 @@ def select_from_database() -> pd.DataFrame:
         f"最新交易日:{pd.to_datetime(daily_bars["date"]).max().strftime("%Y-%m-%d")}\n今日:{today}"
     )
 
-    hot_stocks = StockHotDailyRepository(database).get_by_trade_date(latest_trade_date)
+    hot_stocks = StockHotDailyRepository(database).get_by_trade_date(today)
 
     if stocks.empty or daily_bars.empty:
         return pd.DataFrame(columns=RESULT_COLUMNS)
