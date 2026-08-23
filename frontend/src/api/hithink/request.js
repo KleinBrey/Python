@@ -13,7 +13,7 @@ const ERROR_TYPES = {
   UNKNOWN: 'unknown',
 }
 
-export const FUYAO_ERROR_MAP = {
+export const HITHINK_ERROR_MAP = {
   // 参数错误 (1xxx)
   1001: {
     type: ERROR_TYPES.PARAMETER,
@@ -59,7 +59,7 @@ export const FUYAO_ERROR_MAP = {
   // 服务器错误 (5xxx)
   5001: {
     type: ERROR_TYPES.SERVER,
-    message: '扶摇服务内部错误',
+    message: 'HiThink 服务内部错误',
     retryable: true,
   },
   5002: {
@@ -74,16 +74,16 @@ export const FUYAO_ERROR_MAP = {
   },
 }
 
-export class FuyaoApiError extends Error {
+export class HithinkApiError extends Error {
   constructor(code, message, requestId) {
-    const definition = FUYAO_ERROR_MAP[code] ?? {
+    const definition = HITHINK_ERROR_MAP[code] ?? {
       type: ERROR_TYPES.UNKNOWN,
       message: '未知业务错误',
       retryable: false,
     }
 
     super(message || definition.message)
-    this.name = 'FuyaoApiError'
+    this.name = 'HithinkApiError'
     this.code = code
     this.requestId = requestId
     this.type = definition.type
@@ -92,10 +92,10 @@ export class FuyaoApiError extends Error {
   }
 }
 
-export class FuyaoClient extends HttpClient {
+export class HithinkClient extends HttpClient {
   handleRequest(config) {
     if (!apiKey) {
-      throw new FuyaoApiError(2001, '未配置 HITHINK_FINANCE_API_KEY')
+      throw new HithinkApiError(2001, '未配置 HITHINK_FINANCE_API_KEY')
     }
 
     config.headers['X-api-key'] = apiKey
@@ -103,18 +103,18 @@ export class FuyaoClient extends HttpClient {
   }
 
   handleResponse(response) {
-    const payload = super.handleResponse(response)
+    const payload = response.data
 
-    // 扶摇业务错误同样返回 HTTP 200，需要通过 code 判断。
+    // HiThink 业务错误同样返回 HTTP 200，需要通过 code 判断。
     if (payload && typeof payload.code === 'number' && payload.code !== 0) {
-      throw new FuyaoApiError(payload.code, payload.message, payload.request_id)
+      throw new HithinkApiError(payload.code, payload.message, payload.request_id)
     }
 
     return payload
   }
 }
 
-const request = new FuyaoClient({
+const request = new HithinkClient({
   baseURL: import.meta.env.VITE_THS_API_BASE_URL || 'https://fuyao.aicubes.cn',
   timeout: 15000,
 })

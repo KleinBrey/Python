@@ -311,7 +311,7 @@ export default function IwencaiSelectorDashboard() {
     if (status?.marketDataConfigured === false) {
       setPrefetchStatus({
         state: 'warning',
-        message: '未配置扶摇 API Key，暂不预缓存日线',
+        message: '未配置 HiThink API Key，暂不预缓存日线',
       })
       return undefined
     }
@@ -373,7 +373,7 @@ export default function IwencaiSelectorDashboard() {
       if (status?.marketDataConfigured === false) {
         setKlineData(null)
         setKlineLoading(false)
-        setKlineError('未配置 HITHINK_FINANCE_API_KEY，无法读取扶摇历史行情')
+        setKlineError('未配置 HITHINK_FINANCE_API_KEY，无法读取 HiThink 历史行情')
         return
       }
       setKlineLoading(true)

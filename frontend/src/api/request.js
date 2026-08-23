@@ -39,7 +39,7 @@ export class HttpClient {
   }
 
   handleResponse(response) {
-    return response.data
+    return response
   }
 
   handleResponseError(error) {
@@ -77,14 +77,12 @@ export class HttpClient {
     return this.service.put(url, data, config)
   }
 
+  patch(url, data = {}, config = {}) {
+    return this.service.patch(url, data, config)
+  }
+
   delete(url, params = {}, config = {}) {
     return this.service.delete(url, { ...config, params })
   }
 }
 
-const request = new HttpClient({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001',
-})
-
-export const service = request.service
-export default request

@@ -19,7 +19,7 @@
       "alias": "market",
       "type": "file",
       "path": "/Users/kleinbrey/Documents/QuantTide/data/market.duckdb",
-      "attached": true
+      "attached": false
     }
   ],
   "duckdb.defaultDatabase": "market",

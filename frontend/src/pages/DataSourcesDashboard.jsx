@@ -28,7 +28,7 @@ export default function DataSourcesDashboard({
     <div className="dashboard-content">
       <section className="metric-grid" aria-label="数据源状态">
         <MetricCard
-          label="同花顺扶摇"
+          label="同花顺 HiThink"
           value={statusLabel(hithink?.status, '-')}
           note={hithink?.message || '系统唯一结构化证券数据源'}
           icon={Database}
@@ -61,7 +61,7 @@ export default function DataSourcesDashboard({
         <div className="panel-header">
           <div>
             <h2>数据源连接状态</h2>
-            <span>同花顺扶摇官方 API 的配置与连通情况</span>
+            <span>同花顺 HiThink 官方 API 的配置与连通情况</span>
           </div>
           <Button type="button" onClick={onCheckSources} disabled={loading}>
             {loading ? (

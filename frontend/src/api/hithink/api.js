@@ -10,7 +10,7 @@ export function searchTickersApi(params) {
 
 /**
  * 获取标的列表。
- * 具体筛选和分页参数以扶摇文档为准。
+ * 具体筛选和分页参数以 HiThink 文档为准。
  */
 export function getTickerListApi(params = {}) {
   return request.get('/api/meta/tickers/list', params)
@@ -49,9 +49,9 @@ export function getSkyRocketListApi(period = 'hour') {
 }
 
 /**
- * 任意扶摇接口的通用调用方式。
- * 示例：fuyaoApi({ method: 'get', url: '/api/a-share/calendar/trading-days' })
+ * 任意 HiThink 接口的通用调用方式。
+ * 示例：hithinkApi({ method: 'get', url: '/api/a-share/calendar/trading-days' })
  */
-export function fuyaoApi(config) {
+export function hithinkApi(config) {
   return request.request(config)
 }

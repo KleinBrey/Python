@@ -22,8 +22,8 @@ import {
   getSkyRocketListApi,
   getHotStockListApi,
   getHistoricalPriceApi,
-} from '../api/THS/api.js'
-import { getStocksListApi ,updateStocksListApi} from '@/api/Quant/api.js'
+} from '../api/hithink/api.js'
+import { getStocksListApi ,updateStocksListApi} from '@/api/quantide/api.js'
 import moment from 'moment'
 import { AgGridProvider, AgGridReact } from 'ag-grid-react'
 import {
@@ -258,7 +258,7 @@ function RankingTable({
   const handleRowClick = async (event) => {
     const value = await getStockHistoryData(event.data.thscode)
     setKlineData({
-      dataSource: '同花顺扶摇',
+      dataSource: '同花顺 HiThink',
       adjustLabel: '前复权',
       rows: transformStockData(value.data.item),
     })
@@ -414,7 +414,7 @@ export default function HotRankingsDashboard({
       {/* <section className="metric-grid" aria-label="热度概览">
         <MetricCard
           label="数据源"
-          value={summary?.dataSource || '同花顺扶摇 Financial API'}
+          value={summary?.dataSource || '同花顺 HiThink Financial API'}
           note="当前后端数据入口"
           icon={Database}
           tone="teal"
