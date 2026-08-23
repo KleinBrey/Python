@@ -1,6 +1,6 @@
 """同花顺问财最小连通性测试。"""
 
-from backend.simple.provider.iwencai_provider import IwencaiProvider
+from backend.app.provider.iwencai_provider import IwencaiProvider
 
 import pandas as pd
 

@@ -1,7 +1,7 @@
-from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import HithinkProvider, TushareProvider
-from backend.simple.repository import StockRepository, DailyBarRepository
-from backend.simple.services import Service
+from backend.app.database import DuckDBDatabase
+from backend.app.provider import HithinkProvider, TushareProvider
+from backend.app.repository import StockRepository, DailyBarRepository
+from backend.app.services import Service
 
 
 def main() -> None:

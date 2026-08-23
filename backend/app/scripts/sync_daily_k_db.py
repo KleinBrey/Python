@@ -1,7 +1,7 @@
-from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import TushareProvider
-from backend.simple.repository import DailyBarRepository, StockRepository
-from backend.simple.services import Service
+from backend.app.database import DuckDBDatabase
+from backend.app.provider import TushareProvider
+from backend.app.repository import DailyBarRepository, StockRepository
+from backend.app.services import Service
 
 
 def sync_daily_k(lookback_days: int, batch_size: int) -> None:

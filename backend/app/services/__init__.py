@@ -1,4 +1,3 @@
-from backend.app.services.market_data import MarketDataService, SyncAlreadyRunningError
+from .simple_data import Service
 
-__all__ = ["MarketDataService", "SyncAlreadyRunningError"]
-
+__all__ = ["Service"]

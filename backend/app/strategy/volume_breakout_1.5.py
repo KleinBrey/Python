@@ -15,14 +15,14 @@ from rich.console import Console
 
 from datetime import date
 
-from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import TushareProvider
-from backend.simple.repository import (
+from backend.app.database import DuckDBDatabase
+from backend.app.provider import TushareProvider
+from backend.app.repository import (
     DailyBarRepository,
     StockRepository,
     StockHotDailyRepository,
 )
-from backend.simple.utils.symbol import validate_symbol
+from backend.app.utils.symbol import validate_symbol
 
 console = Console()
 

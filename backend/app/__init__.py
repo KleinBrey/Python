@@ -1,2 +1,1 @@
-"""本地 A 股行情数据服务。"""
-
+"""Simple stock-data application package."""

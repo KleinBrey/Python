@@ -2,7 +2,7 @@
 Tushare 最小连通性测试。
 """
 
-from backend.simple.provider.tushare_provider import TushareProvider
+from backend.app.provider.tushare_provider import TushareProvider
 
 
 def main() -> None:

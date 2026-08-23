@@ -1,14 +1,14 @@
-"""同花顺行情最小连通性测试。"""
+"""AkShare 行情最小连通性测试。"""
 
 import pandas as pd
 
-from backend.simple.provider.hithink_provider import HithinkProvider
+from backend.app.provider.akshare_provider import AkShareProvider
 
 
 def main() -> None:
-    provider = HithinkProvider()
+    provider = AkShareProvider()
 
-    data = provider.fetch_stock_list()
+    data = provider.fetch_stock_list()["data"]["item"]
 
     frame = pd.DataFrame(data)
 

@@ -1,106 +1,58 @@
 from __future__ import annotations
 
-from datetime import date
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
-    HTTPException,
     Query,
-    Request,
-    status,
 )
 
-from backend.app.api.dependencies import get_repository, get_service
-from backend.app.jobs.tasks import run_sync
-from backend.app.repositories import MarketDataRepository
-from backend.app.schemas import BarsResponse, MarketStatus, Stock, SyncAccepted
-from backend.app.services import MarketDataService
+from backend.app.schemas import Stock
+from backend.app.repository import StockRepository
+from backend.app.services import Service
+
+from .dependencies import get_repository, get_service
 
 router = APIRouter()
 
 # 使用 Annotated 封装依赖声明，避免每个接口重复书写 Depends。
-Repository = Annotated[MarketDataRepository, Depends(get_repository)]
-Service = Annotated[MarketDataService, Depends(get_service)]
+Repository = Annotated[StockRepository, Depends(get_repository)]
+dbService = Annotated[Service, Depends(get_service)]
 
 
-@router.get("/health")
-def health() -> dict[str, str]:
-    """返回服务存活状态，供健康检查使用。"""
-    return {"status": "ok"}
-
-
-@router.get("/market/status", response_model=MarketStatus)
-def market_status(request: Request, repository: Repository, service: Service) -> dict:
-    """汇总本地数据、行情提供方和调度器的运行状态。"""
-    scheduler = getattr(request.app.state, "scheduler", None)
-    return {
-        **repository.status(),
-        "provider_configured": service.provider.is_configured(),
-        "scheduler_running": bool(scheduler and scheduler.running),
-    }
-
-
-@router.get("/stocks", response_model=list[Stock])
+@router.get("/stocks-list", response_model=list[Stock])
 def stocks(
     repository: Repository,
     query: str | None = None,
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ) -> list[dict]:
-    """分页查询股票列表，可通过 query 筛选股票。"""
-    return repository.list_stocks(query, limit, offset)
+
+    print(query, limit, offset)
+
+    # Repository 返回的是 Pandas DataFrame（表格对象）。
+    stock_table = repository.get_table_data().head(100)
+
+    # FastAPI 不能直接把 DataFrame 当成“股票列表”返回。
+    # orient="records" 会把每一行转换成一个字典，最终得到：
+    # [{"symbol": "000001.SZ", "name": "平安银行", ...}, ...]
+    stock_list = stock_table.to_dict(orient="records")
+    return stock_list
 
 
-@router.get("/market/bars/{symbol}", response_model=BarsResponse)
-def bars(
-    symbol: str,
-    repository: Repository,
-    start_date: date | None = None,
-    end_date: date | None = None,
-    limit: int = Query(1000, ge=1, le=5000),
-) -> dict:
-    """查询指定股票的本地日 K 数据。"""
-    normalized = normalize_symbol(symbol)
-    rows = repository.get_bars(normalized, start_date, end_date, limit)
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"本地库没有 {normalized} 的日 K")
-    return {"symbol": normalized, "adjustment": "none", "rows": rows}
+@router.post("/stocks-list")
+def update_stocks_list(service: dbService) -> dict[str, str]:
+    """从数据源获取最新股票列表，并保存到本地数据库。"""
 
+    # Service 会依次完成以下工作：
+    # 1. 从 Tushare 获取最新股票列表；
+    # 2. 将数据整理成数据库需要的格式；
+    # 3. 新增股票，或者更新数据库中已经存在的股票。
+    service.update_stocks_list()
 
-@router.post(
-    "/jobs/run", response_model=SyncAccepted, status_code=status.HTTP_202_ACCEPTED
-)
-def trigger_sync(
-    background_tasks: BackgroundTasks,
-    service: Service,
-    mode: Literal["initial", "daily", "weekly", "monthly"] = "daily",
-) -> dict[str, str]:
-    """提交一次异步行情同步任务并立即返回受理结果。"""
-    # 同步操作可能耗时，因此交给 FastAPI 后台任务执行。
-    background_tasks.add_task(run_sync, service, mode)
-    return {"status": "accepted", "mode": mode}
-
-
-def normalize_symbol(value: str) -> str:
-    """将六位股票代码转换为带交易所后缀的标准 thscode。"""
-    symbol = value.strip().upper()
-
-    # 已包含交易所后缀时直接返回，保留调用方传入的完整代码。
-    if "." in symbol:
-        return symbol
-    if len(symbol) != 6 or not symbol.isdigit():
-        raise HTTPException(
-            status_code=422, detail="股票代码应为 6 位数字或完整 thscode"
-        )
-
-    # 根据证券代码前缀推断北京、上海或深圳证券交易所。
-    if symbol.startswith(("4", "8", "92")):
-        exchange = "BJ"
-    elif symbol.startswith(("5", "6", "9")):
-        exchange = "SH"
-    else:
-        exchange = "SZ"
-    return f"{symbol}.{exchange}"
+    # 只有上面的更新操作没有抛出异常时，才会执行到这里。
+    return {
+        "status": "success",
+        "message": "股票列表更新成功",
+    }

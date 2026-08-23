@@ -1,13 +1,12 @@
 from fastapi import Request
 
-from backend.app.repositories import MarketDataRepository
-from backend.app.services import MarketDataService
+from backend.app.repository import StockRepository
+from backend.app.services import Service
 
 
-def get_repository(request: Request) -> MarketDataRepository:
-    return request.app.state.repository
+def get_repository(request: Request) -> StockRepository:
+    return request.app.state.stock_repository
 
 
-def get_service(request: Request) -> MarketDataService:
-    return request.app.state.market_service
-
+def get_service(request: Request) -> Service:
+    return request.app.state.service

@@ -1,4 +1,4 @@
-from backend.simple.database import DuckDBDatabase
+from backend.app.database import DuckDBDatabase
 
 # 初始化数据库
 database = DuckDBDatabase()

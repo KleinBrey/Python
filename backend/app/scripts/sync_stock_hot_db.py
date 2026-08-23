@@ -1,7 +1,7 @@
-from backend.simple.database import DuckDBDatabase
-from backend.simple.provider import IwencaiProvider
-from backend.simple.repository import StockHotDailyRepository
-from backend.simple.services import Service
+from backend.app.database import DuckDBDatabase
+from backend.app.provider import IwencaiProvider
+from backend.app.repository import StockHotDailyRepository
+from backend.app.services import Service
 
 
 def main() -> None:

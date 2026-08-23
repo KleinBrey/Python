@@ -1,18 +1,18 @@
 from __future__ import annotations
-
 from contextlib import asynccontextmanager
+
 import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api import router
-from backend.app.core.config import get_settings
+from backend.app.config.config import get_settings
 from backend.app.database import DuckDBDatabase
 from backend.app.jobs import create_scheduler
-from backend.app.providers import HiThinkMarketDataProvider
-from backend.app.repositories import MarketDataRepository
-from backend.app.services import MarketDataService
+from backend.app.provider import HithinkProvider, TushareProvider
+from backend.app.repository import DailyBarRepository, StockRepository
+from backend.app.services import Service
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s"
@@ -21,39 +21,43 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """初始化应用依赖，并在应用关闭时释放后台任务。"""
+
     settings = get_settings()
 
-    # 按照数据库 -> 仓储 -> 数据提供方 -> 服务的顺序装配业务依赖。
-    database = DuckDBDatabase(settings.database_path)
+    # 初始化数据库
+    database = DuckDBDatabase()
     database.initialize()
-    repository = MarketDataRepository(database)
-    provider = HiThinkMarketDataProvider(
-        settings.hithink_finance_api_key,
-        settings.hithink_finance_base_url,
-        timeout=settings.hithink_timeout_seconds,
-        request_interval=settings.hithink_request_interval,
+
+    # 注册stock表的repository，用来统一处理增删改查
+    stock_repository = StockRepository(database)
+    daily_repository = DailyBarRepository(database)
+
+    # 注册API调用
+    hithink_provider = HithinkProvider()
+
+    tushare_provider = TushareProvider()
+
+    # 业务逻辑处理
+    service = Service(
+        hithink_provider, tushare_provider, stock_repository, daily_repository
     )
-    service = MarketDataService(
-        repository,
-        provider,
-        history_days=settings.history_days,
-        workers=settings.sync_workers,
-    )
-    scheduler = create_scheduler(settings, service)
 
     # 将共享实例挂载到 app.state，供路由及其他应用组件复用。
-    app.state.repository = repository
-    app.state.market_service = service
-    app.state.scheduler = scheduler
+    app.state.stock_repository = stock_repository
+    app.state.service = service
 
-    # 可通过配置关闭定时任务，便于本地开发和测试。
+    # 工作日 18:00 同步当日热门股数据。
+    scheduler = create_scheduler(settings)
+    app.state.scheduler = scheduler
     if settings.scheduler_enabled:
         scheduler.start()
+
+    # yield 之前的代码会在应用启动时执行。
+    # 执行到 yield 后，FastAPI 开始正常接收和处理请求。
+    # 当应用关闭时，程序会从 yield 后面继续执行清理代码。
     try:
         yield
     finally:
-        # 非阻塞关闭调度器，避免应用退出时仍有后台线程运行。
         if scheduler.running:
             scheduler.shutdown(wait=False)
 
