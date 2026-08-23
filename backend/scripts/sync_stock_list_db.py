@@ -1,3 +1,5 @@
+"""同步 A 股股票列表。"""
+
 from backend.app.database import DuckDBDatabase
 from backend.app.provider import HithinkProvider, TushareProvider
 from backend.app.repository import StockRepository, DailyBarRepository

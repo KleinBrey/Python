@@ -15,13 +15,12 @@ quant-platform/
 │   │   ├── provider/        # Tushare、HiThink、AkShare、问财
 │   │   ├── repository/      # DuckDB 数据访问
 │   │   ├── schemas/         # Pydantic API 模型
-│   │   ├── scripts/         # 各类数据同步脚本
 │   │   ├── services/        # 数据格式化和同步业务
 │   │   ├── strategy/        # 选股策略
 │   │   ├── utils/           # 日期、股票代码工具
 │   │   ├── view/            # Rich 命令行展示
 │   │   └── main.py          # FastAPI 入口
-│   ├── scripts/             # 命令行入口包装
+│   ├── scripts/             # 股票列表、日 K、热度同步脚本
 │   ├── tests/               # 后端测试
 │   └── run.py               # API 快捷启动入口
 ├── data/
@@ -59,25 +58,19 @@ DAILY_UPDATE_MINUTE=0
 
 ## 初始化和同步
 
-初始化 `data/market.duckdb`：
+同步脚本会自动初始化 `data/market.duckdb` 和所需数据表。依次同步股票列表、日 K 和当日股票热度：
 
 ```bash
-uv run python -m backend.scripts.init_db
+uv run python -m backend.scripts.sync_stock_list_db
+uv run quant-sync
+uv run python -m backend.scripts.sync_stock_hot_db
 ```
 
-同步股票列表、日 K 和当日股票热度：
+`quant-sync` 会显示交互式菜单，可选择：
 
-```bash
-uv run python -m backend.app.scripts.sync_stock_list_db
-uv run quant-sync --lookback-days 3 --batch-size 100
-uv run python -m backend.app.scripts.sync_stock_hot_db
-```
-
-日 K 常用回看范围：
-
-- 日常更新：`--lookback-days 3 --batch-size 100`
-- 每周校准：`--lookback-days 60 --batch-size 50`
-- 年度范围：`--lookback-days 365 --batch-size 10`
+- 最近 3 个自然日，每批 100 只；
+- 最近 60 个自然日，每批 50 只；
+- 最近 365 个自然日，每批 10 只。
 
 ## 启动 API
 
@@ -105,12 +98,6 @@ FastAPI 启动时默认注册以下任务：
 - 周一至周五配置时间：更新最近 3 个自然日的日 K；
 - 每周六 09:00：校准最近 60 个自然日的日 K；
 - 每月 1 日 10:00：校准最近 365 个自然日的日 K。
-
-只运行调度器、不启动 API：
-
-```bash
-uv run python -m backend.scripts.run_scheduler
-```
 
 ## 测试
 

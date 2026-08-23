@@ -1,3 +1,5 @@
+"""同步股票日 K 数据。"""
+
 from backend.app.database import DuckDBDatabase
 from backend.app.provider import TushareProvider
 from backend.app.repository import DailyBarRepository, StockRepository
@@ -37,7 +39,6 @@ def main() -> None:
             1. 更新最近 3 日数据，每批 100 只
             2. 更新最近 60 日数据，每批 50 只
             3. 更新最近 365 日数据，每批 10 只
-            4. 同步同花顺股票日线数据
             e. 退出
           """)
 

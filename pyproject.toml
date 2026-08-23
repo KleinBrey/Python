@@ -27,7 +27,7 @@ dev = ["pytest>=8.4,<10", "httpx>=0.28,<1"]
 
 [project.scripts]
 quant-api = "backend.run:main"
-quant-sync = "backend.scripts.sync_market_data:main"
+quant-sync = "backend.scripts.sync_daily_k_db:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

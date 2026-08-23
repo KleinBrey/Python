@@ -92,19 +92,6 @@ Repository 负责字段检查、日期转换以及 DuckDB 的幂等 upsert。
 
 每个任务设置 `max_instances=1` 和 `coalesce=True`，避免同一任务重复运行。
 
-### `app/scripts/`
-
-```bash
-# 股票列表
-uv run python -m backend.app.scripts.sync_stock_list_db
-
-# 日 K
-uv run python -m backend.app.scripts.sync_daily_k_db
-
-# 股票热度
-uv run python -m backend.app.scripts.sync_stock_hot_db
-```
-
 ### `app/strategy/`
 
 包含股票热度与量价突破策略，使用股票基础信息、日 K、每日市值和问财热度进行筛选。
@@ -114,16 +101,31 @@ uv run python -m backend.app.scripts.sync_stock_hot_db
 - `utils/`：日期、交易所和股票代码处理；
 - `view/`：Rich 命令行展示示例。
 
-## 外层命令行入口
+## 外层同步脚本
+
+```bash
+# 股票列表
+uv run python -m backend.scripts.sync_stock_list_db
+
+# 日 K
+uv run python -m backend.scripts.sync_daily_k_db
+
+# 股票热度
+uv run python -m backend.scripts.sync_stock_hot_db
+```
+
+三个脚本都位于外层 `backend/scripts/`，并会在同步前自动初始化数据库。
+
+## 命令入口
 
 - `backend/run.py`：启动 FastAPI；
-- `backend/scripts/init_db.py`：初始化数据库；
-- `backend/scripts/sync_market_data.py`：非交互式日 K 同步，供 `quant-sync` 使用；
-- `backend/scripts/run_scheduler.py`：独立运行调度器。
+- `backend/scripts/sync_stock_list_db.py`：同步股票列表；
+- `backend/scripts/sync_daily_k_db.py`：交互式同步日 K，供 `quant-sync` 使用；
+- `backend/scripts/sync_stock_hot_db.py`：同步当天股票热度。
 
 ```bash
 uv run quant-api
-uv run quant-sync --lookback-days 3 --batch-size 100
+uv run quant-sync
 ```
 
 ## 测试
@@ -144,6 +146,6 @@ uv run pytest
 | 增加数据格式化或同步流程 | `app/services/` |
 | 增加 HTTP 接口 | `app/api/` 与 `app/schemas/` |
 | 增加定时任务 | `app/jobs/` |
-| 增加数据同步脚本 | `app/scripts/` |
+| 增加数据同步脚本 | `backend/scripts/` |
 | 增加策略 | `app/strategy/` |
 | 增加测试 | `backend/tests/` |

@@ -1,3 +1,5 @@
+"""同步每日股票热度。"""
+
 from backend.app.database import DuckDBDatabase
 from backend.app.provider import IwencaiProvider
 from backend.app.repository import StockHotDailyRepository
