@@ -1,10 +1,9 @@
-module.exports = {
-  printWidth: 160,
-  tabWidth: 4,
+export default {
+  printWidth: 120,
+  tabWidth: 2,
   semi: true,
   singleQuote: true,
   arrowParens: 'avoid',
-  endOfLine: 'auto',
-  bracketLine: true,
+  endOfLine: 'lf',
   trailingComma: 'none'
 };

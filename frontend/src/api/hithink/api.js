@@ -1,11 +1,11 @@
-import request from './request.js'
+import request from './request.js';
 
 /**
  * 标的检索。
  * @param {{q: string, exchange?: string, asset_type?: string, limit?: number}} params
  */
 export function searchTickersApi(params) {
-  return request.get('/api/meta/tickers/search', params)
+  return request.get('/api/meta/tickers/search', params);
 }
 
 /**
@@ -13,7 +13,7 @@ export function searchTickersApi(params) {
  * 具体筛选和分页参数以 HiThink 文档为准。
  */
 export function getTickerListApi(params = {}) {
-  return request.get('/api/meta/tickers/list', params)
+  return request.get('/api/meta/tickers/list', params);
 }
 
 /**
@@ -21,7 +21,7 @@ export function getTickerListApi(params = {}) {
  * @param {{thscodes?: string, limit?: number, offset?: number}} params
  */
 export function getPriceSnapshotApi(params = {}) {
-  return request.get('/api/a-share/prices/snapshot', params)
+  return request.get('/api/a-share/prices/snapshot', params);
 }
 
 /**
@@ -29,7 +29,7 @@ export function getPriceSnapshotApi(params = {}) {
  * @param {{thscode: string, interval: '1d', start: number, end: number, adjust?: 'none'|'forward'|'backward', offset?: number}} params
  */
 export function getHistoricalPriceApi(params) {
-  return request.get('/api/a-share/prices/historical', params)
+  return request.get('/api/a-share/prices/historical', params);
 }
 
 /**
@@ -37,15 +37,15 @@ export function getHistoricalPriceApi(params) {
  * resource 示例：hot-stock-list、skyrocket-list、limit-up-pool。
  */
 export function getSpecialDataApi(resource, params = {}) {
-  return request.get(`/api/a-share/special-data/${resource}`, params)
+  return request.get(`/api/a-share/special-data/${resource}`, params);
 }
 
 export function getHotStockListApi(period = 'hour') {
-  return getSpecialDataApi('hot-stock-list', { period })
+  return getSpecialDataApi('hot-stock-list', { period });
 }
 
 export function getSkyRocketListApi(period = 'hour') {
-  return getSpecialDataApi('skyrocket-list', { period })
+  return getSpecialDataApi('skyrocket-list', { period });
 }
 
 /**
@@ -53,5 +53,5 @@ export function getSkyRocketListApi(period = 'hour') {
  * 示例：hithinkApi({ method: 'get', url: '/api/a-share/calendar/trading-days' })
  */
 export function hithinkApi(config) {
-  return request.request(config)
+  return request.request(config);
 }
