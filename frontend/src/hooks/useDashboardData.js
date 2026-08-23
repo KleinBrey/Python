@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiGet } from '../api/client.js';
-import { getDashboardByPath } from '../config/dashboardRegistry.js';
+import { getDashboardByPath } from '../routes/RouteConfig';
 
 export default function useDashboardData(pathname) {
   const [summary, setSummary] = useState(null);
@@ -15,19 +15,16 @@ export default function useDashboardData(pathname) {
   const [refreshingId, setRefreshingId] = useState('');
   const [error, setError] = useState('');
 
-  const selectedDashboard = useMemo(
-    () => getDashboardByPath(pathname),
-    [pathname],
-  );
+  const selectedDashboard = useMemo(() => getDashboardByPath(pathname), [pathname]);
 
   const activeRanking = useMemo(
-    () => rankings.find((ranking) => ranking.id === activeId) || rankings[0],
-    [rankings, activeId],
+    () => rankings.find(ranking => ranking.id === activeId) || rankings[0],
+    [rankings, activeId]
   );
 
   const sourceStats = useMemo(() => {
     const grouped = new Map();
-    rankings.forEach((ranking) => {
+    rankings.forEach(ranking => {
       const current = grouped.get(ranking.source) || { source: ranking.source, count: 0, rows: 0 };
       current.count += 1;
       current.rows += ranking.rowCount || 0;
@@ -105,9 +102,7 @@ export default function useDashboardData(pathname) {
       for (const ranking of items) {
         try {
           const payload = await apiGet(`/api/hot-rankings/${ranking.id}?limit=120&refresh=true`);
-          setRankings((current) => current.map((item) => (
-            item.id === ranking.id ? payload.item : item
-          )));
+          setRankings(current => current.map(item => (item.id === ranking.id ? payload.item : item)));
         } catch (err) {
           setError(err.message);
         }
@@ -125,9 +120,7 @@ export default function useDashboardData(pathname) {
     setError('');
     try {
       const payload = await apiGet(`/api/hot-rankings/${rankingId}?limit=120&refresh=true`);
-      setRankings((current) => current.map((ranking) => (
-        ranking.id === rankingId ? payload.item : ranking
-      )));
+      setRankings(current => current.map(ranking => (ranking.id === rankingId ? payload.item : ranking)));
       await loadSummary();
     } catch (err) {
       setError(err.message);
@@ -171,6 +164,6 @@ export default function useDashboardData(pathname) {
     loadRankings,
     refreshAllRankings,
     refreshRanking,
-    setActiveId,
+    setActiveId
   };
 }

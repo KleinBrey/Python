@@ -1,9 +1,9 @@
 import React from 'react';
 import { Blocks } from 'lucide-react';
-import { dashboardGroups } from '../config/dashboardRegistry.js';
+import { dashboardGroups } from '../routes/RouteConfig.js';
 
 export default function PlaceholderDashboard({ dashboardId }) {
-  const current = dashboardGroups.flatMap((group) => group.items).find((item) => item.id === dashboardId);
+  const current = dashboardGroups.flatMap(group => group.items).find(item => item.id === dashboardId);
 
   return (
     <section className="placeholder">
