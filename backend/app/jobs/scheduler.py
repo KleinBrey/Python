@@ -10,7 +10,7 @@ from backend.app.jobs.tasks import (
 
 
 def create_scheduler(settings: Settings) -> BackgroundScheduler:
-    """创建 simple 应用的定时任务调度器。"""
+    """创建 app 应用的定时任务调度器。"""
     scheduler = BackgroundScheduler(timezone=settings.scheduler_timezone)
 
     # 所有定时任务都会使用这些安全设置。

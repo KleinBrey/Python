@@ -1,6 +1,6 @@
 import pandas as pd
 
-from backend.simple.services import Service
+from backend.app.services import Service
 
 
 class FakeIwencaiProvider:

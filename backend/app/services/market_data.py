@@ -1,3 +1,5 @@
+"""市场数据格式化与同步服务。"""
+
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 

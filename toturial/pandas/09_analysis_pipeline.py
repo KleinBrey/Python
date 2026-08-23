@@ -7,7 +7,7 @@ import pandas as pd
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATABASE_PATH = PROJECT_ROOT / "data" / "simple.duckdb"
+DATABASE_PATH = PROJECT_ROOT / "data" / "market.duckdb"
 SYMBOLS = ["600519", "000001", "300750"]
 
 

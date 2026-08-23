@@ -58,7 +58,7 @@ def create_tushare_client(
 
 
 class TushareProvider:
-    """把 Tushare Pro 返回的数据适配为 simple 服务使用的结构。"""
+    """把 Tushare Pro 返回的数据适配为 app 服务使用的结构。"""
 
     source = "Tushare"
 
@@ -96,7 +96,7 @@ class TushareProvider:
 
     @staticmethod
     def _ts_code(value: str) -> str:
-        """把 simple 支持的股票代码统一转换为 Tushare TS 代码。"""
+        """把 app 支持的股票代码统一转换为 Tushare TS 代码。"""
 
         code = validate_symbol(value)
         return f"{code}.{exchange_for(code)}"

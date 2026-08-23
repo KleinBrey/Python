@@ -1,1 +1,1 @@
-"""Simple stock-data application package."""
+"""A 股本地行情数据应用包。"""

@@ -1,9 +1,9 @@
 from apscheduler.triggers.cron import CronTrigger
 
-from backend.simple.config.config import Settings
-from backend.simple.jobs import tasks
-from backend.simple.jobs import create_scheduler
-from backend.simple.jobs.tasks import run_daily_k_sync, run_stock_hot_sync
+from backend.app.config.config import Settings
+from backend.app.jobs import tasks
+from backend.app.jobs import create_scheduler
+from backend.app.jobs.tasks import run_daily_k_sync, run_stock_hot_sync
 
 
 def test_stock_hot_sync_runs_at_18_on_weekdays():

@@ -43,6 +43,16 @@ RESULT_COLUMNS = [
     "return_5d_pct",
 ]
 
+INDICATOR_COLUMNS = [
+    "symbol",
+    "latest_date",
+    "latest_close",
+    "recent_5d_avg_volume",
+    "previous_20d_avg_volume",
+    "volume_ratio",
+    "return_5d_pct",
+]
+
 
 def select_from_database() -> pd.DataFrame:
     """读取本地数据"""
@@ -211,7 +221,7 @@ class HotVolumeBreakoutStrategy:
                 }
             )
 
-        return pd.DataFrame(rows)
+        return pd.DataFrame(rows, columns=INDICATOR_COLUMNS)
 
     def _filter_volume_ratio(self, result: pd.DataFrame) -> pd.DataFrame:
         """保留最近 5 日均量至少是此前 20 日均量 1.5 倍的股票。"""

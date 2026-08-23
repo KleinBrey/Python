@@ -18,7 +18,7 @@ from ..utils.symbol import exchange_for, validate_symbol
 
 
 class AkShareProvider:
-    """把 AkShare 返回的数据适配为 simple 服务使用的结构。"""
+    """把 AkShare 返回的数据适配为 app 服务使用的结构。"""
 
     source = "AkShare"
 
@@ -185,7 +185,11 @@ class AkShareProvider:
 
         trade_dates = pd.to_datetime(result.pop("date"), errors="raise")
         shanghai_dates = trade_dates.dt.tz_localize("Asia/Shanghai")
-        result["date_ms"] = shanghai_dates.astype("int64") // 1_000_000
+        # Pandas 不同版本的 datetime 内部精度可能是秒、毫秒、微秒或纳秒，
+        # 直接 astype("int64") 后再固定除数会得到错误年份。显式转时间戳更稳定。
+        result["date_ms"] = shanghai_dates.map(
+            lambda value: int(value.timestamp() * 1000)
+        )
 
         numeric_columns = [
             "open_price",

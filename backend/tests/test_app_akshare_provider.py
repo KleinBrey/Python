@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
 
-from backend.simple.provider.akshare_provider import AkShareProvider
+from backend.app.provider.akshare_provider import AkShareProvider
 
 
 SHANGHAI_TIMEZONE = ZoneInfo("Asia/Shanghai")
@@ -43,7 +43,7 @@ def test_fetch_stock_list_adds_exchange_and_source(monkeypatch):
         ]
     )
     monkeypatch.setattr(
-        "backend.simple.provider.akshare_provider.ak.stock_info_a_code_name",
+        "backend.app.provider.akshare_provider.ak.stock_info_a_code_name",
         lambda: frame,
     )
 
@@ -92,7 +92,7 @@ def test_fetch_historical_adapts_akshare_columns(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "backend.simple.provider.akshare_provider.ak.stock_zh_a_hist",
+        "backend.app.provider.akshare_provider.ak.stock_zh_a_hist",
         fake_stock_zh_a_hist,
     )
 
@@ -147,11 +147,11 @@ def test_fetch_historical_falls_back_to_tencent(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "backend.simple.provider.akshare_provider.ak.stock_zh_a_hist",
+        "backend.app.provider.akshare_provider.ak.stock_zh_a_hist",
         unavailable_eastmoney,
     )
     monkeypatch.setattr(
-        "backend.simple.provider.akshare_provider.ak.stock_zh_a_hist_tx",
+        "backend.app.provider.akshare_provider.ak.stock_zh_a_hist_tx",
         fake_tencent,
     )
 

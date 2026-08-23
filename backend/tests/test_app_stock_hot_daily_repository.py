@@ -3,14 +3,14 @@ from datetime import date
 import pandas as pd
 import pytest
 
-from backend.simple.database import DuckDBDatabase
-from backend.simple.repository import StockHotDailyRepository
+from backend.app.database import DuckDBDatabase
+from backend.app.repository import StockHotDailyRepository
 
 
 @pytest.fixture
 def repository(tmp_path) -> StockHotDailyRepository:
     database = DuckDBDatabase()
-    database.database_path = tmp_path / "simple.duckdb"
+    database.database_path = tmp_path / "market.duckdb"
     database.initialize()
     return StockHotDailyRepository(database)
 
