@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import { AllCommunityModule, colorSchemeDark, themeQuartz } from 'ag-grid-community';
+import { ClientSideRowModelModule, colorSchemeDark, themeQuartz } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import moment from 'moment';
 
 import { Button } from '@/components/ui/button.jsx';
 
-const modules = [AllCommunityModule];
+const modules = [ClientSideRowModelModule];
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeDark).withParams({
   backgroundColor: '#09090b'

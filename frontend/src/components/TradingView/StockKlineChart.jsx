@@ -108,6 +108,8 @@ export default function StockKlineChart({
 }) {
   const chartRef = useRef(null)
   const rows = useMemo(() => chartRows(data), [data])
+  const stockName = stock?.name || stock?.股票简称 || ''
+  const stockCode = stock?.code || stock?.thscode || stock?.股票代码 || ''
   const [activeBar, setActiveBar] = useState(() => rowSummary(rows.at(-1)))
 
   useEffect(() => {
@@ -265,9 +267,7 @@ export default function StockKlineChart({
       <div className={styles.header}>
         <div>
           <h3>
-            {stock
-              ? `${stock.name || ''}  |  ${String(stock.code || '')}`
-              : '个股 K 线'}
+            {stock ? `${stockName}  |  ${String(stockCode)}` : '个股 K 线'}
           </h3>
           <span>TradingView Charts</span>
         </div>
@@ -336,7 +336,7 @@ export default function StockKlineChart({
             className={styles.canvas}
             ref={chartRef}
             role="img"
-            aria-label={`${stock?.股票简称 || '个股'} K线、均线及成交量图`}
+            aria-label={`${stockName || '个股'} K线、均线及成交量图`}
           />
         </div>
       ) : (

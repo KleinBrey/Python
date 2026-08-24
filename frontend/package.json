@@ -7,6 +7,8 @@
     "dev": "vite --host 127.0.0.1 --port 5173 --open",
     "build": "vite build",
     "lint": "eslint src",
+    "test": "node --test",
+    "check": "npm run lint && npm run test && npm run build",
     "preview": "vite preview --host 127.0.0.1 --port 5173 --open"
   },
   "dependencies": {

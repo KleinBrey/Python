@@ -26,4 +26,43 @@ export default [
       'no-unused-vars': ['error', { varsIgnorePattern: '^React$' }],
     },
   },
+  {
+    files: ['src/features/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/pages/**', '@/routes/**', '@/layouts/**', '@/features/**'],
+              message: 'Feature 只能依赖共享层；Feature 内部请使用相对路径，禁止跨 Feature 引用。',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'src/api/**/*.{js,jsx}',
+      'src/components/**/*.{js,jsx}',
+      'src/contexts/**/*.{js,jsx}',
+      'src/hooks/**/*.{js,jsx}',
+      'src/lib/**/*.{js,jsx}',
+      'src/utils/**/*.{js,jsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/features/**', '@/pages/**', '@/routes/**'],
+              message: '共享层不能反向依赖 Feature、页面或路由层。',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]

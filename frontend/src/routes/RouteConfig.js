@@ -24,6 +24,13 @@ export const dashboardGroups = [
         status: '已接入'
       },
       {
+        id: 'iwencai-selector',
+        path: '/iwencai-selector',
+        title: '问财选股',
+        description: '通过自然语言组合行情、财务与技术条件',
+        status: '已接入'
+      },
+      {
         id: 'chart-center',
         path: '/chart-center',
         title: '图表中心',
@@ -54,7 +61,3 @@ export const dashboardGroups = [
 ];
 
 export const defaultDashboardPath = '/hot-rankings';
-
-export function getDashboardByPath(pathname) {
-  return dashboardGroups.flatMap(group => group.items).find(item => item.path === pathname);
-}
