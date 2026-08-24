@@ -1,4 +1,5 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import logoUrl from '@/assets/branding/logo.png';
 
 import React from 'react';
 import {
@@ -31,7 +32,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className={style.logo}>
           <div className={style.mark}>
-            <img src="/static/logo.png" alt="Stock Flow Logo" />
+            <img src={logoUrl} alt="Stock Flow Logo" />
           </div>
           <div className={style.title}>
             <span>Quant Tide</span>
