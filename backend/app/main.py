@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI):
 
     # 将共享实例挂载到 app.state，供路由及其他应用组件复用。
     app.state.stock_repository = stock_repository
+    app.state.daily_repository = daily_repository
     app.state.service = service
 
     # 工作日 18:00 同步当日热门股数据。

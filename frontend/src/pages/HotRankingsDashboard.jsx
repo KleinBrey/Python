@@ -9,7 +9,7 @@ import {
   getHotStockListApi,
   getHistoricalPriceApi
 } from '../api/hithink/api.js';
-import { getStocksListApi, updateStocksListApi } from '../api/quantide/api.js';
+import { getStocksListApi, updateStocksListApi, getDailyBarsApi } from '../api/quantide/api.js';
 import moment from 'moment';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, colorSchemeDark, themeQuartz } from 'ag-grid-community';
@@ -83,6 +83,19 @@ function RankingTable({ activeRanking, onRefreshRanking, refreshingId, refreshin
     }
   };
 
+  const getStockDailyBars = async () => {
+    try {
+      const res = await getDailyBarsApi({
+        symbol: '600519',
+        start_date: '2026-01-01',
+        end_date: '2026-08-17'
+      });
+      console.log(res);
+    } catch (error) {
+      console.error('更新数据库Stocks数据失败', error);
+    }
+  };
+
   // 行单击事件处理函数
   const handleRowClick = async event => {
     const value = await getStockHistoryData(event.data.thscode);
@@ -123,6 +136,10 @@ function RankingTable({ activeRanking, onRefreshRanking, refreshingId, refreshin
         </Button>
         <Button type="button" className="ghost-button" variant="outline" onClick={() => updateStocksList()}>
           <span>更新数据库Stocks数据</span>
+        </Button>
+
+        <Button type="button" className="ghost-button" variant="outline" onClick={() => getStockDailyBars()}>
+          <span>股票历史数据</span>
         </Button>
       </div>
 

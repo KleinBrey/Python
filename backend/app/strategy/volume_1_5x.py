@@ -117,7 +117,9 @@ class HotVolumeBreakoutStrategy:
 
         # 候选池
         candidates = self._prepare_candidates(stocks, daily_bars)
+
         candidates = self._exclude_special_stocks(candidates)
+
         candidates = self._filter_market_cap(candidates)
 
         # 指标计算池

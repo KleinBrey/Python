@@ -7,6 +7,7 @@ Repository 只负责数据库读写，不负责调用第三方接口或清洗业
 import pandas as pd
 
 from ..database import DuckDBDatabase
+from ..utils.symbol import validate_symbol
 
 STOCK_COLUMNS = ["symbol", "name", "exchange", "market", "type", "source"]
 
@@ -114,6 +115,47 @@ class DailyBarRepository(BaseRepository):
         with self.db.connection(read_only=True) as connection:
             return connection.execute(
                 "SELECT * FROM daily_bars ORDER BY symbol, date"
+            ).df()
+
+    def get_by_symbol_and_date_range(
+        self,
+        symbol: object,
+        start_date: object,
+        end_date: object,
+    ) -> pd.DataFrame:
+        """查询一只股票在指定日期区间内的日 K 线。
+
+        开始日期和结束日期都包含在查询范围内。股票代码会统一为项目内部
+        使用的 6 位格式，因此 ``600519`` 和 ``600519.SH`` 查询结果相同。
+        """
+
+        normalized_symbol = validate_symbol(symbol)
+        normalized_start = pd.to_datetime(start_date, errors="raise").date()
+        normalized_end = pd.to_datetime(end_date, errors="raise").date()
+
+        if normalized_start > normalized_end:
+            raise ValueError("开始日期不能晚于结束日期")
+
+        # 使用 SQL 参数而不是拼接字符串，避免特殊输入改变查询语义。
+        with self.db.connection(read_only=True) as connection:
+            return connection.execute(
+                """
+                SELECT
+                    symbol,
+                    date,
+                    open,
+                    high,
+                    low,
+                    close,
+                    volume,
+                    amount,
+                    source
+                FROM daily_bars
+                WHERE symbol = ?
+                  AND date BETWEEN ? AND ?
+                ORDER BY date
+                """,
+                [normalized_symbol, normalized_start, normalized_end],
             ).df()
 
     def upsert_daily_bars(self, rows: pd.DataFrame) -> int:
