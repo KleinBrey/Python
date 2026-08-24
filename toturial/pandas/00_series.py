@@ -1,6 +1,11 @@
 """Pandas 第 0 课：用 Series 和 DataFrame 表示股票数据。"""
 
 import pandas as pd
+import numpy as np
+
+# ------------------------------------------------------------------
+# Series
+# ------------------------------------------------------------------
 
 # Series 是“一列带标签的数据”。这里用交易日期作为标签。
 series = pd.Series(
@@ -176,55 +181,195 @@ print(volume)
 print(volume.dtype)
 
 
-# DataFrame 是二维表，也是 Pandas 中最常用的数据结构。
-# bars = pd.DataFrame(
-#     {
-#         "symbol": ["600519.SH", "000001.BJ", "300750.SZ"],
-#         "name": ["贵州茅台", "平安银行", "宁德时代"],
-#         "close": [1488.0, 11.4, 300.0],
-#         "volume": [1680, 11800, 5600],
-#     }
-# )
+"""sort_values()"""
+# 对 Series 中的元素进行排序（按值排序）
+price = pd.Series(
+    [30, 10, 20],
+    index=["A", "B", "C"],
+)
 
-# data_list = [
-#     {
-#         "symbol": "600519.SH",
-#         "name": "贵州茅台",
-#         "close": 1488.0,
-#         "volume": 1680,
-#     },
-#     {
-#         "symbol": "000001.BJ",
-#         "name": "平安银行",
-#         "close": 11.4,
-#         "volume": 11800,
-#     },
-#     {
-#         "symbol": "300750.SZ",
-#         "name": "宁德时代",
-#         "close": 300.0,
-#         "volume": 5600,
-#     },
-# ]
+print(price.sort_values())
 
-# data_dict = {
-#     "symbol": ["600519.SH", "000001.BJ", "300750.SZ"],
-#     "name": ["贵州茅台", "平安银行", "宁德时代"],
-#     "close": [1488.0, 11.4, 300.0],
-#     "volume": [1680, 11800, 5600],
-# }
+# B    10
+# C    20
+# A    30
+# dtype: int64
 
-# bars = pd.DataFrame(data_list)
-
-# bars_2 = pd.DataFrame(data_dict)
-
-# print(f"两个frame是否相等: {bars.equals(bars_2)}")
-
-# print("\n=== 最新行情表 ===")
-# print(bars)
-# print("\n行数、列数：", bars.shape)
-# print("列名：", bars.columns.tolist())
-# print("收盘价这一列：\n", bars["close"])
+price.sort_values(ascending=False)
 
 
-# 记住：一列通常是 Series，多列组成 DataFrame。
+"""sort_index()"""
+# 对 Series 的索引进行排序
+price = pd.Series(
+    [100, 200, 300],
+    index=["600519", "000001", "300750"],
+)
+
+
+print(price.sort_index())
+
+# B    10
+# C    20
+# A    30
+# dtype: int64
+
+price.sort_index(ascending=False)
+print(price)
+
+
+"""dropna()"""
+# 删除 Series 中的缺失值（NaN）
+s = pd.Series([10, np.nan, 20, np.nan, 30])
+
+print(s.dropna())
+
+
+"""fillna(value)"""
+# 填充 Series 中的缺失值（NaN）
+s = pd.Series([10, np.nan, 20])
+
+print(s.fillna(0))
+
+
+"""replace(to_replace, value)"""
+# 替换 Series 中指定的值
+market = pd.Series(
+    [
+        "主板",
+        "创业板",
+        "科创板",
+    ]
+)
+
+print(market.replace("科创板", "STAR"))
+
+
+"""cumsum()"""
+# 返回 Series 的累计求和
+profit = pd.Series([10, -5, 20, -8])
+
+print(profit.cumsum())
+# 0    10
+# 1     5
+# 2    25
+# 3    17
+# dtype: int64
+
+
+"""cumprod()"""
+# 返回 Series 的累计乘积
+returns = pd.Series(
+    [
+        0.10,
+        -0.05,
+        0.03,
+    ]
+)
+
+print((1 + returns).cumprod())
+# 0    1.10000
+# 1    1.04500
+# 2    1.07635
+# dtype: float64
+
+
+"""shift(periods)"""
+# 将 Series 中的元素按指定的步数进行位移
+close = pd.Series(
+    [
+        10,
+        11,
+        12,
+        15,
+    ],
+)
+
+# 日期        昨天价格   今天价格
+# 8月18日     NaN        10
+# 8月19日     10         11
+# 8月20日     11         12
+# 8月21日     12         15
+
+# 8月21日当天，昨天的收盘价是12，今天的收盘价是15
+
+
+print(close.shift(1))
+
+# 收益率 = 今天的收盘价 / 昨天的收盘价
+daily_return = close / close.shift(1) - 1
+
+# 计算今日相比较昨日的收益率
+print(daily_return == close.pct_change())
+
+
+"""rank()"""
+# 返回 Series 中元素的排名
+hot = pd.Series(
+    [100, 30, 80, 20],
+    index=["贵州茅台", "平安银行", "宁德时代", "招商银行"],
+)
+
+print(hot.rank())
+
+# 默认是 数值越小 → 排名越靠前
+# 所以招商银行是20，数字最小，排名是1 ...
+
+# 贵州茅台    4
+# 平安银行    2
+# 宁德时代    3
+# 招商银行    1
+
+
+"""to_list()"""
+# 将 Series 转换为 Python 列表
+symbols = pd.Series(
+    [
+        "600519",
+        "000001",
+        "300750",
+    ]
+)
+
+result = symbols.to_list()
+
+print(result)
+
+
+"""to_frame()"""
+# 将 Series 转换为 DataFrame
+s = pd.Series(
+    [10, 20, 30],
+    name="close",
+)
+
+frame = s.to_frame()
+
+print(frame)
+
+
+"""iloc[]"""
+# 通过位置索引来选择数据
+s = pd.Series(
+    [10.5, 11.2, 12.8],
+    index=["600519", "000001", "300750"],
+)
+
+# 取第一个
+print(s.iloc[0])
+
+# 取第二个
+print(s.iloc[1])
+
+# 取前两个
+print(s.iloc[:2])
+
+
+"""loc[]"""
+# 通过标签索引来选择数据
+s = pd.Series(
+    [10.5, 11.2, 12.8],
+    index=["600519", "000001", "300750"],
+)
+
+# 取"600519"索引对应的
+print(s.loc["600519"])
