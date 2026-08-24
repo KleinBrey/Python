@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import moment from 'moment';
-
-import { getHistoricalPriceApi } from '@/api/hithink/api.js';
+import { getDailyBarsApi } from '@/api/quantide/api.js';
 import { transformStockHistory } from '../utils/transformers.js';
 
 export function useStockKline() {
@@ -10,26 +9,28 @@ export function useStockKline() {
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
 
-  const loadKline = useCallback(async thscode => {
-    if (!thscode) return;
+  const loadKline = useCallback(async symbol => {
+    if (!symbol) return;
 
     const requestId = ++requestIdRef.current;
+
     setLoading(true);
+
     setError('');
 
     try {
-      const response = await getHistoricalPriceApi({
-        thscode,
-        interval: '1d',
-        start: moment().subtract(1, 'year').valueOf(),
-        end: moment().valueOf()
+      const response = await getDailyBarsApi({
+        symbol,
+        start_date: moment().subtract(1, 'year').format('YYYY-MM-DD'),
+        end_date: moment().format('YYYY-MM-DD')
       });
+
       if (requestId !== requestIdRef.current) return;
 
       setData({
         dataSource: '同花顺 HiThink',
         adjustLabel: '前复权',
-        rows: transformStockHistory(response?.data?.item)
+        rows: transformStockHistory(response?.data)
       });
     } catch (requestError) {
       if (requestId !== requestIdRef.current) return;

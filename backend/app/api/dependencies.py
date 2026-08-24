@@ -9,8 +9,6 @@ def get_repository(request: Request) -> StockRepository:
 
 
 def get_daily_repository(request: Request) -> DailyBarRepository:
-    """取得应用启动时创建的日线 Repository。"""
-
     return request.app.state.daily_repository
 
 
