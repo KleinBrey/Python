@@ -17,21 +17,7 @@ export default function AppRoutes({ dashboard }) {
       <Route index element={<Navigate to={defaultDashboardPath} replace />} />
       <Route
         path="/hot-rankings"
-        element={
-          <HotRankingsDashboard
-            summary={dashboard.summary}
-            rankings={dashboard.rankings}
-            activeRanking={dashboard.activeRanking}
-            loading={dashboard.loading}
-            error={dashboard.error}
-            sourceStats={dashboard.sourceStats}
-            refreshingAll={dashboard.refreshingAll}
-            refreshingId={dashboard.refreshingId}
-            onLoadCache={() => dashboard.loadRankings(false)}
-            onSelectRanking={dashboard.setActiveId}
-            onRefreshRanking={dashboard.refreshRanking}
-          />
-        }
+        element={<HotRankingsDashboard />}
       />
       <Route
         path="/market-overview"
