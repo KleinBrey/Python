@@ -38,7 +38,9 @@ export default function HotRankingsDashboard() {
     if (!timestamp) return '未刷新';
 
     const value = moment(timestamp);
-    return value.isValid() ? value.format('YYYY-MM-DD HH:mm:ss') : '未刷新';
+
+    const time = `${value.format('YYYY-MM-DD HH:mm:ss')}｜${value.fromNow()}`;
+    return value.isValid() ? time : '未刷新';
   }
 
   return (

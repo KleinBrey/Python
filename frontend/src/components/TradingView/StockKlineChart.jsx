@@ -421,7 +421,6 @@ export default function StockKlineChart({
             ref={chartRef}
             role="img"
             aria-label={`${stockName || '个股'} K线、均线及成交量图`}
-            title={enableMouseWheelZoom ? '滚轮缩放图表' : '滚轮滚动列表'}
           />
           {contextMenu ? (
             <div

@@ -48,13 +48,13 @@ function keepKlineRowsWithStocks({ nodes }) {
 
 export default function RankingTable({ rows, loading }) {
   const columnDefs = useRef([
-    { headerName: '排名', field: 'rank', flex: 0.7, minWidth: 72 },
     { headerName: '股票', field: 'name', flex: 1 },
     { headerName: '代码', field: 'thscode', flex: 1 },
+    { headerName: '排名', field: 'rank', flex: 0.7, minWidth: 72 },
     { headerName: '热度', field: 'heat', flex: 1 }
   ]);
 
-  // 构造 一条K线数据行
+  // 构造K线图数据行
   const rowData = useMemo(
     () =>
       rows.flatMap((row, index) => {
