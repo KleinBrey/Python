@@ -531,6 +531,32 @@ h3 {
   min-height: 640px;
 }
 
+.hot-ranking-header-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.hot-ranking-fullscreen-button {
+  color: #d4d4d8;
+}
+
+.hot-ranking-panel:fullscreen {
+  background: #09090b;
+  border: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.hot-ranking-panel:fullscreen .hot-ranking-table-wrap {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
 .hot-ranking-grid {
   height: 100%;
   width: 100%;

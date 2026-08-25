@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import moment from 'moment'
 import {
   CandlestickSeries,
   ColorType,
@@ -24,6 +25,8 @@ const movingAverages = [
   { days: 20, color: '#a78bfa' },
 ]
 
+const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
 function timeKey(value) {
   if (typeof value === 'string' || typeof value === 'number')
     return String(value)
@@ -33,6 +36,16 @@ function timeKey(value) {
     return `${value.year}-${month}-${day}`
   }
   return ''
+}
+
+function formatCrosshairDate(value) {
+  const timestamp =
+    typeof value === 'number'
+      ? moment.unix(value).utc()
+      : moment.utc(timeKey(value), 'YYYY-MM-DD', true)
+
+  if (!timestamp.isValid()) return String(value ?? '')
+  return `${weekdayLabels[timestamp.day()]} ${timestamp.format('YYYY-MM-DD')}`
 }
 
 function chartRows(data) {
@@ -57,11 +70,10 @@ function chartRows(data) {
 }
 
 function weekKey(time) {
-  const [year, month, day] = String(time).split('-').map(Number)
-  const date = new Date(Date.UTC(year, month - 1, day))
-  const weekday = date.getUTCDay() || 7
-  date.setUTCDate(date.getUTCDate() - weekday + 1)
-  return date.toISOString().slice(0, 10)
+  return moment
+    .utc(String(time), 'YYYY-MM-DD', true)
+    .startOf('isoWeek')
+    .format('YYYY-MM-DD')
 }
 
 function aggregateRows(rows, period) {
@@ -248,7 +260,10 @@ export default function StockKlineChart({
         rightBarStaysOnScroll: true,
         timeVisible: false,
       },
-      localization: { locale: 'zh-CN' },
+      localization: {
+        locale: 'zh-CN',
+        timeFormatter: formatCrosshairDate,
+      },
       handleScroll: {
         mouseWheel: true,
         pressedMouseMove: true,
