@@ -1,7 +1,7 @@
 import { Braces, FileSearch, Layers3, ListChecks, Loader2, RefreshCcw } from 'lucide-react';
 
 import MetricCard from '@/components/MetricCard.jsx';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
 import SourceCard from './SourceCard.jsx';
 import StockTable from './StockTable.jsx';
 

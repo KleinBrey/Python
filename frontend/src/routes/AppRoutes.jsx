@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import { Spinner } from '@/components/ui/spinner.jsx';
+import { Spinner } from '@/shadcn/components/ui/spinner.jsx';
 
 import PlaceholderDashboard from '@/components/PlaceholderDashboard.jsx';
 import { defaultDashboardPath } from '@/routes/RouteConfig.js';

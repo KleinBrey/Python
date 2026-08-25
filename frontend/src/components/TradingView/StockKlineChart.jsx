@@ -10,7 +10,7 @@ import {
   createChart,
 } from 'lightweight-charts'
 import { Loader2, RotateCcw } from 'lucide-react'
-import { Button } from '@/components/ui/button.jsx'
+import { Button } from '@/shadcn/components/ui/button.jsx'
 import styles from './StockKlineChart.module.css'
 
 const periodOptions = [

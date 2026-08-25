@@ -1,4 +1,4 @@
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shadcn/components/ui/sidebar';
 import logoUrl from '@/assets/branding/logo.png';
 
 import React from 'react';

@@ -1,8 +1,8 @@
 import { Loader2, Play } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge.jsx';
-import { Button } from '@/components/ui/button.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
+import { Badge } from '@/shadcn/components/ui/badge.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
+import { Textarea } from '@/shadcn/components/ui/textarea.jsx';
 import { exampleQueries } from '../constants.js';
 
 export default function QueryPanel({ query, onQueryChange, status, apiKeyBadge, loading, onSubmit }) {

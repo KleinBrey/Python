@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react';
 
 import StockKlineChart from '@/components/TradingView/StockKlineChart.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
+import { Badge } from '@/shadcn/components/ui/badge.jsx';
 import { formatValue, shortTime } from '@/utils/formatters.js';
 import ResultTable from './ResultTable.jsx';
 import StockSelectionTable from './StockSelectionTable.jsx';

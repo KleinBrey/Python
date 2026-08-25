@@ -1,6 +1,6 @@
 import React from 'react';
 import { LoaderCircle } from 'lucide-react';
-import { cn } from '@/lib/utils.js';
+import { cn } from '@/shadcn/lib/utils.js';
 
 function Spinner({ className, ...props }) {
   return (

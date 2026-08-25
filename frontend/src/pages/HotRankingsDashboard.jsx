@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import RankingTable from '@/features/hot-rankings/components/RankingTable.jsx';
 import { useHotStockRanking } from '@/features/hot-rankings/hooks/useHotStockRanking.js';
 import { Loader2, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
 import moment from 'moment';
 
 export default function HotRankingsDashboard() {

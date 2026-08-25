@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shadcn/components/ui/table.jsx';
 import { formatValue } from '@/utils/formatters.js';
 
 export default function StockSelectionTable({ rows, selectedStock, onSelect }) {

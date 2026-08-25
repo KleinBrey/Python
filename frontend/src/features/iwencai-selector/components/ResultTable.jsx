@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button.jsx';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shadcn/components/ui/table.jsx';
 import { formatValue } from '@/utils/formatters.js';
 import { collectColumns } from '../utils/tableColumns.js';
 

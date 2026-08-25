@@ -1,6 +1,6 @@
 import { Play, RotateCcw } from 'lucide-react';
 
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
 
 export default function MarketFlowChart({ chartRef, isReplaying, onReplay }) {
   return (

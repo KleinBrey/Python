@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarTrigger } from '@/shadcn/components/ui/sidebar'
 import { AppSidebar } from './Sidebar.jsx'
 import style from './Layout.module.css'
 

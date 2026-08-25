@@ -2,7 +2,7 @@ import { BarChart3, Blocks, Database, Loader2, RefreshCcw, Table2 } from 'lucide
 
 import MetricCard from '@/components/MetricCard.jsx';
 import StatusBadge from '@/components/StatusBadge.jsx';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
 import { formatValue, shortTime } from '@/utils/formatters.js';
 import { buildDatabaseViewModel } from '../utils/databaseViewModel.js';
 

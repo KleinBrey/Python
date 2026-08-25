@@ -2,7 +2,7 @@ import { Blocks, ChartCandlestick, Database, Loader2, RefreshCcw } from 'lucide-
 
 import MetricCard from '@/components/MetricCard.jsx';
 import StatusBadge from '@/components/StatusBadge.jsx';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/shadcn/components/ui/button.jsx';
 import { shortTime, statusLabel } from '@/utils/formatters.js';
 
 export default function DataSourcesView({ dataSources, loading, error, onCheckSources }) {
