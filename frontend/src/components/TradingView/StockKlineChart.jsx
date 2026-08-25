@@ -163,6 +163,7 @@ export default function StockKlineChart({
   error,
   period,
   onPeriodChange,
+  enableMouseWheelZoom = true,
 }) {
   const chartRef = useRef(null)
   const contextMenuRef = useRef(null)
@@ -265,14 +266,14 @@ export default function StockKlineChart({
         timeFormatter: formatCrosshairDate,
       },
       handleScroll: {
-        mouseWheel: true,
+        mouseWheel: enableMouseWheelZoom,
         pressedMouseMove: true,
         horzTouchDrag: true,
         vertTouchDrag: false,
       },
       handleScale: {
         axisPressedMouseMove: true,
-        mouseWheel: true,
+        mouseWheel: enableMouseWheelZoom,
         pinch: true,
       },
     })
@@ -355,7 +356,7 @@ export default function StockKlineChart({
       chart.unsubscribeCrosshairMove(handleCrosshairMove)
       chart.remove()
     }
-  }, [rows])
+  }, [enableMouseWheelZoom, rows])
 
   const handleContextMenu = (event) => {
     event.preventDefault()
@@ -453,6 +454,7 @@ export default function StockKlineChart({
             ref={chartRef}
             role="img"
             aria-label={`${stockName || '个股'} K线、均线及成交量图`}
+            title={enableMouseWheelZoom ? '滚轮缩放图表' : '滚轮滚动列表'}
           />
           {contextMenu ? (
             <div

@@ -27,7 +27,13 @@ function RankingKlineRow({ data }) {
 
   return (
     <div className="hot-ranking-kline-row">
-      <StockKlinePanel stock={stock} data={klineData} loading={loading} error={error} />
+      <StockKlinePanel
+        stock={stock}
+        data={klineData}
+        loading={loading}
+        error={error}
+        enableMouseWheelZoom={false}
+      />
     </div>
   );
 }

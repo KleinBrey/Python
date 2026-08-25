@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import StockKlineChart from '@/components/TradingView/StockKlineChart.jsx';
 
-export default function StockKlinePanel({ stock, data, loading, error }) {
+export default function StockKlinePanel({ stock, data, loading, error, enableMouseWheelZoom = true }) {
   const [period, setPeriod] = useState('daily');
   const chartStock = stock
     ? {
@@ -19,6 +19,7 @@ export default function StockKlinePanel({ stock, data, loading, error }) {
       error={error}
       period={period}
       onPeriodChange={setPeriod}
+      enableMouseWheelZoom={enableMouseWheelZoom}
     />
   );
 }
