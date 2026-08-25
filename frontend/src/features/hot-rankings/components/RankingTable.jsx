@@ -27,22 +27,14 @@ function RankingKlineRow({ data }) {
 
   return (
     <div className="hot-ranking-kline-row">
-      <StockKlinePanel
-        stock={stock}
-        data={klineData}
-        loading={loading}
-        error={error}
-        enableMouseWheelZoom={false}
-      />
+      <StockKlinePanel stock={stock} data={klineData} loading={loading} error={error} enableMouseWheelZoom={false} />
     </div>
   );
 }
 
 function keepKlineRowsWithStocks({ nodes }) {
   const klineRowsByStock = new Map(
-    nodes
-      .filter(node => node.data?.__rowType === 'kline')
-      .map(node => [node.data.__parentRowId, node])
+    nodes.filter(node => node.data?.__rowType === 'kline').map(node => [node.data.__parentRowId, node])
   );
   const stockRows = nodes.filter(node => node.data?.__rowType !== 'kline');
 

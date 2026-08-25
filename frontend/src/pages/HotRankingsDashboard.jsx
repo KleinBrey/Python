@@ -60,17 +60,20 @@ export default function HotRankingsDashboard() {
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </Button>
-            <Button type="button" className="ghost-button" variant="outline" onClick={refresh} disabled={rankingLoading}>
+            <Button
+              type="button"
+              className="ghost-button"
+              variant="outline"
+              onClick={refresh}
+              disabled={rankingLoading}
+            >
               {rankingLoading ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
               <span>{rankingLoading ? '更新中' : '刷新当前'}</span>
             </Button>
           </div>
         </div>
         <div className="table-wrap hot-ranking-table-wrap">
-          <RankingTable
-            ranking={ranking}
-            loading={rankingLoading}
-          />
+          <RankingTable ranking={ranking} loading={rankingLoading} />
         </div>
       </section>
     </div>
