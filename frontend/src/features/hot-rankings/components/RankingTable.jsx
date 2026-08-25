@@ -1,7 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ClientSideRowModelModule, colorSchemeDark, themeQuartz } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-
 import StockKlinePanel from './StockKlinePanel.jsx';
 import { useStockKline } from '../hooks/useStockKline.js';
 import styles from './RankingTable.module.css';
@@ -35,48 +34,46 @@ function RankingKlineRow({ data }) {
 
 function keepKlineRowsWithStocks({ nodes }) {
   const klineRowsByStock = new Map(
-    nodes.filter(node => node.data?.__rowType === 'kline').map(node => [node.data.__parentRowId, node])
+    nodes.filter(node => node.data?.rowType === 'kline').map(node => [node.data.parentRowId, node])
   );
-  const stockRows = nodes.filter(node => node.data?.__rowType !== 'kline');
+  const stockRows = nodes.filter(node => node.data?.rowType !== 'kline');
 
   nodes.length = 0;
   stockRows.forEach(stockRow => {
     nodes.push(stockRow);
-    const klineRow = klineRowsByStock.get(stockRow.data.__rowId);
+    const klineRow = klineRowsByStock.get(stockRow.data.rowId);
     if (klineRow) nodes.push(klineRow);
   });
 }
 
-export default function RankingTable({ ranking, loading }) {
-  const columnDefs = useMemo(
-    () => [
-      { headerName: '排名', field: 'rank', flex: 0.7, minWidth: 72 },
-      { headerName: '股票', field: 'name', flex: 1 },
-      { headerName: '代码', field: 'thscode', flex: 1 },
-      { headerName: '热度', field: 'heat', flex: 1 }
-    ],
-    []
-  );
+export default function RankingTable({ rows, loading }) {
+  const columnDefs = useRef([
+    { headerName: '排名', field: 'rank', flex: 0.7, minWidth: 72 },
+    { headerName: '股票', field: 'name', flex: 1 },
+    { headerName: '代码', field: 'thscode', flex: 1 },
+    { headerName: '热度', field: 'heat', flex: 1 }
+  ]);
 
+  // 构造 一条K线数据行
   const rowData = useMemo(
     () =>
-      ranking.rows.flatMap((row, index) => {
+      rows.flatMap((row, index) => {
         const rowKey = `${stockSymbol(row) || 'stock'}-${index}`;
         const stockRowId = `stock-${rowKey}`;
         return [
           {
             ...row,
-            __rowId: stockRowId
+            rowId: stockRowId
           },
           {
-            __rowType: 'kline',
-            __rowId: `kline-${rowKey}`,
-            __parentRowId: stockRowId,
+            rowType: 'kline',
+            rowId: `kline-${rowKey}`,
+            parentRowId: stockRowId,
             stock: row
           }
         ];
       }),
-    [ranking.rows]
+    [rows]
   );
 
   return (
@@ -87,12 +84,12 @@ export default function RankingTable({ ranking, loading }) {
             <AgGridReact
               theme={themeDarkBlue}
               rowData={rowData}
-              columnDefs={columnDefs}
+              columnDefs={columnDefs.current}
               defaultColDef={{ resizable: true, sortable: true }}
               fullWidthCellRenderer={RankingKlineRow}
-              getRowHeight={params => (params.data?.__rowType === 'kline' ? KLINE_ROW_HEIGHT : undefined)}
-              getRowId={params => params.data.__rowId}
-              isFullWidthRow={params => params.rowNode.data?.__rowType === 'kline'}
+              getRowHeight={params => (params.data?.rowType === 'kline' ? KLINE_ROW_HEIGHT : undefined)}
+              getRowId={params => params.data.rowId}
+              isFullWidthRow={params => params.rowNode.data?.rowType === 'kline'}
               loading={loading}
               postSortRows={keepKlineRowsWithStocks}
             />

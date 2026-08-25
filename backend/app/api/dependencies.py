@@ -4,7 +4,7 @@ from backend.app.repository import DailyBarRepository, StockRepository
 from backend.app.services import Service
 
 
-def get_repository(request: Request) -> StockRepository:
+def get_stock_repository(request: Request) -> StockRepository:
     return request.app.state.stock_repository
 
 

@@ -75,7 +75,7 @@ export default function HotRankingsDashboard() {
           </div>
         </div>
         <div className={styles.tableWrap}>
-          <RankingTable ranking={ranking} loading={rankingLoading} />
+          <RankingTable rows={ranking.rows} loading={rankingLoading} />
         </div>
       </section>
     </div>

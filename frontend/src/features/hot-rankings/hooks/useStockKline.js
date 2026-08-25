@@ -35,8 +35,8 @@ export function useStockKline() {
       if (!request) {
         request = getDailyBarsApi({
           symbol,
-          start_date: moment().subtract(1, 'year').format('YYYY-MM-DD'),
-          end_date: moment().format('YYYY-MM-DD')
+          start: moment().subtract(1, 'year').format('YYYY-MM-DD'),
+          end: moment().format('YYYY-MM-DD')
         }).then(response => ({
           dataSource: '同花顺 HiThink',
           adjustLabel: '前复权',
