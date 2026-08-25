@@ -2,7 +2,7 @@ import logging
 
 from backend.scripts.sync_daily_k_db import sync_daily_k
 from backend.scripts.sync_hot_stock_db import sync_stock_hot
-from backend.scripts.sync_stock_list_db import main as sync_stock_list
+from backend.scripts.sync_stock_list_db import sync_stock_list
 
 logger = logging.getLogger(__name__)
 
