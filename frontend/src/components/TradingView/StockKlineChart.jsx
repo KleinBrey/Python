@@ -8,7 +8,7 @@ import {
   LineStyle,
   createChart,
 } from 'lightweight-charts'
-import { Loader2 } from 'lucide-react'
+import { Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import styles from './StockKlineChart.module.css'
 
@@ -56,6 +56,40 @@ function chartRows(data) {
     .sort((left, right) => String(left.time).localeCompare(String(right.time)))
 }
 
+function weekKey(time) {
+  const [year, month, day] = String(time).split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  const weekday = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() - weekday + 1)
+  return date.toISOString().slice(0, 10)
+}
+
+function aggregateRows(rows, period) {
+  if (period === 'daily') return rows
+
+  const groups = new Map()
+
+  rows.forEach((row) => {
+    const key =
+      period === 'weekly' ? weekKey(row.time) : String(row.time).slice(0, 7)
+    const current = groups.get(key)
+
+    if (!current) {
+      groups.set(key, { ...row })
+      return
+    }
+
+    current.time = row.time
+    current.date = row.date
+    current.high = Math.max(current.high, row.high)
+    current.low = Math.min(current.low, row.low)
+    current.close = row.close
+    current.volume += row.volume
+  })
+
+  return Array.from(groups.values())
+}
+
 function calculateMA(rows, dayCount) {
   let rollingTotal = 0
   return rows.flatMap((row, index) => {
@@ -98,6 +132,18 @@ function rowSummary(row) {
   }
 }
 
+function resetTimeScale(chart, rowCount) {
+  if (rowCount > 120) {
+    chart.timeScale().setVisibleLogicalRange({
+      from: rowCount - 120,
+      to: rowCount + 5,
+    })
+    return
+  }
+
+  chart.timeScale().fitContent()
+}
+
 export default function StockKlineChart({
   data,
   stock,
@@ -107,14 +153,48 @@ export default function StockKlineChart({
   onPeriodChange,
 }) {
   const chartRef = useRef(null)
-  const rows = useMemo(() => chartRows(data), [data])
+  const contextMenuRef = useRef(null)
+  const resetViewRef = useRef(() => {})
+  const dailyRows = useMemo(() => chartRows(data), [data])
+  const rows = useMemo(
+    () => aggregateRows(dailyRows, period),
+    [dailyRows, period],
+  )
   const stockName = stock?.name || stock?.股票简称 || ''
   const stockCode = stock?.code || stock?.thscode || stock?.股票代码 || ''
   const [activeBar, setActiveBar] = useState(() => rowSummary(rows.at(-1)))
+  const [contextMenu, setContextMenu] = useState(null)
 
   useEffect(() => {
     setActiveBar(rowSummary(rows.at(-1)))
+    setContextMenu(null)
   }, [rows])
+
+  useEffect(() => {
+    if (!contextMenu) return undefined
+
+    contextMenuRef.current?.querySelector('button')?.focus()
+
+    const closeMenu = (event) => {
+      if (!contextMenuRef.current?.contains(event.target)) setContextMenu(null)
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setContextMenu(null)
+    }
+    const close = () => setContextMenu(null)
+
+    document.addEventListener('pointerdown', closeMenu)
+    document.addEventListener('keydown', closeOnEscape)
+    window.addEventListener('blur', close)
+    window.addEventListener('resize', close)
+
+    return () => {
+      document.removeEventListener('pointerdown', closeMenu)
+      document.removeEventListener('keydown', closeOnEscape)
+      window.removeEventListener('blur', close)
+      window.removeEventListener('resize', close)
+    }
+  }, [contextMenu])
 
   useEffect(() => {
     const container = chartRef.current
@@ -238,6 +318,12 @@ export default function StockKlineChart({
     const panes = chart.panes()
     if (panes[1]) panes[1].setHeight(120)
 
+    resetViewRef.current = () => {
+      candleSeries.priceScale().applyOptions({ autoScale: true })
+      volumeSeries.priceScale().applyOptions({ autoScale: true })
+      resetTimeScale(chart, rows.length)
+    }
+
     const rowsByTime = new Map(rows.map((row) => [String(row.time), row]))
     const handleCrosshairMove = (parameter) => {
       const selected = parameter.time
@@ -247,20 +333,35 @@ export default function StockKlineChart({
     }
     chart.subscribeCrosshairMove(handleCrosshairMove)
 
-    if (rows.length > 120) {
-      chart.timeScale().setVisibleLogicalRange({
-        from: rows.length - 120,
-        to: rows.length + 5,
-      })
-    } else {
-      chart.timeScale().fitContent()
-    }
+    resetTimeScale(chart, rows.length)
 
     return () => {
+      resetViewRef.current = () => {}
       chart.unsubscribeCrosshairMove(handleCrosshairMove)
       chart.remove()
     }
   }, [rows])
+
+  const handleContextMenu = (event) => {
+    event.preventDefault()
+
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const menuWidth = 232
+    const menuHeight = 48
+    const leftLimit = Math.max(8, bounds.width - menuWidth - 8)
+    const topLimit = Math.max(8, bounds.height - menuHeight - 8)
+
+    setContextMenu({
+      left: Math.max(8, Math.min(event.clientX - bounds.left, leftLimit)),
+      top: Math.max(8, Math.min(event.clientY - bounds.top, topLimit)),
+    })
+  }
+
+  const handleResetView = () => {
+    resetViewRef.current()
+    setActiveBar(rowSummary(rows.at(-1)))
+    setContextMenu(null)
+  }
 
   return (
     <section className={styles.kline}>
@@ -297,7 +398,7 @@ export default function StockKlineChart({
           <span>{error}</span>
         </div>
       ) : rows.length ? (
-        <div className={styles.chartShell}>
+        <div className={styles.chartShell} onContextMenu={handleContextMenu}>
           {activeBar ? (
             <div className={styles.legend} aria-live="polite">
               <span className={styles.legendDate}>{activeBar.time}</span>
@@ -338,6 +439,22 @@ export default function StockKlineChart({
             role="img"
             aria-label={`${stockName || '个股'} K线、均线及成交量图`}
           />
+          {contextMenu ? (
+            <div
+              aria-label="图表操作菜单"
+              className={styles.contextMenu}
+              onContextMenu={(event) => event.preventDefault()}
+              ref={contextMenuRef}
+              role="menu"
+              style={{ left: contextMenu.left, top: contextMenu.top }}
+              tabIndex={-1}
+            >
+              <button onClick={handleResetView} role="menuitem" type="button">
+                <RotateCcw aria-hidden="true" size={18} />
+                <span>重置图表视图</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className={styles.state}>

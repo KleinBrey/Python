@@ -525,6 +525,26 @@ h3 {
   /* height: 500px; */
 }
 
+.table-wrap.hot-ranking-table-wrap {
+  display: block;
+  height: calc(100vh - 190px);
+  min-height: 640px;
+}
+
+.hot-ranking-grid {
+  height: 100%;
+  width: 100%;
+}
+
+.hot-ranking-kline-row {
+  border-bottom: 1px solid #3f3f46;
+  border-top: 1px solid #3f3f46;
+  box-sizing: border-box;
+  height: 586px;
+  overflow: hidden;
+  width: 100%;
+}
+
 .table-panel th:nth-child(1),
 .table-panel td:nth-child(1) {
   width: 76px;

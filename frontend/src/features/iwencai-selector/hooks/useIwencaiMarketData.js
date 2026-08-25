@@ -66,7 +66,7 @@ export function useIwencaiMarketData(rows, status) {
       setKlineLoading(true);
       setKlineError('');
       try {
-        const payload = await getStockHistory({ stock: selectedStock, period: klinePeriod, signal: controller.signal });
+        const payload = await getStockHistory({ stock: selectedStock, period: 'daily', signal: controller.signal });
         setKlineData(payload.item);
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
@@ -79,7 +79,7 @@ export function useIwencaiMarketData(rows, status) {
     }
     loadKline();
     return () => controller.abort();
-  }, [selectedStock, klinePeriod, status?.marketDataConfigured]);
+  }, [selectedStock, status?.marketDataConfigured]);
 
   return { selectedStock, setSelectedStock, klineData, klineLoading, klineError, klinePeriod, setKlinePeriod, prefetchStatus };
 }

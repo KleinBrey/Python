@@ -3,6 +3,9 @@ import moment from 'moment';
 import { getDailyBarsApi } from '@/api/quantide/api.js';
 import { transformStockHistory } from '../utils/transformers.js';
 
+const klineCache = new Map();
+const pendingRequests = new Map();
+
 export function useStockKline() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,26 +16,44 @@ export function useStockKline() {
     if (!symbol) return;
 
     const requestId = ++requestIdRef.current;
+    const cachedData = klineCache.get(symbol);
+
+    if (cachedData) {
+      setData(cachedData);
+      setError('');
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-
+    setData(null);
     setError('');
 
     try {
-      const response = await getDailyBarsApi({
-        symbol,
-        start_date: moment().subtract(1, 'year').format('YYYY-MM-DD'),
-        end_date: moment().format('YYYY-MM-DD')
-      });
+      let request = pendingRequests.get(symbol);
+
+      if (!request) {
+        request = getDailyBarsApi({
+          symbol,
+          start_date: moment().subtract(1, 'year').format('YYYY-MM-DD'),
+          end_date: moment().format('YYYY-MM-DD')
+        }).then(response => ({
+          dataSource: '同花顺 HiThink',
+          adjustLabel: '前复权',
+          rows: transformStockHistory(response?.data)
+        }));
+        pendingRequests.set(symbol, request);
+      }
+
+      const nextData = await request;
+      klineCache.set(symbol, nextData);
+      pendingRequests.delete(symbol);
 
       if (requestId !== requestIdRef.current) return;
 
-      setData({
-        dataSource: '同花顺 HiThink',
-        adjustLabel: '前复权',
-        rows: transformStockHistory(response?.data)
-      });
+      setData(nextData);
     } catch (requestError) {
+      pendingRequests.delete(symbol);
       if (requestId !== requestIdRef.current) return;
       console.error('K 线加载失败', requestError);
       setData(null);

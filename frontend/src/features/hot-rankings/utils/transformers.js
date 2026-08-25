@@ -1,5 +1,3 @@
-import moment from 'moment';
-
 export function transformStockHistory(items = []) {
   if (!Array.isArray(items)) return [];
 
