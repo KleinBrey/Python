@@ -9,10 +9,11 @@ from ..repository import (
     StockHotDailyRepository,
     StockRepository,
 )
+from ..utils.symbol import chunked
+
 import pandas as pd
 from tqdm.auto import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..utils.symbol import chunked
 import time
 import threading
 import random
@@ -131,7 +132,7 @@ class Service:
         return frame[columns].reset_index(drop=True)
 
     @staticmethod
-    def format_stock_hot_daily(
+    def format_hot_stock(
         value: pd.DataFrame,
         trade_date: date | datetime | str,
     ) -> pd.DataFrame:
@@ -176,7 +177,7 @@ class Service:
         frame = frame.drop_duplicates(subset=["trade_date", "symbol"], keep="last")
         return frame[columns].reset_index(drop=True)
 
-    def update_stock_hot_daily(
+    def update_hot_stock(
         self,
         trade_date: date | datetime | str | None = None,
     ) -> int:
@@ -189,8 +190,11 @@ class Service:
             trade_date = datetime.now(ZoneInfo("Asia/Shanghai")).date()
 
         try:
+            # API 请求数据
             result = self.iwencai_provider.fetch_hot_rank()
-            hot_rows = self.format_stock_hot_daily(result, trade_date)
+            # 格式化清洗数据
+            hot_rows = self.format_hot_stock(result, trade_date)
+            # 存到数据库
             affected_rows = self.stock_hot_repository.upsert_stock_hot_daily(hot_rows)
         except Exception as error:
             print(f"股票热度更新失败: {error}")

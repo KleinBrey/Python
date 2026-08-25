@@ -38,12 +38,12 @@ def create_scheduler(settings: Settings) -> BackgroundScheduler:
     )
 
     """更新热门股列表"""
-    # 每日更新：周一至周五执行，每天 18:00 触发
+    # 每日更新：周一至周五执行，每天 15:00 触发
     scheduler.add_job(
         run_stock_hot_sync,
         CronTrigger(
             day_of_week="mon-fri",
-            hour=18,
+            hour=15,
             minute=0,
             timezone=settings.scheduler_timezone,
         ),
@@ -52,13 +52,13 @@ def create_scheduler(settings: Settings) -> BackgroundScheduler:
     )
 
     """更新股票日K线列表"""
-    # 每日更新：周一到周五，默认 18:00 更新最近 3 日数据。
+    # 每日更新：周一到周五，16:00 更新最近 3 日数据。
     scheduler.add_job(
         run_daily_k_sync,
         CronTrigger(
             day_of_week="mon-fri",
-            hour=settings.daily_update_hour,
-            minute=settings.daily_update_minute,
+            hour=16,
+            minute=0,
             timezone=settings.scheduler_timezone,
         ),
         id="weekday-daily-k-sync",
@@ -66,30 +66,30 @@ def create_scheduler(settings: Settings) -> BackgroundScheduler:
         **common,
     )
 
-    # 每周校准：每周六 09:00 更新最近 60 日数据。
+    # 每周校准：每周六 16:00 更新最近 60 日数据。
     scheduler.add_job(
         run_daily_k_sync,
         CronTrigger(
             day_of_week="sat",
-            hour=9,
+            hour=16,
             minute=0,
             timezone=settings.scheduler_timezone,
         ),
-        id="weekly-daily-k-calibration",
+        id="weekly-daily-k-sync",
         args=[60, 50],
         **common,
     )
 
-    # 每月校准：每月 1 日 10:00 更新最近 365 日数据。
+    # 每月校准：每月 1 日 16:00 更新最近 365 日数据。
     scheduler.add_job(
         run_daily_k_sync,
         CronTrigger(
             day=1,
-            hour=10,
+            hour=16,
             minute=0,
             timezone=settings.scheduler_timezone,
         ),
-        id="monthly-daily-k-calibration",
+        id="monthly-daily-k-sync",
         args=[365, 10],
         **common,
     )

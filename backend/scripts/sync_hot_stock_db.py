@@ -6,8 +6,7 @@ from backend.app.repository import StockHotDailyRepository
 from backend.app.services import Service
 
 
-def main() -> None:
-
+def sync_stock_hot() -> None:
     # 初始化数据库
     database = DuckDBDatabase()
     database.initialize()
@@ -25,7 +24,11 @@ def main() -> None:
     )
 
     # 获取并保存当天股票热度。
-    service.update_stock_hot_daily()
+    service.update_hot_stock()
+
+
+def main() -> None:
+    sync_stock_hot()
 
 
 if __name__ == "__main__":

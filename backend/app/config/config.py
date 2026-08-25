@@ -17,66 +17,34 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
-    """应用配置类。
-
-    所有配置参数都可以通过环境变量覆盖。从项目根目录下的 backend/.env 文件加载配置。
-    """
+    """应用配置类"""
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / "backend" / ".env",
         env_file_encoding="utf-8",
-        extra="ignore",  # 忽略 .env 文件中的多余变量
+        extra="ignore",
     )
 
-    # ===== 应用基础配置 =====
-    app_name: str = "A 股本地行情数据平台"  # 应用名称
-    api_prefix: str = "/api"  # API 路由前缀
-    database_path: Path = Field(
-        default=PROJECT_ROOT / "data" / "market.duckdb"
-    )  # DuckDB 数据库路径
-    cors_origins: str = (
-        "http://127.0.0.1:5173,http://localhost:5173"  # CORS 允许的源（逗号分隔）
-    )
+    # 应用名称
+    app_name: str = "Quant Tide"
 
-    # ===== HiThink 同花顺 API 配置 =====
-    hithink_finance_api_key: str = ""  # 同花顺 API 密钥
-    hithink_finance_base_url: str = "https://fuyao.aicubes.cn"  # 同花顺 API 基础 URL
-    hithink_timeout_seconds: int = 30  # 同花顺 API 请求超时时间（秒）
-    hithink_request_interval: float = 0.0  # 同花顺 API 请求间隔（秒）
+    # API 路由前缀
+    api_prefix: str = "/api"
 
-    # ===== 定时任务调度配置 =====
-    scheduler_enabled: bool = True  # 是否启用定时任务调度器
-    scheduler_timezone: str = "Asia/Shanghai"  # 调度器时区
-    daily_update_hour: int = 18  # 每日更新任务的执行时间（小时）
-    daily_update_minute: int = 0  # 每日更新任务的执行时间（分钟）
+    # DuckDB 数据库路径
+    database_path: Path = Field(default=PROJECT_ROOT / "data" / "market.duckdb")
 
-    # ===== 数据同步配置 =====
-    sync_workers: int = 4  # 数据同步的并发工作进程数
-    history_days: int = 370  # 获取历史数据的天数
+    # 跨域 # CORS 允许的源
+    cors_origins_list: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
 
-    @field_validator("database_path", mode="after")
-    @classmethod
-    def resolve_database_path(cls, value: Path) -> Path:
-        """验证和转换数据库路径。
+    # 是否启用定时任务调度器
+    scheduler_enabled: bool = True
 
-        如果数据库路径是相对路径，则转换为相对于项目根目录的绝对路径。
+    # 调度器时区
+    scheduler_timezone: str = "Asia/Shanghai"
 
-        Args:
-            value: 输入的数据库路径
-
-        Returns:
-            绝对路径
-        """
-        return value if value.is_absolute() else PROJECT_ROOT / value
-
-    @property
-    def cors_origin_list(self) -> list[str]:
-        """将 CORS 源字符串转换为列表。
-
-        Returns:
-            CORS 源列表，已去除空格和空字符串
-        """
-        return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
+    # 数据同步的并发工作进程数
+    sync_workers: int = 4
 
 
 @lru_cache(maxsize=1)
