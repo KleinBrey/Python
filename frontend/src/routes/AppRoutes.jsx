@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Spinner } from '@/shadcn/components/ui/spinner.jsx';
 
 import PlaceholderDashboard from '@/components/PlaceholderDashboard.jsx';
+import placeholderStyles from '@/components/PlaceholderDashboard.module.css';
 import { defaultDashboardPath } from '@/routes/RouteConfig.js';
 
 const DataSourcesDashboard = lazy(() => import('@/pages/DataSourcesDashboard.jsx'));
@@ -15,7 +16,7 @@ const StrategySignalsDashboard = lazy(() => import('@/pages/StrategySignalsDashb
 
 function RouteFallback() {
   return (
-    <section className="placeholder">
+    <section className={placeholderStyles.placeholder}>
       <Spinner />
       <h2>加载页面</h2>
       <p>正在准备数据和界面</p>

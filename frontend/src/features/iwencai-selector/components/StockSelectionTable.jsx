@@ -1,11 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shadcn/components/ui/table.jsx';
 import { formatValue } from '@/utils/formatters.js';
+import styles from './IwencaiSelector.module.css';
 
 export default function StockSelectionTable({ rows, selectedStock, onSelect }) {
   return (
-    <aside className="iwencai-stock-selector">
-      <div className="iwencai-stock-selector-head"><strong>股票列表</strong><span>{rows.length} 只</span></div>
-      <Table containerClassName="iwencai-stock-table-scroll" style={{ minWidth: 374 }}>
+    <aside className={styles.stockSelector}>
+      <div className={styles.stockSelectorHead}><strong>股票列表</strong><span>{rows.length} 只</span></div>
+      <Table containerClassName={styles.stockTableScroll} style={{ minWidth: 374 }}>
         <TableHeader><TableRow><TableHead style={{ width: 112 }}>代码</TableHead><TableHead style={{ width: 108 }}>股票</TableHead><TableHead style={{ width: 76 }}>最新价</TableHead><TableHead style={{ width: 78 }}>涨跌幅</TableHead></TableRow></TableHeader>
         <TableBody>{rows.map((row, index) => {
           const selected = row.股票代码 === selectedStock?.股票代码;

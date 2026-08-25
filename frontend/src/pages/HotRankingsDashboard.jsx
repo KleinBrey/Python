@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 import RankingTable from '@/features/hot-rankings/components/RankingTable.jsx';
+import styles from '@/features/hot-rankings/HotRankingsDashboard.module.css';
 import { useHotStockRanking } from '@/features/hot-rankings/hooks/useHotStockRanking.js';
 import { Loader2, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
 import { Button } from '@/shadcn/components/ui/button.jsx';
+import { cn } from '@/shadcn/lib/utils.js';
 import moment from 'moment';
 
 export default function HotRankingsDashboard() {
@@ -41,17 +43,17 @@ export default function HotRankingsDashboard() {
 
   return (
     <div className="dashboard-content">
-      <section className="panel table-panel hot-ranking-panel" ref={panelRef}>
-        <div className="panel-header">
+      <section className={cn('dashboard-panel', 'dashboard-table-panel', styles.panel)} ref={panelRef}>
+        <div className="dashboard-panel-header">
           <div>
             <h2>{ranking.title}</h2>
             <span>{rankingError || formatTimestamp(ranking.timestamp)}</span>
           </div>
-          <div className="hot-ranking-header-actions">
+          <div className={styles.headerActions}>
             <Button
               aria-label={isFullscreen ? '退出全屏' : '全屏显示热榜'}
               aria-pressed={isFullscreen}
-              className="ghost-button hot-ranking-fullscreen-button"
+              className={cn('dashboard-ghost-button', styles.fullscreenButton)}
               onClick={toggleFullscreen}
               size="icon-lg"
               title={isFullscreen ? '退出全屏' : '全屏显示热榜'}
@@ -62,17 +64,17 @@ export default function HotRankingsDashboard() {
             </Button>
             <Button
               type="button"
-              className="ghost-button"
+              className="dashboard-ghost-button"
               variant="outline"
               onClick={refresh}
               disabled={rankingLoading}
             >
-              {rankingLoading ? <Loader2 className="spin" size={15} /> : <RefreshCcw size={15} />}
+              {rankingLoading ? <Loader2 className="dashboard-spin" size={15} /> : <RefreshCcw size={15} />}
               <span>{rankingLoading ? '更新中' : '刷新当前'}</span>
             </Button>
           </div>
         </div>
-        <div className="table-wrap hot-ranking-table-wrap">
+        <div className={styles.tableWrap}>
           <RankingTable ranking={ranking} loading={rankingLoading} />
         </div>
       </section>

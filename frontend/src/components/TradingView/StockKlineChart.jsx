@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import moment from 'moment'
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import moment from 'moment';
 import {
   CandlestickSeries,
   ColorType,
@@ -7,132 +7,117 @@ import {
   HistogramSeries,
   LineSeries,
   LineStyle,
-  createChart,
-} from 'lightweight-charts'
-import { Loader2, RotateCcw } from 'lucide-react'
-import { Button } from '@/shadcn/components/ui/button.jsx'
-import styles from './StockKlineChart.module.css'
+  createChart
+} from 'lightweight-charts';
+import { Loader2, RotateCcw } from 'lucide-react';
+import { Button } from '@/shadcn/components/ui/button.jsx';
+import styles from './StockKlineChart.module.css';
 
 const periodOptions = [
   ['daily', '日线'],
   ['weekly', '周线'],
-  ['monthly', '月线'],
-]
+  ['monthly', '月线']
+];
 
 const movingAverages = [
   { days: 5, color: '#f59e0b' },
   { days: 10, color: '#38bdf8' },
-  { days: 20, color: '#a78bfa' },
-]
+  { days: 20, color: '#a78bfa' }
+];
 
-const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 function timeKey(value) {
-  if (typeof value === 'string' || typeof value === 'number')
-    return String(value)
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
   if (value && typeof value === 'object' && 'year' in value) {
-    const month = String(value.month).padStart(2, '0')
-    const day = String(value.day).padStart(2, '0')
-    return `${value.year}-${month}-${day}`
+    const month = String(value.month).padStart(2, '0');
+    const day = String(value.day).padStart(2, '0');
+    return `${value.year}-${month}-${day}`;
   }
-  return ''
+  return '';
 }
 
 function formatCrosshairDate(value) {
   const timestamp =
-    typeof value === 'number'
-      ? moment.unix(value).utc()
-      : moment.utc(timeKey(value), 'YYYY-MM-DD', true)
+    typeof value === 'number' ? moment.unix(value).utc() : moment.utc(timeKey(value), 'YYYY-MM-DD', true);
 
-  if (!timestamp.isValid()) return String(value ?? '')
-  return `${weekdayLabels[timestamp.day()]} ${timestamp.format('YYYY-MM-DD')}`
+  if (!timestamp.isValid()) return String(value ?? '');
+  return `${weekdayLabels[timestamp.day()]} ${timestamp.format('YYYY-MM-DD')}`;
 }
 
 function chartRows(data) {
   return (data?.rows || [])
-    .map((row) => ({
+    .map(row => ({
       ...row,
       time: row.date,
       open: Number(row.open),
       high: Number(row.high),
       low: Number(row.low),
       close: Number(row.close),
-      volume: Number(row.volume || 0),
+      volume: Number(row.volume || 0)
     }))
-    .filter(
-      (row) =>
-        row.time &&
-        [row.open, row.high, row.low, row.close, row.volume].every(
-          Number.isFinite,
-        ),
-    )
-    .sort((left, right) => String(left.time).localeCompare(String(right.time)))
+    .filter(row => row.time && [row.open, row.high, row.low, row.close, row.volume].every(Number.isFinite))
+    .sort((left, right) => String(left.time).localeCompare(String(right.time)));
 }
 
 function weekKey(time) {
-  return moment
-    .utc(String(time), 'YYYY-MM-DD', true)
-    .startOf('isoWeek')
-    .format('YYYY-MM-DD')
+  return moment.utc(String(time), 'YYYY-MM-DD', true).startOf('isoWeek').format('YYYY-MM-DD');
 }
 
 function aggregateRows(rows, period) {
-  if (period === 'daily') return rows
+  if (period === 'daily') return rows;
 
-  const groups = new Map()
+  const groups = new Map();
 
-  rows.forEach((row) => {
-    const key =
-      period === 'weekly' ? weekKey(row.time) : String(row.time).slice(0, 7)
-    const current = groups.get(key)
+  rows.forEach(row => {
+    const key = period === 'weekly' ? weekKey(row.time) : String(row.time).slice(0, 7);
+    const current = groups.get(key);
 
     if (!current) {
-      groups.set(key, { ...row })
-      return
+      groups.set(key, { ...row });
+      return;
     }
 
-    current.time = row.time
-    current.date = row.date
-    current.high = Math.max(current.high, row.high)
-    current.low = Math.min(current.low, row.low)
-    current.close = row.close
-    current.volume += row.volume
-  })
+    current.time = row.time;
+    current.date = row.date;
+    current.high = Math.max(current.high, row.high);
+    current.low = Math.min(current.low, row.low);
+    current.close = row.close;
+    current.volume += row.volume;
+  });
 
-  return Array.from(groups.values())
+  return Array.from(groups.values());
 }
 
 function calculateMA(rows, dayCount) {
-  let rollingTotal = 0
+  let rollingTotal = 0;
   return rows.flatMap((row, index) => {
-    rollingTotal += row.close
-    if (index >= dayCount) rollingTotal -= rows[index - dayCount].close
-    if (index < dayCount - 1) return []
-    return [
-      { time: row.time, value: Number((rollingTotal / dayCount).toFixed(3)) },
-    ]
-  })
+    rollingTotal += row.close;
+    if (index >= dayCount) rollingTotal -= rows[index - dayCount].close;
+    if (index < dayCount - 1) return [];
+    return [{ time: row.time, value: Number((rollingTotal / dayCount).toFixed(3)) }];
+  });
 }
 
 function formatPrice(value) {
   return Number.isFinite(Number(value))
     ? Number(value).toLocaleString('zh-CN', {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 3,
+        maximumFractionDigits: 3
       })
-    : '—'
+    : '—';
 }
 
 function formatVolume(value) {
-  const number = Number(value)
-  if (!Number.isFinite(number)) return '—'
-  if (number >= 100000000) return `${(number / 100000000).toFixed(2)}亿`
-  if (number >= 10000) return `${(number / 10000).toFixed(1)}万`
-  return number.toLocaleString('zh-CN')
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  if (number >= 100000000) return `${(number / 100000000).toFixed(2)}亿`;
+  if (number >= 10000) return `${(number / 10000).toFixed(1)}万`;
+  return number.toLocaleString('zh-CN');
 }
 
 function rowSummary(row) {
-  if (!row) return null
+  if (!row) return null;
   return {
     time: row.time,
     open: row.open,
@@ -140,20 +125,20 @@ function rowSummary(row) {
     low: row.low,
     close: row.close,
     volume: row.volume,
-    rising: row.close >= row.open,
-  }
+    rising: row.close >= row.open
+  };
 }
 
 function resetTimeScale(chart, rowCount) {
   if (rowCount > 120) {
     chart.timeScale().setVisibleLogicalRange({
       from: rowCount - 120,
-      to: rowCount + 5,
-    })
-    return
+      to: rowCount - 1 // 右侧不留空隙
+    });
+    return;
   }
 
-  chart.timeScale().fitContent()
+  chart.timeScale().fitContent();
 }
 
 export default function StockKlineChart({
@@ -163,55 +148,52 @@ export default function StockKlineChart({
   error,
   period,
   onPeriodChange,
-  enableMouseWheelZoom = true,
+  enableMouseWheelZoom = true
 }) {
-  const chartRef = useRef(null)
-  const contextMenuRef = useRef(null)
-  const resetViewRef = useRef(() => {})
-  const dailyRows = useMemo(() => chartRows(data), [data])
-  const rows = useMemo(
-    () => aggregateRows(dailyRows, period),
-    [dailyRows, period],
-  )
-  const stockName = stock?.name || stock?.股票简称 || ''
-  const stockCode = stock?.code || stock?.thscode || stock?.股票代码 || ''
-  const [activeBar, setActiveBar] = useState(() => rowSummary(rows.at(-1)))
-  const [contextMenu, setContextMenu] = useState(null)
+  const chartRef = useRef(null);
+  const contextMenuRef = useRef(null);
+  const resetViewRef = useRef(() => {});
+  const dailyRows = useMemo(() => chartRows(data), [data]);
+  const rows = useMemo(() => aggregateRows(dailyRows, period), [dailyRows, period]);
+  const stockName = stock?.name || stock?.股票简称 || '';
+  const stockCode = stock?.code || stock?.thscode || stock?.股票代码 || '';
+  const [activeBar, setActiveBar] = useState(() => rowSummary(rows.at(-1)));
+  const [contextMenu, setContextMenu] = useState(null);
 
   useEffect(() => {
-    setActiveBar(rowSummary(rows.at(-1)))
-    setContextMenu(null)
-  }, [rows])
+    setActiveBar(rowSummary(rows.at(-1)));
+    setContextMenu(null);
+  }, [rows]);
 
   useEffect(() => {
-    if (!contextMenu) return undefined
+    if (!contextMenu) return undefined;
 
-    contextMenuRef.current?.querySelector('button')?.focus()
+    contextMenuRef.current?.querySelector('button')?.focus();
 
-    const closeMenu = (event) => {
-      if (!contextMenuRef.current?.contains(event.target)) setContextMenu(null)
-    }
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setContextMenu(null)
-    }
-    const close = () => setContextMenu(null)
+    const closeMenu = event => {
+      if (!contextMenuRef.current?.contains(event.target)) setContextMenu(null);
+    };
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setContextMenu(null);
+    };
+    const close = () => setContextMenu(null);
 
-    document.addEventListener('pointerdown', closeMenu)
-    document.addEventListener('keydown', closeOnEscape)
-    window.addEventListener('blur', close)
-    window.addEventListener('resize', close)
+    document.addEventListener('pointerdown', closeMenu);
+    document.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('blur', close);
+    window.addEventListener('resize', close);
 
     return () => {
-      document.removeEventListener('pointerdown', closeMenu)
-      document.removeEventListener('keydown', closeOnEscape)
-      window.removeEventListener('blur', close)
-      window.removeEventListener('resize', close)
-    }
-  }, [contextMenu])
+      document.removeEventListener('pointerdown', closeMenu);
+      document.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('blur', close);
+      window.removeEventListener('resize', close);
+    };
+  }, [contextMenu]);
 
   useEffect(() => {
-    const container = chartRef.current
-    if (!container || !rows.length) return undefined
+    const container = chartRef.current;
+    if (!container || !rows.length) return undefined;
 
     const chart = createChart(container, {
       autoSize: true,
@@ -224,12 +206,12 @@ export default function StockKlineChart({
         panes: {
           separatorColor: '#27272a',
           separatorHoverColor: '#3f3f46',
-          enableResize: true,
-        },
+          enableResize: true
+        }
       },
       grid: {
         vertLines: { color: '#202024', style: LineStyle.Dotted },
-        horzLines: { color: '#27272a', style: LineStyle.Dotted },
+        horzLines: { color: '#27272a', style: LineStyle.Dotted }
       },
       crosshair: {
         mode: CrosshairMode.Normal,
@@ -237,46 +219,46 @@ export default function StockKlineChart({
           color: '#71717a',
           labelBackgroundColor: '#27272a',
           style: LineStyle.Dashed,
-          labelVisible: true,
+          labelVisible: true
         },
         horzLine: {
           color: '#71717a',
           labelBackgroundColor: '#27272a',
           style: LineStyle.Dashed,
-          labelVisible: true,
-        },
+          labelVisible: true
+        }
       },
       rightPriceScale: {
         borderColor: '#3f3f46',
         entireTextOnly: true,
-        scaleMargins: { top: 0.12, bottom: 0.08, right: 0.02 },
+        scaleMargins: { top: 0.12, bottom: 0.08, right: 0.02 }
       },
       timeScale: {
         borderColor: '#3f3f46',
-        rightOffset: 6,
+        rightOffset: 0,
         barSpacing: 8,
         minBarSpacing: 3,
         fixLeftEdge: false,
         lockVisibleTimeRangeOnResize: true,
         rightBarStaysOnScroll: true,
-        timeVisible: false,
+        timeVisible: false
       },
       localization: {
         locale: 'zh-CN',
-        timeFormatter: formatCrosshairDate,
+        timeFormatter: formatCrosshairDate
       },
       handleScroll: {
         mouseWheel: enableMouseWheelZoom,
         pressedMouseMove: true,
         horzTouchDrag: true,
-        vertTouchDrag: false,
+        vertTouchDrag: false
       },
       handleScale: {
         axisPressedMouseMove: true,
         mouseWheel: enableMouseWheelZoom,
-        pinch: true,
-      },
-    })
+        pinch: true
+      }
+    });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#ef4444',
@@ -286,8 +268,8 @@ export default function StockKlineChart({
       wickUpColor: '#ef4444',
       wickDownColor: '#22c55e',
       priceLineVisible: false,
-      lastValueVisible: true,
-    })
+      lastValueVisible: true
+    });
 
     candleSeries.setData(
       rows.map(({ time, open, high, low, close }) => ({
@@ -295,9 +277,9 @@ export default function StockKlineChart({
         open,
         high,
         low,
-        close,
-      })),
-    )
+        close
+      }))
+    );
 
     movingAverages.forEach(({ days, color }) => {
       const series = chart.addSeries(LineSeries, {
@@ -305,87 +287,80 @@ export default function StockKlineChart({
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
-        crosshairMarkerVisible: false,
+        crosshairMarkerVisible: false
         // title: `MA${days}`,
-      })
-      series.setData(calculateMA(rows, days))
-    })
+      });
+      series.setData(calculateMA(rows, days));
+    });
 
     const volumeSeries = chart.addSeries(
       HistogramSeries,
       {
         priceFormat: { type: 'volume' },
         priceLineVisible: false,
-        lastValueVisible: false,
+        lastValueVisible: false
       },
-      1,
-    )
+      1
+    );
     volumeSeries.setData(
-      rows.map((row) => ({
+      rows.map(row => ({
         time: row.time,
         value: row.volume,
-        color:
-          row.close >= row.open
-            ? 'rgba(239, 68, 68, 0.72)'
-            : 'rgba(34, 197, 94, 0.72)',
-      })),
-    )
+        color: row.close >= row.open ? 'rgba(239, 68, 68, 0.72)' : 'rgba(34, 197, 94, 0.72)'
+      }))
+    );
 
-    const panes = chart.panes()
-    if (panes[1]) panes[1].setHeight(120)
+    const panes = chart.panes();
+    if (panes[1]) panes[1].setHeight(120);
 
     resetViewRef.current = () => {
-      candleSeries.priceScale().applyOptions({ autoScale: true })
-      volumeSeries.priceScale().applyOptions({ autoScale: true })
-      resetTimeScale(chart, rows.length)
-    }
+      candleSeries.priceScale().applyOptions({ autoScale: true });
+      volumeSeries.priceScale().applyOptions({ autoScale: true });
+      resetTimeScale(chart, rows.length);
+    };
 
-    const rowsByTime = new Map(rows.map((row) => [String(row.time), row]))
-    const handleCrosshairMove = (parameter) => {
-      const selected = parameter.time
-        ? rowsByTime.get(timeKey(parameter.time))
-        : rows.at(-1)
-      setActiveBar(rowSummary(selected || rows.at(-1)))
-    }
-    chart.subscribeCrosshairMove(handleCrosshairMove)
+    const rowsByTime = new Map(rows.map(row => [String(row.time), row]));
+    const handleCrosshairMove = parameter => {
+      const selected = parameter.time ? rowsByTime.get(timeKey(parameter.time)) : rows.at(-1);
+      setActiveBar(rowSummary(selected || rows.at(-1)));
+    };
+    chart.subscribeCrosshairMove(handleCrosshairMove);
 
-    resetTimeScale(chart, rows.length)
+    resetTimeScale(chart, rows.length);
 
     return () => {
-      resetViewRef.current = () => {}
-      chart.unsubscribeCrosshairMove(handleCrosshairMove)
-      chart.remove()
-    }
-  }, [enableMouseWheelZoom, rows])
+      resetViewRef.current = () => {};
+      chart.unsubscribeCrosshairMove(handleCrosshairMove);
+      chart.remove();
+    };
+  }, [enableMouseWheelZoom, rows]);
 
-  const handleContextMenu = (event) => {
-    event.preventDefault()
+  const handleContextMenu = event => {
+    event.preventDefault();
 
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const menuWidth = 232
-    const menuHeight = 48
-    const leftLimit = Math.max(8, bounds.width - menuWidth - 8)
-    const topLimit = Math.max(8, bounds.height - menuHeight - 8)
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 232;
+    const menuHeight = 48;
+    const leftLimit = Math.max(8, bounds.width - menuWidth - 8);
+    const topLimit = Math.max(8, bounds.height - menuHeight - 8);
 
     setContextMenu({
       left: Math.max(8, Math.min(event.clientX - bounds.left, leftLimit)),
-      top: Math.max(8, Math.min(event.clientY - bounds.top, topLimit)),
-    })
-  }
+      top: Math.max(8, Math.min(event.clientY - bounds.top, topLimit))
+    });
+  };
 
   const handleResetView = () => {
-    resetViewRef.current()
-    setActiveBar(rowSummary(rows.at(-1)))
-    setContextMenu(null)
-  }
+    resetViewRef.current();
+    setActiveBar(rowSummary(rows.at(-1)));
+    setContextMenu(null);
+  };
 
   return (
     <section className={styles.kline}>
       <div className={styles.header}>
         <div>
-          <h3>
-            {stock ? `${stockName}  |  ${String(stockCode)}` : '个股 K 线'}
-          </h3>
+          <h3>{stock ? `${stockName}  |  ${String(stockCode)}` : '个股 K 线'}</h3>
           <span>TradingView Charts</span>
         </div>
         <div className={styles.periods}>
@@ -429,21 +404,13 @@ export default function StockKlineChart({
               </span>
               <span>
                 收{' '}
-                <strong
-                  className={activeBar.rising ? styles.rise : styles.fall}
-                >
-                  {formatPrice(activeBar.close)}
-                </strong>
+                <strong className={activeBar.rising ? styles.rise : styles.fall}>{formatPrice(activeBar.close)}</strong>
               </span>
               <span>
                 量 <strong>{formatVolume(activeBar.volume)}</strong>
               </span>
               {movingAverages.map(({ days, color }) => (
-                <span
-                  className={styles.maKey}
-                  key={days}
-                  style={{ '--ma-color': color }}
-                >
+                <span className={styles.maKey} key={days} style={{ '--ma-color': color }}>
                   MA{days}
                 </span>
               ))}
@@ -460,7 +427,7 @@ export default function StockKlineChart({
             <div
               aria-label="图表操作菜单"
               className={styles.contextMenu}
-              onContextMenu={(event) => event.preventDefault()}
+              onContextMenu={event => event.preventDefault()}
               ref={contextMenuRef}
               role="menu"
               style={{ left: contextMenu.left, top: contextMenu.top }}
@@ -479,5 +446,5 @@ export default function StockKlineChart({
         </div>
       )}
     </section>
-  )
+  );
 }

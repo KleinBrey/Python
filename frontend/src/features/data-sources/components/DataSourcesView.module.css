@@ -1,0 +1,86 @@
+.grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 248px;
+  min-width: 0;
+  padding: 17px;
+}
+
+.cardHead {
+  align-items: start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.cardHead span {
+  color: var(--muted-foreground);
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.card h3 {
+  color: var(--foreground);
+  font-size: 24px;
+  line-height: 1.15;
+  margin-top: 8px;
+}
+
+.card dl {
+  border-bottom: 1px solid #27272a;
+  border-top: 1px solid #27272a;
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 14px;
+  padding: 14px 0;
+}
+
+.card dl div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.card dt {
+  color: #71717a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.card dd {
+  color: #e4e4e7;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+@media (max-width: 1180px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

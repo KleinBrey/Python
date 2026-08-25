@@ -4,6 +4,7 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 
 import StockKlinePanel from './StockKlinePanel.jsx';
 import { useStockKline } from '../hooks/useStockKline.js';
+import styles from './RankingTable.module.css';
 
 const modules = [ClientSideRowModelModule];
 
@@ -26,7 +27,7 @@ function RankingKlineRow({ data }) {
   }, [loadKline, stock]);
 
   return (
-    <div className="hot-ranking-kline-row">
+    <div className={styles.klineRow}>
       <StockKlinePanel stock={stock} data={klineData} loading={loading} error={error} enableMouseWheelZoom={false} />
     </div>
   );
@@ -80,7 +81,7 @@ export default function RankingTable({ ranking, loading }) {
 
   return (
     <>
-      <div className="ag-grid-container hot-ranking-grid">
+      <div className={styles.grid}>
         <AgGridProvider modules={modules}>
           <div style={{ height: '100%', width: '100%' }}>
             <AgGridReact
