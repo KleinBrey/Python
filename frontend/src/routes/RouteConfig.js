@@ -24,18 +24,22 @@ export const dashboardGroups = [
         status: '已接入'
       },
       {
-        id: 'iwencai-selector',
-        path: '/iwencai-selector',
-        title: '问财选股',
-        description: '通过自然语言组合行情、财务与技术条件',
-        status: '已接入'
-      },
-      {
         id: 'chart-center',
         path: '/chart-center',
         title: '图表中心',
         description: '历史行情和自定义图表',
         status: '规划中'
+      }
+    ]
+  },
+  {
+    title: '市场',
+    items: [
+      {
+        id: 'a-share-market',
+        path: '/a-share-market',
+        title: 'A股',
+        description: 'A股市场'
       }
     ]
   },
