@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ClientSideRowModelModule, colorSchemeDark, themeQuartz } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import AShareStockKlinePanel from './AShareStockKlinePanel.jsx';
@@ -12,6 +12,36 @@ const themeDarkBlue = themeQuartz.withPart(colorSchemeDark).withParams({
 });
 
 const KLINE_ROW_HEIGHT = 586;
+
+function formatChangePercent(value) {
+  if (value === null || value === undefined || value === '') return '-';
+
+  const change = Number(value);
+  if (!Number.isFinite(change)) return '-';
+
+  const sign = change > 0 ? '+' : '';
+  return `${sign}${change.toFixed(2)}%`;
+}
+
+function ChangePercentCell({ value }) {
+  const change = Number(value);
+  const color = change > 0 ? '#f04451' : change < 0 ? '#24bd7a' : undefined;
+
+  return <span style={{ color }}>{formatChangePercent(value)}</span>;
+}
+
+const COLUMN_DEFS = [
+  { headerName: '股票', field: 'name', flex: 1 },
+  { headerName: '代码', field: 'symbol', flex: 1 },
+  {
+    headerName: '涨幅%',
+    field: 'change_pct',
+    flex: 0.7,
+    minWidth: 92,
+    cellRenderer: ChangePercentCell
+  },
+  { headerName: '热度', field: 'hot_value', flex: 1 }
+];
 
 // K线图组件
 function AShareMarketKlineRow({ data }) {
@@ -50,13 +80,6 @@ function keepKlineRowsWithStocks({ nodes }) {
 }
 
 export default function AShareMarketTable({ rows, loading }) {
-  const columnDefs = useRef([
-    { headerName: '股票', field: 'name', flex: 1 },
-    { headerName: '代码', field: 'symbol', flex: 1 },
-    { headerName: '涨幅', field: 'change_pct', flex: 0.7, minWidth: 72 },
-    { headerName: '热度', field: 'hot_value', flex: 1 }
-  ]);
-
   // 构造K线图数据行
   const rowData = useMemo(
     () =>
@@ -87,7 +110,7 @@ export default function AShareMarketTable({ rows, loading }) {
             <AgGridReact
               theme={themeDarkBlue}
               rowData={rowData}
-              columnDefs={columnDefs.current}
+              columnDefs={COLUMN_DEFS}
               defaultColDef={{ resizable: true, sortable: true }}
               fullWidthCellRenderer={AShareMarketKlineRow}
               getRowHeight={params => (params.data?.rowType === 'kline' ? KLINE_ROW_HEIGHT : undefined)}
@@ -95,6 +118,7 @@ export default function AShareMarketTable({ rows, loading }) {
               isFullWidthRow={params => params.rowNode.data?.rowType === 'kline'}
               loading={loading}
               postSortRows={keepKlineRowsWithStocks}
+              suppressCellFocus
             />
           </div>
         </AgGridProvider>

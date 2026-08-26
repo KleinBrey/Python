@@ -3,7 +3,7 @@ export function transformStockHistory(items = []) {
 
   return items.map(item => {
     return {
-      date: item.date,
+      date: item.trade_date,
       open: Number(item.open.toFixed(2)),
       high: Number(item.high.toFixed(2)),
       low: Number(item.low.toFixed(2)),
