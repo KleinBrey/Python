@@ -63,12 +63,12 @@ export function useAShareStockKline() {
     }
   }, []);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // 清理函数
+    return () => {
       requestIdRef.current += 1;
-    },
-    []
-  );
+    };
+  }, []);
 
   return {
     data,

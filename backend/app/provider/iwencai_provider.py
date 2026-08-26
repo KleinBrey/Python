@@ -140,11 +140,35 @@ class IwencaiProvider:
         return result
 
     def fetch_hot_rank(self) -> pd.DataFrame:
-        """股票热度列表"""
+        """获取 A 股热度列表。"""
         data = self.query(
-            "个股热度从高到低排序前2000，返回原始字段",
+            "A股热度排名前2000",
             page_size=50,
         )
+
+        return self._format_hot_rank(data)
+
+    def fetch_hk_hot_rank(self) -> pd.DataFrame:
+        """获取港股关注度排名前 50。"""
+        data = self.query(
+            "港股关注度排名前50",
+            page_size=50,
+        )
+
+        return self._format_hot_rank(data)
+
+    def fetch_us_hot_rank(self) -> pd.DataFrame:
+        """获取美股关注度排名前 50。"""
+        data = self.query(
+            "美股关注度排名前50",
+            page_size=50,
+        )
+
+        return self._format_hot_rank(data)
+
+    @staticmethod
+    def _format_hot_rank(data: list[dict[str, Any]]) -> pd.DataFrame:
+        """将问财热度结果转换为统一字段。"""
 
         frame = pd.DataFrame(data)
 

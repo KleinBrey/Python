@@ -81,3 +81,35 @@ def test_upsert_rejects_missing_columns(repository: StockHotDailyRepository):
                 [{"trade_date": "20260820", "symbol": "600000", "name": "浦发银行"}]
             )
         )
+
+
+def test_get_latest_update_time_and_latest_trade_date(
+    repository: StockHotDailyRepository,
+):
+    repository.upsert_stock_hot_daily(
+        pd.DataFrame(
+            [
+                ["20260820", "600000", "浦发银行", 12.1, 1.2, 88],
+                ["20260821", "000001", "平安银行", 11.2, -0.5, 99],
+                ["20260821", "300750", "宁德时代", 200.0, 2.0, 100],
+            ],
+            columns=[
+                "trade_date",
+                "symbol",
+                "name",
+                "price",
+                "change_pct",
+                "hot_value",
+            ],
+        )
+    )
+
+    latest_update_time = repository.get_latest_update_time()
+    latest_rows = repository.get_latest()
+
+    assert latest_update_time is not None
+    assert latest_rows["trade_date"].tolist() == [
+        pd.Timestamp("2026-08-21"),
+        pd.Timestamp("2026-08-21"),
+    ]
+    assert latest_rows["symbol"].tolist() == ["300750", "000001"]

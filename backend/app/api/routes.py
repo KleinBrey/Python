@@ -11,7 +11,7 @@ from fastapi import (
     Query,
 )
 
-from backend.app.schemas import DailyBar, Stock
+from backend.app.schemas import DailyBar, HotStock, Stock
 from backend.app.repository import DailyBarRepository, StockRepository
 from backend.app.services import Service
 from backend.app.utils.symbol import validate_symbol
@@ -51,6 +51,19 @@ def update_stocks_list(service: dbService) -> dict[str, str]:
         "status": "success",
         "message": "股票列表更新成功",
     }
+
+
+@router.get("/hot-stock", response_model=list[HotStock])
+def hot_stock(service: dbService, count: int = 100) -> list[dict]:
+    """返回最新 A 股热度榜；数据库缓存超过两小时时自动同步。"""
+
+    hot_stock_table = service.get_hot_stock().head(count)
+    # 将 pandas 的 NaN/NaT 转为 None，确保可选字段能被 JSON 正确编码。
+    hot_stock_table = hot_stock_table.astype(object).where(
+        pd.notna(hot_stock_table),
+        None,
+    )
+    return hot_stock_table.to_dict(orient="records")
 
 
 @router.get("/daily-bars", response_model=list[DailyBar])

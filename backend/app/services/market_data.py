@@ -1,6 +1,6 @@
 """市场数据格式化与同步服务。"""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from ..provider import HithinkProvider, IwencaiProvider, TushareProvider
@@ -20,6 +20,8 @@ import random
 
 
 class Service:
+    HOT_STOCK_CACHE_TTL = timedelta(hours=2)
+
     def __init__(
         self,
         hithink_provider: HithinkProvider | None = None,
@@ -35,6 +37,7 @@ class Service:
         self.daily_repository = daily_repository
         self.iwencai_provider = iwencai_provider
         self.stock_hot_repository = stock_hot_repository
+        self._hot_stock_sync_lock = threading.Lock()
 
     @staticmethod
     def format_stock_list(value: pd.DataFrame, source: str) -> pd.DataFrame:
@@ -202,6 +205,51 @@ class Service:
 
         print(f"股票热度更新成功，共写入 {affected_rows} 条")
         return affected_rows
+
+    def get_hot_stock(
+        self,
+        request_time: datetime | None = None,
+    ) -> pd.DataFrame:
+        """返回最新 A 股热度榜，缓存超过两小时时先同步数据。"""
+
+        if self.stock_hot_repository is None:
+            raise RuntimeError("未配置股票热度 Repository")
+
+        current_time = request_time or datetime.now(ZoneInfo("Asia/Shanghai"))
+        latest_update_time = self.stock_hot_repository.get_latest_update_time()
+
+        if not self._is_hot_stock_fresh(latest_update_time, current_time):
+            # 路由是同步接口，可能被多个工作线程同时调用。锁内再次检查，
+            # 确保缓存过期时只发起一次问财同步。
+            with self._hot_stock_sync_lock:
+                latest_update_time = self.stock_hot_repository.get_latest_update_time()
+                if not self._is_hot_stock_fresh(latest_update_time, current_time):
+                    trade_date = self._to_shanghai_naive(current_time).date()
+                    self.update_hot_stock(trade_date)
+
+        return self.stock_hot_repository.get_latest()
+
+    def _is_hot_stock_fresh(
+        self,
+        latest_update_time: datetime | None,
+        request_time: datetime,
+    ) -> bool:
+        """判断热度数据距请求时间是否严格不足两小时。"""
+
+        if latest_update_time is None:
+            return False
+
+        latest = self._to_shanghai_naive(latest_update_time)
+        requested_at = self._to_shanghai_naive(request_time)
+        return requested_at - latest < self.HOT_STOCK_CACHE_TTL
+
+    @staticmethod
+    def _to_shanghai_naive(value: datetime) -> datetime:
+        """将时间统一为上海时区的无时区时间，兼容 DuckDB TIMESTAMP。"""
+
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(ZoneInfo("Asia/Shanghai")).replace(tzinfo=None)
 
     def update_stocks_list(self):
         """获取股票列表数据"""

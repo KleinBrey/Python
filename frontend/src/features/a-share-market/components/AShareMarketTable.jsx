@@ -13,16 +13,13 @@ const themeDarkBlue = themeQuartz.withPart(colorSchemeDark).withParams({
 
 const KLINE_ROW_HEIGHT = 586;
 
-function stockSymbol(stock) {
-  return stock?.thscode || stock?.code || '';
-}
-
+// K线图组件
 function AShareMarketKlineRow({ data }) {
   const stock = data.stock;
   const { data: klineData, loading, error, loadKline } = useAShareStockKline();
 
   useEffect(() => {
-    loadKline(stockSymbol(stock));
+    loadKline(stock.symbol);
   }, [loadKline, stock]);
 
   return (
@@ -55,16 +52,16 @@ function keepKlineRowsWithStocks({ nodes }) {
 export default function AShareMarketTable({ rows, loading }) {
   const columnDefs = useRef([
     { headerName: '股票', field: 'name', flex: 1 },
-    { headerName: '代码', field: 'thscode', flex: 1 },
-    { headerName: '排名', field: 'rank', flex: 0.7, minWidth: 72 },
-    { headerName: '热度', field: 'heat', flex: 1 }
+    { headerName: '代码', field: 'symbol', flex: 1 },
+    { headerName: '涨幅', field: 'change_pct', flex: 0.7, minWidth: 72 },
+    { headerName: '热度', field: 'hot_value', flex: 1 }
   ]);
 
   // 构造K线图数据行
   const rowData = useMemo(
     () =>
       rows.flatMap((row, index) => {
-        const rowKey = `${stockSymbol(row) || 'stock'}-${index}`;
+        const rowKey = `${row.symbol}-${index}`;
         const stockRowId = `stock-${rowKey}`;
         return [
           {

@@ -36,6 +36,8 @@ uv run uvicorn backend.app.main:app \
 - `dependencies.py`：从 `app.state` 获取共享 Repository 和 Service；
 - `GET /api/stocks-list`：读取股票列表；
 - `POST /api/stocks-list`：从 Tushare 更新股票列表。
+- `GET /api/hot-stock`：读取最新 A 股热度榜；数据更新时间不足 2 小时直接返回，
+  否则先从问财同步后返回。
 
 ### `app/config/`
 

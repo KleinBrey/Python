@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getHotStockListApi } from '@/api/hithink/api.js';
 
+import { getHotStocksApi } from '@/api/quantide/api';
+import moment from 'moment';
+
 const initialConfig = {
   title: '同花顺热榜',
   timestamp: null,
@@ -26,15 +29,15 @@ export function useAShareMarketRanking() {
     setError('');
 
     try {
-      const response = await getHotStockListApi('hour');
+      const response = await getHotStocksApi();
 
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
 
       setRanking({
         title: '同花顺热榜',
-        timestamp: response?.data?.timestamp ?? null,
-        rows: Array.isArray(response?.data?.item) ? response.data.item : []
+        timestamp: Date.now(),
+        rows: response?.data ? response.data : []
       });
     } catch (requestError) {
       // 过期请求直接忽略

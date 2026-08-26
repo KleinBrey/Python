@@ -10,8 +10,12 @@ from backend.app.api import router
 from backend.app.config.config import get_settings
 from backend.app.database import DuckDBDatabase
 from backend.app.jobs import create_scheduler
-from backend.app.provider import HithinkProvider, TushareProvider
-from backend.app.repository import DailyBarRepository, StockRepository
+from backend.app.provider import HithinkProvider, IwencaiProvider, TushareProvider
+from backend.app.repository import (
+    DailyBarRepository,
+    StockHotDailyRepository,
+    StockRepository,
+)
 from backend.app.services import Service
 
 logging.basicConfig(
@@ -31,20 +35,27 @@ async def lifespan(app: FastAPI):
     # 注册stock表的repository，用来统一处理增删改查
     stock_repository = StockRepository(database)
     daily_repository = DailyBarRepository(database)
+    stock_hot_repository = StockHotDailyRepository(database)
 
     # 注册API调用
     hithink_provider = HithinkProvider()
-
     tushare_provider = TushareProvider()
+    iwencai_provider = IwencaiProvider()
 
     # 业务逻辑处理
     service = Service(
-        hithink_provider, tushare_provider, stock_repository, daily_repository
+        hithink_provider=hithink_provider,
+        tushare_provider=tushare_provider,
+        stock_repository=stock_repository,
+        daily_repository=daily_repository,
+        iwencai_provider=iwencai_provider,
+        stock_hot_repository=stock_hot_repository,
     )
 
     # 将共享实例挂载到 app.state，供路由及其他应用组件复用。
     app.state.stock_repository = stock_repository
     app.state.daily_repository = daily_repository
+    app.state.stock_hot_repository = stock_hot_repository
     app.state.service = service
 
     # 工作日 18:00 同步当日热门股数据。

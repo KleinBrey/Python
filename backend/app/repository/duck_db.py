@@ -4,6 +4,8 @@ Repository 只负责数据库读写，不负责调用第三方接口或清洗业
 每张表的冲突键和更新字段不同，因此由具体 Repository 明确实现写入逻辑。
 """
 
+from datetime import datetime
+
 import pandas as pd
 
 from ..database import DuckDBDatabase
@@ -221,6 +223,39 @@ class DailyBarRepository(BaseRepository):
 
 class StockHotDailyRepository(BaseRepository):
     """负责 stock_hot_daily 表的读写。"""
+
+    def get_latest_update_time(self) -> datetime | None:
+        """获取股票热度表最近一次更新时间；无数据时返回 ``None``。"""
+
+        with self.db.connection(read_only=True) as connection:
+            row = connection.execute(
+                "SELECT MAX(update_time) FROM stock_hot_daily"
+            ).fetchone()
+
+        return row[0] if row and row[0] is not None else None
+
+    def get_latest(self) -> pd.DataFrame:
+        """获取数据库中最新交易日的股票热度榜。"""
+
+        with self.db.connection(read_only=True) as connection:
+            return connection.execute(
+                """
+                SELECT
+                    trade_date,
+                    symbol,
+                    name,
+                    price,
+                    change_pct,
+                    hot_value,
+                    source,
+                    update_time
+                FROM stock_hot_daily
+                WHERE trade_date = (
+                    SELECT MAX(trade_date) FROM stock_hot_daily
+                )
+                ORDER BY hot_value DESC, symbol
+                """
+            ).df()
 
     def get_by_trade_date(self, trade_date: object) -> pd.DataFrame:
         """按交易日获取股票热度列表，并按热度从高到低排列。"""

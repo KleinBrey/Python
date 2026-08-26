@@ -14,3 +14,8 @@ export function updateStocksListApi(params = {}) {
 export function getDailyBarsApi(params = {}) {
   return request.get('/api/daily-bars', params);
 }
+
+// 获取指定股票在日期范围内的日 K 线
+export function getHotStocksApi(params = {}) {
+  return request.get('/api/hot-stock', params);
+}

@@ -3,7 +3,7 @@ import axios from 'axios';
 export class HttpClient {
   constructor(config = {}) {
     this.service = axios.create({
-      timeout: 10000,
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json;charset=utf-8'
       },

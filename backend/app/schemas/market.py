@@ -25,3 +25,16 @@ class DailyBar(BaseModel):
     volume: float
     amount: float | None = None
     source: str
+
+
+class HotStock(BaseModel):
+    """A 股热度榜中的一条记录。"""
+
+    trade_date: date
+    symbol: str
+    name: str
+    price: float | None = None
+    change_pct: float | None = None
+    hot_value: float
+    source: str
+    update_time: datetime
