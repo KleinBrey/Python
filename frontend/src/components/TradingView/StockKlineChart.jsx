@@ -156,7 +156,7 @@ export default function StockKlineChart({
   const dailyRows = useMemo(() => chartRows(data), [data]);
   const rows = useMemo(() => aggregateRows(dailyRows, period), [dailyRows, period]);
   const stockName = stock?.name;
-  const stockCode = stock?.symbol;
+  const stockCode = stock?.symbol || stock?.code || stock?.thscode;
   const [activeBar, setActiveBar] = useState(() => rowSummary(rows.at(-1)));
   const [contextMenu, setContextMenu] = useState(null);
 

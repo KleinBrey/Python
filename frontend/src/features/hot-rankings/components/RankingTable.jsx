@@ -46,7 +46,7 @@ function keepKlineRowsWithStocks({ nodes }) {
   });
 }
 
-export default function RankingTable({ rows, loading }) {
+export default function RankingTable({ rows, loading, showKline = false }) {
   const columnDefs = useRef([
     { headerName: '股票', field: 'name', flex: 1 },
     { headerName: '代码', field: 'thscode', flex: 1 },
@@ -54,17 +54,21 @@ export default function RankingTable({ rows, loading }) {
     { headerName: '热度', field: 'heat', flex: 1 }
   ]);
 
-  // 构造K线图数据行
+  // 普通状态只展示股票行；榜单进入全屏后，才为每只股票插入对应的 K 线行。
   const rowData = useMemo(
     () =>
       rows.flatMap((row, index) => {
         const rowKey = `${stockSymbol(row) || 'stock'}-${index}`;
         const stockRowId = `stock-${rowKey}`;
+        const stockRow = {
+          ...row,
+          rowId: stockRowId
+        };
+
+        if (!showKline) return [stockRow];
+
         return [
-          {
-            ...row,
-            rowId: stockRowId
-          },
+          stockRow,
           {
             rowType: 'kline',
             rowId: `kline-${rowKey}`,
@@ -73,7 +77,7 @@ export default function RankingTable({ rows, loading }) {
           }
         ];
       }),
-    [rows]
+    [rows, showKline]
   );
 
   return (
@@ -92,6 +96,7 @@ export default function RankingTable({ rows, loading }) {
               isFullWidthRow={params => params.rowNode.data?.rowType === 'kline'}
               loading={loading}
               postSortRows={keepKlineRowsWithStocks}
+              suppressCellFocus
             />
           </div>
         </AgGridProvider>

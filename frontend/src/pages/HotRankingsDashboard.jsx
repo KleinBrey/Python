@@ -9,25 +9,45 @@ import { cn } from '@/shadcn/lib/utils.js';
 import moment from 'moment';
 
 export default function HotRankingsDashboard() {
-  const panelRef = useRef(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const panelRefs = useRef({});
+  const [fullscreenMarket, setFullscreenMarket] = useState(null);
   const { ranking, loading: rankingLoading, error: rankingError, refresh } = useHotStockRanking();
+
+  const markets = [
+    { id: 'a-share', title: 'A股热榜' },
+    { id: 'hk-share', title: '港股热榜' },
+    { id: 'us-share', title: '美股热榜' }
+  ];
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(document.fullscreenElement === panelRef.current);
+      const activeMarket = Object.entries(panelRefs.current).find(([, panel]) => panel === document.fullscreenElement);
+      setFullscreenMarket(activeMarket?.[0] || null);
+    };
+
+    const handleEscape = event => {
+      if (event.key === 'Escape' && !document.fullscreenElement) setFullscreenMarket(null);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
-  async function toggleFullscreen() {
+  async function toggleFullscreen(marketId) {
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       } else {
-        await panelRef.current?.requestFullscreen();
+        const panel = panelRefs.current[marketId];
+        if (typeof panel?.requestFullscreen === 'function') {
+          await panel.requestFullscreen();
+        } else {
+          setFullscreenMarket(currentMarket => (currentMarket === marketId ? null : marketId));
+        }
       }
     } catch (fullscreenError) {
       console.error('切换热榜全屏失败', fullscreenError);
@@ -39,47 +59,66 @@ export default function HotRankingsDashboard() {
 
     const value = moment(timestamp);
 
-    const time = `${value.format('YYYY-MM-DD HH:mm:ss')}｜${value.fromNow()}`;
+    const time = value.format('YYYY-MM-DD HH:mm:ss');
     return value.isValid() ? time : '未刷新';
   }
 
   return (
-    <div className="dashboard-content">
-      <section className={cn('dashboard-panel', 'dashboard-table-panel', styles.panel)} ref={panelRef}>
-        <div className="dashboard-panel-header">
-          <div>
-            <h2>{ranking.title}</h2>
-            <span>{rankingError || formatTimestamp(ranking.timestamp)}</span>
-          </div>
-          <div className={styles.headerActions}>
-            <Button
-              aria-label={isFullscreen ? '退出全屏' : '全屏显示热榜'}
-              aria-pressed={isFullscreen}
-              className={cn('dashboard-ghost-button', styles.fullscreenButton)}
-              onClick={toggleFullscreen}
-              size="icon-lg"
-              title={isFullscreen ? '退出全屏' : '全屏显示热榜'}
-              type="button"
-              variant="outline"
-            >
-              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-            </Button>
-            <Button
-              type="button"
-              className="dashboard-ghost-button"
-              variant="outline"
-              onClick={refresh}
-              disabled={rankingLoading}
-            >
-              {rankingLoading ? <Loader2 className="dashboard-spin" size={15} /> : <RefreshCcw size={15} />}
-              <span>{rankingLoading ? '更新中' : '刷新当前'}</span>
-            </Button>
-          </div>
-        </div>
-        <div className={styles.tableWrap}>
-          <RankingTable rows={ranking.rows} loading={rankingLoading} />
-        </div>
-      </section>
+    <div className={cn('dashboard-content', styles.dashboardGrid)}>
+      {markets.map(market => {
+        const isFullscreen = fullscreenMarket === market.id;
+
+        return (
+          <section
+            className={cn(
+              'dashboard-panel',
+              'dashboard-table-panel',
+              styles.panel,
+              isFullscreen && !document.fullscreenElement && styles.fallbackFullscreen
+            )}
+            data-market-id={market.id}
+            key={market.id}
+            ref={node => {
+              panelRefs.current[market.id] = node;
+            }}
+          >
+            <div className={cn('dashboard-panel-header', styles.panelHeader)}>
+              <div>
+                <h2>{market.title}</h2>
+                <span>{rankingError || formatTimestamp(ranking.timestamp)}</span>
+              </div>
+              <div className={styles.headerActions}>
+                <Button
+                  aria-label={isFullscreen ? `退出${market.title}全屏` : `全屏显示${market.title}`}
+                  aria-pressed={isFullscreen}
+                  className={cn('dashboard-ghost-button', styles.fullscreenButton)}
+                  onClick={() => toggleFullscreen(market.id)}
+                  size="icon-lg"
+                  title={isFullscreen ? '退出全屏' : '全屏显示'}
+                  type="button"
+                  variant="outline"
+                >
+                  {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </Button>
+                <Button
+                  aria-label={`刷新${market.title}数据`}
+                  type="button"
+                  className="dashboard-ghost-button"
+                  variant="outline"
+                  onClick={refresh}
+                  disabled={rankingLoading}
+                >
+                  {rankingLoading ? <Loader2 className="dashboard-spin" size={15} /> : <RefreshCcw size={15} />}
+                  <span>{rankingLoading ? '更新中' : '刷新数据'}</span>
+                </Button>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <RankingTable rows={ranking.rows} loading={rankingLoading} showKline={isFullscreen} />
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
