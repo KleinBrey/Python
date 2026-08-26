@@ -2,15 +2,9 @@ import re
 
 
 def validate_symbol(value: object) -> str:
-    """验证股票代码合法性，600519.SH -> 600519"""
-    # 输入 600519.SH -> 600519
+    """验证股票代码合法性，600519.SH"""
 
-    symbol = str(value).strip().upper().split(".", maxsplit=1)[0]
-
-    if not re.fullmatch(r"\d{6}", symbol):
-        raise ValueError(f"无法识别股票代码: {value!r}")
-
-    return symbol
+    return value
 
 
 def exchange_for(code: str) -> str:

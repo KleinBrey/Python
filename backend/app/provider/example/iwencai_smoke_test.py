@@ -8,20 +8,20 @@ import pandas as pd
 def main() -> None:
     provider = IwencaiProvider()
 
-    # data = provider.query(
-    #     "当前个股热度前1000，返回原始字段",
-    #     page_size=50,
-    # )
+    data = provider.query(
+        "当前个股热度前1000，返回原始字段",
+        page_size=50,
+    )
 
     # data = provider.query(
     #     "港股关注度排名前50",
     #     page_size=50,
     # )
 
-    data = provider.query(
-        "美股关注度排名前50",
-        page_size=50,
-    )
+    # data = provider.query(
+    #     "美股关注度排名前50",
+    #     page_size=50,
+    # )
 
     frame = pd.DataFrame(data)
 

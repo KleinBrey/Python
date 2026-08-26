@@ -55,6 +55,7 @@ class Service:
         if frame.empty:
             return pd.DataFrame(columns=columns)
         # 格式转换
+        frame["symbol"] = frame["ts_code"]
         frame["exchange"] = frame["exchange"].map(exchange_map)
         frame["type"] = "A股"
         frame["source"] = source
@@ -108,7 +109,7 @@ class Service:
         frame = pd.DataFrame(value)
         columns = [
             "symbol",
-            "date",
+            "trade_date",
             "open",
             "high",
             "low",
@@ -121,8 +122,8 @@ class Service:
         if frame.empty:
             return pd.DataFrame(columns=columns)
         # 格式转换
-        frame["symbol"] = frame["ts_code"].str.split(".").str[0]
-        frame["date"] = frame["trade_date"]
+        frame["symbol"] = frame["ts_code"]
+        frame["trade_date"] = frame["trade_date"]
         frame["open"] = frame["open"]
         frame["high"] = frame["high"]
         frame["low"] = frame["low"]
@@ -164,11 +165,7 @@ class Service:
         if missing_columns:
             raise ValueError(f"股票热度数据缺少字段：{', '.join(missing_columns)}")
 
-        normalized_date = pd.to_datetime(trade_date, errors="raise").date()
-        frame["trade_date"] = normalized_date
-        frame["symbol"] = (
-            frame["symbol"].astype("string").str.partition(".")[0].str.zfill(6)
-        )
+        frame["trade_date"] = pd.to_datetime(trade_date, errors="raise").date()
         frame["name"] = frame["name"].astype("string").str.strip()
         for column in ["price", "change_pct", "hot_value"]:
             frame[column] = pd.to_numeric(
@@ -282,8 +279,7 @@ class Service:
         stocks_list_from_db = self.stock_repository.get_table_data()
 
         symbols = [
-            f"{stock.symbol}.{stock.exchange}"
-            for stock in stocks_list_from_db.itertuples(index=False)
+            f"{stock.symbol}" for stock in stocks_list_from_db.itertuples(index=False)
         ]
 
         batches = list(
@@ -353,6 +349,7 @@ class Service:
                 try:
                     # API 请求数据
                     result = future.result()
+
                     # 格式化清洗数据
                     daily_list = self.format_daily_list(result)
 

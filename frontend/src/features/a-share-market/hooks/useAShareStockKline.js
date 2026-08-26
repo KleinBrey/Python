@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 import { getDailyBarsApi } from '@/api/quantide/api.js';
-import { transformAShareStockHistory } from '../utils/aShareMarketTransformers.js';
+import { mergeAShareStockHistoryWithSnapshot, transformAShareStockHistory } from '../utils/aShareMarketTransformers.js';
 
-const klineCache = new Map();
+const historyCache = new Map();
 const pendingRequests = new Map();
 
 export function useAShareStockKline() {
@@ -12,14 +12,18 @@ export function useAShareStockKline() {
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
 
-  const loadKline = useCallback(async symbol => {
+  const loadKline = useCallback(async (symbol, todaySnapshot) => {
     if (!symbol) return;
 
     const requestId = ++requestIdRef.current;
-    const cachedData = klineCache.get(symbol);
+    const cachedRows = historyCache.get(symbol);
 
-    if (cachedData) {
-      setData(cachedData);
+    if (cachedRows) {
+      setData({
+        dataSource: '本地历史 + 同花顺快照',
+        adjustLabel: '前复权',
+        rows: mergeAShareStockHistoryWithSnapshot(cachedRows, todaySnapshot)
+      });
       setError('');
       setLoading(false);
       return;
@@ -37,21 +41,21 @@ export function useAShareStockKline() {
           symbol,
           start: moment().subtract(1, 'year').format('YYYY-MM-DD'),
           end: moment().format('YYYY-MM-DD')
-        }).then(response => ({
-          dataSource: '同花顺 HiThink',
-          adjustLabel: '前复权',
-          rows: transformAShareStockHistory(response?.data)
-        }));
+        }).then(response => transformAShareStockHistory(response?.data));
         pendingRequests.set(symbol, request);
       }
 
-      const nextData = await request;
-      klineCache.set(symbol, nextData);
+      const historyRows = await request;
+      historyCache.set(symbol, historyRows);
       pendingRequests.delete(symbol);
 
       if (requestId !== requestIdRef.current) return;
 
-      setData(nextData);
+      setData({
+        dataSource: '本地历史 + 同花顺快照',
+        adjustLabel: '前复权',
+        rows: mergeAShareStockHistoryWithSnapshot(historyRows, todaySnapshot)
+      });
     } catch (requestError) {
       pendingRequests.delete(symbol);
       if (requestId !== requestIdRef.current) return;

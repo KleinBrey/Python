@@ -27,6 +27,7 @@ class IwencaiSettings(BaseSettings):
 
     api_key: str = ""
     api_key_backup: str = ""
+    api_key_weibo: str = ""
     base_url: str = "https://openapi.iwencai.com"
 
 
@@ -44,6 +45,7 @@ class IwencaiProvider:
         settings = IwencaiSettings()
         self.api_key = settings.api_key.strip()
         self.api_key_backup = settings.api_key_backup.strip()
+        self.api_key_weibo = settings.api_key_weibo.strip()
         self.base_url = settings.base_url
         self.timeout = max(1, timeout)
         self.session = requests.Session()
@@ -100,7 +102,8 @@ class IwencaiProvider:
     ) -> dict[str, Any]:
         headers = {
             # "Authorization": f"Bearer {self.api_key}",
-            "Authorization": f"Bearer {self.api_key_backup}",
+            # "Authorization": f"Bearer {self.api_key_backup}",
+            "Authorization": f"Bearer {self.api_key_weibo}",
             "X-Claw-Call-Type": "normal",
             "X-Claw-Skill-Id": "hithink-astock-selector",
             "X-Claw-Skill-Version": "1.0.0",
@@ -146,7 +149,7 @@ class IwencaiProvider:
             page_size=50,
         )
 
-        return self._format_hot_rank(data)
+        return self.format_hot_rank(data)
 
     def fetch_hk_hot_rank(self) -> pd.DataFrame:
         """获取港股关注度排名前 50。"""
@@ -155,7 +158,7 @@ class IwencaiProvider:
             page_size=50,
         )
 
-        return self._format_hot_rank(data)
+        return self.format_hot_rank(data)
 
     def fetch_us_hot_rank(self) -> pd.DataFrame:
         """获取美股关注度排名前 50。"""
@@ -164,10 +167,10 @@ class IwencaiProvider:
             page_size=50,
         )
 
-        return self._format_hot_rank(data)
+        return self.format_hot_rank(data)
 
     @staticmethod
-    def _format_hot_rank(data: list[dict[str, Any]]) -> pd.DataFrame:
+    def format_hot_rank(data: list[dict[str, Any]]) -> pd.DataFrame:
         """将问财热度结果转换为统一字段。"""
 
         frame = pd.DataFrame(data)

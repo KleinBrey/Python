@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getHotStockListApi } from '@/api/hithink/api.js';
-
-import { getHotStocksApi } from '@/api/quantide/api';
-import moment from 'moment';
+import { getPriceSnapshotApi } from '@/api/hithink/api.js';
+import { getHotStocksApi } from '@/api/quantide/api.js';
+import { attachAShareMarketSnapshots } from '../utils/aShareMarketTransformers.js';
 
 const initialConfig = {
   title: '同花顺热榜',
@@ -30,6 +29,9 @@ export function useAShareMarketRanking() {
 
     try {
       const response = await getHotStocksApi();
+      const hotStocks = Array.isArray(response?.data) ? response.data : [];
+      const thscodes = [...new Set(hotStocks.map(stock => stock.symbol).filter(Boolean))];
+      const snapshotResponse = await getPriceSnapshotApi({ thscodes: thscodes.join(',') });
 
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
@@ -37,7 +39,7 @@ export function useAShareMarketRanking() {
       setRanking({
         title: '同花顺热榜',
         timestamp: Date.now(),
-        rows: response?.data ? response.data : []
+        rows: attachAShareMarketSnapshots(hotStocks, snapshotResponse?.data?.item)
       });
     } catch (requestError) {
       // 过期请求直接忽略

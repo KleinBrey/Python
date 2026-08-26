@@ -155,8 +155,8 @@ export default function StockKlineChart({
   const resetViewRef = useRef(() => {});
   const dailyRows = useMemo(() => chartRows(data), [data]);
   const rows = useMemo(() => aggregateRows(dailyRows, period), [dailyRows, period]);
-  const stockName = stock?.name || stock?.股票简称 || '';
-  const stockCode = stock?.code || stock?.thscode || stock?.股票代码 || '';
+  const stockName = stock?.name;
+  const stockCode = stock?.symbol;
   const [activeBar, setActiveBar] = useState(() => rowSummary(rows.at(-1)));
   const [contextMenu, setContextMenu] = useState(null);
 

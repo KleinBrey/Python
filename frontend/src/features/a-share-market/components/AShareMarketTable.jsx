@@ -19,7 +19,7 @@ function AShareMarketKlineRow({ data }) {
   const { data: klineData, loading, error, loadKline } = useAShareStockKline();
 
   useEffect(() => {
-    loadKline(stock.symbol);
+    loadKline(stock.symbol, stock.todaySnapshot);
   }, [loadKline, stock]);
 
   return (

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS daily_bars (
   -- 股票代码。
   symbol VARCHAR NOT NULL,
   -- 交易日期。
-  date DATE NOT NULL,
+  trade_date DATE NOT NULL,
   -- 开盘价。
   open DOUBLE NOT NULL,
   -- 最高价。
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS daily_bars (
   -- 记录更新时间；插入时未指定则使用数据库当前时间。
   update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   -- 同一股票、同一交易日只能存在一条记录。
-  PRIMARY KEY (symbol, date),
+  PRIMARY KEY (symbol, trade_date),
   -- 最高价必须不低于开盘价、最高价、最低价和收盘价中的任意值。
   CHECK (high >= greatest(open, high, low, close)),
   -- 最低价必须不高于开盘价、最高价、最低价和收盘价中的任意值。

@@ -3,7 +3,7 @@ export function transformAShareStockHistory(items = []) {
 
   return items.map(item => {
     return {
-      date: item.date,
+      date: item.trade_date,
       open: Number(item.open.toFixed(2)),
       high: Number(item.high.toFixed(2)),
       low: Number(item.low.toFixed(2)),
@@ -11,6 +11,70 @@ export function transformAShareStockHistory(items = []) {
       volume: item.volume
     };
   });
+}
+
+export function normalizeAShareSymbol(value) {
+  const symbol = String(value ?? '')
+    .trim()
+    .toUpperCase();
+  const ticker = symbol.split('.', 1)[0];
+  return /^\d{6}$/.test(ticker) ? ticker : '';
+}
+
+export function attachAShareMarketSnapshots(stocks = [], snapshots = []) {
+  const snapshotsBySymbol = new Map(
+    (Array.isArray(snapshots) ? snapshots : []).flatMap(snapshot => {
+      const symbol = normalizeAShareSymbol(snapshot?.thscode ?? snapshot?.ticker);
+      return symbol ? [[symbol, snapshot]] : [];
+    })
+  );
+
+  return (Array.isArray(stocks) ? stocks : []).map(stock => ({
+    ...stock,
+    todaySnapshot: snapshotsBySymbol.get(normalizeAShareSymbol(stock?.symbol ?? stock?.thscode)) ?? null
+  }));
+}
+
+function finiteNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function transformAShareMarketSnapshot(snapshot, date) {
+  if (!snapshot) return null;
+
+  const open = finiteNumber(snapshot.open_price);
+  const high = finiteNumber(snapshot.high_price);
+  const low = finiteNumber(snapshot.low_price);
+  const close = finiteNumber(snapshot.last_price);
+  const volume = finiteNumber(snapshot.volume / 100);
+
+  if ([open, high, low, close, volume].some(value => value === null)) return null;
+
+  return {
+    date,
+    open,
+    high,
+    low,
+    close,
+    volume
+  };
+}
+
+export function mergeAShareStockHistoryWithSnapshot(historyRows = [], snapshot = null) {
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+  const todayRow = transformAShareMarketSnapshot(snapshot, today);
+  const rowsByDate = new Map((Array.isArray(historyRows) ? historyRows : []).map(row => [String(row.date), row]));
+
+  if (todayRow) rowsByDate.set(today, todayRow);
+
+  return [...rowsByDate.values()].sort((left, right) => String(left.date).localeCompare(String(right.date)));
 }
 
 export function transformAShareMarketResponse(payload) {

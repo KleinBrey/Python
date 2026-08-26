@@ -17,7 +17,7 @@ class DailyBar(BaseModel):
     """一只股票单个交易日的日 K 线。"""
 
     symbol: str
-    date: date
+    trade_date: date
     open: float
     high: float
     low: float

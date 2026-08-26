@@ -15,7 +15,7 @@ STOCK_COLUMNS = ["symbol", "name", "exchange", "market", "type", "source"]
 
 DAILY_BAR_COLUMNS = [
     "symbol",
-    "date",
+    "trade_date",
     "open",
     "high",
     "low",
@@ -144,7 +144,7 @@ class DailyBarRepository(BaseRepository):
                 """
                 SELECT
                     symbol,
-                    date,
+                    trade_date,
                     open,
                     high,
                     low,
@@ -154,8 +154,8 @@ class DailyBarRepository(BaseRepository):
                     source
                 FROM daily_bars
                 WHERE symbol = ?
-                  AND date BETWEEN ? AND ?
-                ORDER BY date
+                  AND trade_date BETWEEN ? AND ?
+                ORDER BY trade_date
                 """,
                 [normalized_symbol, normalized_start, normalized_end],
             ).df()
@@ -175,14 +175,14 @@ class DailyBarRepository(BaseRepository):
         bars = bars[DAILY_BAR_COLUMNS]
 
         # DuckDB 的目标字段是 DATE；无效日期会在这里明确报错。
-        bars["date"] = pd.to_datetime(bars["date"], errors="raise").dt.date
+        bars["trade_date"] = pd.to_datetime(bars["trade_date"], errors="raise").dt.date
 
         with self.db.connection() as connection:
             connection.register("incoming_daily_bars", bars)
             connection.execute("""
                 INSERT INTO daily_bars (
                     symbol,
-                    date,
+                    trade_date,
                     open,
                     high,
                     low,
@@ -193,7 +193,7 @@ class DailyBarRepository(BaseRepository):
                 )
                 SELECT
                     symbol,
-                    date,
+                    trade_date,
                     open,
                     high,
                     low,
@@ -202,7 +202,7 @@ class DailyBarRepository(BaseRepository):
                     amount,
                     source
                 FROM incoming_daily_bars
-                ON CONFLICT (symbol, date) DO UPDATE SET
+                ON CONFLICT (symbol, trade_date) DO UPDATE SET
                     open = excluded.open,
                     high = excluded.high,
                     low = excluded.low,
@@ -238,8 +238,7 @@ class StockHotDailyRepository(BaseRepository):
         """获取数据库中最新交易日的股票热度榜。"""
 
         with self.db.connection(read_only=True) as connection:
-            return connection.execute(
-                """
+            return connection.execute("""
                 SELECT
                     trade_date,
                     symbol,
@@ -254,8 +253,7 @@ class StockHotDailyRepository(BaseRepository):
                     SELECT MAX(trade_date) FROM stock_hot_daily
                 )
                 ORDER BY hot_value DESC, symbol
-                """
-            ).df()
+                """).df()
 
     def get_by_trade_date(self, trade_date: object) -> pd.DataFrame:
         """按交易日获取股票热度列表，并按热度从高到低排列。"""

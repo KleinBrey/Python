@@ -108,7 +108,7 @@ class TushareProvider:
         result = self.pro.stock_basic(
             exchange="",
             list_status="L",
-            fields="symbol,name,exchange,market",
+            fields="ts_code,symbol,name,exchange,market",
         )
 
         return result
@@ -143,8 +143,8 @@ class TushareProvider:
             return pd.DataFrame(columns=["symbol", "market_cap"])
 
         # 格式化symbol
-        result["symbol"] = result["ts_code"].map(validate_symbol)
-        # tushare daily_basic.total_mv 的单位是万元，策略统一使用元。
+        result["symbol"] = result["ts_code"]
+        # tushare daily_basic.total_mv 总市值 （万元） 的单位是万元，策略统一使用元。
         result["market_cap"] = (
             pd.to_numeric(result["total_mv"], errors="coerce") * 10000
         )
