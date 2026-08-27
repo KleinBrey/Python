@@ -1,5 +1,13 @@
-import { apiGet } from '@/api/client.js';
+import request from '@/api/quantide/request.js';
 
-export function getDataSources({ check = false, signal } = {}) {
-  return apiGet(`/api/data-sources?check=${check ? 'true' : 'false'}`, { signal });
+export function syncStockList() {
+  return request.post('/api/database-sync/stock-list', {}, { timeout: 0 });
+}
+
+export function syncDailyK() {
+  return request.post('/api/database-sync/daily-k', {}, { timeout: 0 });
+}
+
+export function syncHotStock() {
+  return request.post('/api/database-sync/hot-stock', {}, { timeout: 0 });
 }

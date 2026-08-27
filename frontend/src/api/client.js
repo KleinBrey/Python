@@ -16,7 +16,7 @@ export async function apiGet(path, options = {}) {
       const response = await fetch(`${baseUrl}${path}`, options);
       const payload = await response.json();
       if (!response.ok) {
-        const error = new Error(payload.error || '请求失败');
+        const error = new Error(payload.error || payload.detail || '请求失败');
         error.responseReceived = true;
         throw error;
       }
@@ -44,7 +44,7 @@ export async function apiPost(path, body, options = {}) {
       });
       const payload = await response.json();
       if (!response.ok) {
-        const error = new Error(payload.error || '请求失败');
+        const error = new Error(payload.error || payload.detail || '请求失败');
         error.responseReceived = true;
         throw error;
       }

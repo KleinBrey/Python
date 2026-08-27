@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import logging
+import threading
+import time
 from datetime import date
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Callable
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from fastapi import (
@@ -10,20 +15,94 @@ from fastapi import (
     HTTPException,
     Query,
 )
+from starlette.concurrency import run_in_threadpool
 
-from backend.app.schemas import DailyBar, HotStock, Stock
 from backend.app.repository import DailyBarRepository, StockRepository
+from backend.app.schemas import DailyBar, HotStock, Stock
 from backend.app.services import Service
 from backend.app.utils.symbol import validate_symbol
+from backend.scripts.sync_daily_k_db import sync_daily_k
+from backend.scripts.sync_hot_stock_db import sync_stock_hot
+from backend.scripts.sync_stock_list_db import sync_stock_list
 
 from .dependencies import get_daily_repository, get_stock_repository, get_service
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# DuckDB 只允许一个同步任务写入，避免用户连续点击导致写入互相冲突。
+database_sync_lock = threading.Lock()
 
 # 使用 Annotated 封装依赖声明，避免每个接口重复书写 Depends。
 StockListRepository = Annotated[StockRepository, Depends(get_stock_repository)]
 DailyRepository = Annotated[DailyBarRepository, Depends(get_daily_repository)]
 dbService = Annotated[Service, Depends(get_service)]
+
+
+async def _run_database_sync(
+    script: str,
+    success_message: str,
+    task: Callable[[], None],
+) -> dict[str, str | float]:
+    """在线程池运行阻塞式同步脚本，并统一返回执行结果。"""
+
+    if not database_sync_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="已有数据库同步任务正在执行，请稍后再试")
+
+    started_at = time.perf_counter()
+    try:
+        await run_in_threadpool(task)
+    except Exception as error:
+        logger.exception("数据库同步脚本执行失败: %s", script)
+        raise HTTPException(
+            status_code=500,
+            detail=f"{script} 执行失败：{error}",
+        ) from error
+    finally:
+        database_sync_lock.release()
+
+    return {
+        "status": "success",
+        "script": script,
+        "message": success_message,
+        "duration_seconds": round(time.perf_counter() - started_at, 2),
+        "finished_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(
+            timespec="seconds"
+        ),
+    }
+
+
+@router.post("/database-sync/stock-list")
+async def sync_stock_list_database() -> dict[str, str | float]:
+    """执行股票列表数据库同步脚本。"""
+
+    return await _run_database_sync(
+        "sync_stock_list_db.py",
+        "A 股股票列表同步完成",
+        sync_stock_list,
+    )
+
+
+@router.post("/database-sync/daily-k")
+async def sync_daily_k_database() -> dict[str, str | float]:
+    """执行最近 3 个自然日的日 K 数据库同步脚本。"""
+
+    return await _run_database_sync(
+        "sync_daily_k_db.py",
+        "最近 3 个自然日的日 K 数据同步完成",
+        lambda: sync_daily_k(lookback_days=3, batch_size=100),
+    )
+
+
+@router.post("/database-sync/hot-stock")
+async def sync_hot_stock_database() -> dict[str, str | float]:
+    """执行每日股票热度数据库同步脚本。"""
+
+    return await _run_database_sync(
+        "sync_hot_stock_db.py",
+        "每日股票热度同步完成",
+        sync_stock_hot,
+    )
 
 
 @router.get("/stocks-list", response_model=list[Stock])

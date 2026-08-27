@@ -49,9 +49,9 @@ export const dashboardGroups = [
       {
         id: 'data-sources',
         path: '/data-sources',
-        title: '数据源',
-        description: '同花顺 HiThink 官方 Financial API',
-        status: '查看'
+        title: '数据同步',
+        description: '手动执行数据库同步脚本',
+        status: '执行'
       },
       {
         id: 'database',
