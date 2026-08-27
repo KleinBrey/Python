@@ -4,10 +4,10 @@ import { syncDailyK, syncHotStock, syncStockList } from '../api/dataSourcesApi.j
 
 const SYNC_TASKS = [
   {
-    id: 'stock-list',
-    name: 'A 股股票列表',
-    description: '拉取并写入最新 A 股基础信息，建议先执行这个任务。',
-    run: syncStockList
+    id: 'hot-stock',
+    name: '股票热度',
+    description: '获取当天 A 股热度榜，并更新股票热度数据表。',
+    run: syncHotStock
   },
   {
     id: 'daily-k',
@@ -16,10 +16,10 @@ const SYNC_TASKS = [
     run: syncDailyK
   },
   {
-    id: 'hot-stock',
-    name: '每日股票热度',
-    description: '获取当天 A 股热度榜，并更新股票热度数据表。',
-    run: syncHotStock
+    id: 'stock-list',
+    name: 'A 股股票列表',
+    description: '拉取并写入最新 A 股基础信息，建议先执行这个任务。',
+    run: syncStockList
   }
 ];
 
