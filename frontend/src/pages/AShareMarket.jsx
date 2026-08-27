@@ -39,7 +39,7 @@ export default function AShareMarket() {
 
     const value = moment(timestamp);
 
-    const time = `${value.format('YYYY-MM-DD HH:mm:ss')}｜${value.fromNow()}`;
+    const time = value.format('YYYY-MM-DD HH:mm:ss');
     return value.isValid() ? time : '未刷新';
   }
 

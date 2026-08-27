@@ -13,25 +13,17 @@ export function transformAShareStockHistory(items = []) {
   });
 }
 
-export function normalizeAShareSymbol(value) {
-  const symbol = String(value ?? '')
-    .trim()
-    .toUpperCase();
-  const ticker = symbol.split('.', 1)[0];
-  return /^\d{6}$/.test(ticker) ? ticker : '';
-}
-
-export function attachAShareMarketSnapshots(stocks = [], snapshots = []) {
+export function attachSnapshots(stocks = [], snapshots = []) {
   const snapshotsBySymbol = new Map(
-    (Array.isArray(snapshots) ? snapshots : []).flatMap(snapshot => {
-      const symbol = normalizeAShareSymbol(snapshot?.thscode ?? snapshot?.ticker);
-      return symbol ? [[symbol, snapshot]] : [];
+    snapshots.map(snapshot => {
+      const symbol = snapshot.thscode;
+      return [symbol, snapshot];
     })
   );
 
-  return (Array.isArray(stocks) ? stocks : []).map(stock => ({
+  return stocks.map(stock => ({
     ...stock,
-    todaySnapshot: snapshotsBySymbol.get(normalizeAShareSymbol(stock?.symbol ?? stock?.thscode)) ?? null
+    todaySnapshot: snapshotsBySymbol.get(stock?.symbol)
   }));
 }
 

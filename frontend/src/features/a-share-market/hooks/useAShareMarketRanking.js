@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getPriceSnapshotApi } from '@/api/hithink/api.js';
 import { getHotStocksApi } from '@/api/quantide/api.js';
-import { attachAShareMarketSnapshots } from '../utils/aShareMarketTransformers.js';
+import { attachSnapshots } from '../utils/aShareMarketTransformers.js';
 
 const initialConfig = {
   title: '同花顺热榜',
@@ -29,17 +29,23 @@ export function useAShareMarketRanking() {
 
     try {
       const response = await getHotStocksApi();
-      const hotStocks = Array.isArray(response?.data) ? response.data : [];
-      const thscodes = [...new Set(hotStocks.map(stock => stock.symbol).filter(Boolean))];
-      const snapshotResponse = await getPriceSnapshotApi({ thscodes: thscodes.join(',') });
+      const hotStocks = response.data;
+      const symbols = [...new Set(hotStocks.map(stock => stock.symbol).filter(Boolean))];
+      const snapshotResponse = await getPriceSnapshotApi({ thscodes: symbols.join(',') });
 
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
 
+      console.log({
+        title: '同花顺热榜',
+        timestamp: hotStocks[0].update_time || '',
+        rows: attachSnapshots(hotStocks, snapshotResponse?.data?.item)
+      });
+
       setRanking({
         title: '同花顺热榜',
-        timestamp: Date.now(),
-        rows: attachAShareMarketSnapshots(hotStocks, snapshotResponse?.data?.item)
+        timestamp: hotStocks[0].update_time || '',
+        rows: attachSnapshots(hotStocks, snapshotResponse?.data?.item)
       });
     } catch (requestError) {
       // 过期请求直接忽略

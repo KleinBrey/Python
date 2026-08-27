@@ -145,7 +145,7 @@ class IwencaiProvider:
     def fetch_hot_rank(self) -> pd.DataFrame:
         """获取 A 股热度列表。"""
         data = self.query(
-            "A股热度排名前2000",
+            "A股热度排名前1000",
             page_size=50,
         )
 
