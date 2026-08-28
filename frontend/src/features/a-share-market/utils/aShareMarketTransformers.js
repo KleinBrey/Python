@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 export function transformAShareStockHistory(items = []) {
   if (!Array.isArray(items)) return [];
 
@@ -55,15 +57,9 @@ function transformAShareMarketSnapshot(snapshot, date) {
 }
 
 export function mergeAShareStockHistoryWithSnapshot(historyRows = [], snapshot = null) {
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(new Date());
+  const today = moment().format('YYYY-MM-DD');
   const todayRow = transformAShareMarketSnapshot(snapshot, today);
   const rowsByDate = new Map((Array.isArray(historyRows) ? historyRows : []).map(row => [String(row.date), row]));
-
   if (todayRow) rowsByDate.set(today, todayRow);
 
   return [...rowsByDate.values()].sort((left, right) => String(left.date).localeCompare(String(right.date)));

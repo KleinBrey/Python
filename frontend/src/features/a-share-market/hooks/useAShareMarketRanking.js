@@ -28,10 +28,9 @@ export function useAShareMarketRanking() {
     setError('');
 
     try {
-      const response = await getHotStocksApi();
-      const hotStocks = response.data;
+      const { data: hotStocks } = await getHotStocksApi();
       const symbols = [...new Set(hotStocks.map(stock => stock.symbol).filter(Boolean))];
-      const snapshotResponse = await getPriceSnapshotApi({ thscodes: symbols.join(',') });
+      const { data: snapshotData } = await getPriceSnapshotApi({ thscodes: symbols.join(',') });
 
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
@@ -39,13 +38,13 @@ export function useAShareMarketRanking() {
       console.log({
         title: '同花顺热榜',
         timestamp: hotStocks[0].update_time || '',
-        rows: attachSnapshots(hotStocks, snapshotResponse?.data?.item)
+        rows: attachSnapshots(hotStocks, snapshotData?.item)
       });
 
       setRanking({
         title: '同花顺热榜',
         timestamp: hotStocks[0].update_time || '',
-        rows: attachSnapshots(hotStocks, snapshotResponse?.data?.item)
+        rows: attachSnapshots(hotStocks, snapshotData?.item)
       });
     } catch (requestError) {
       // 过期请求直接忽略
