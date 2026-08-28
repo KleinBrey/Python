@@ -19,8 +19,10 @@ from starlette.concurrency import run_in_threadpool
 
 from backend.app.repository import (
     DailyBarRepository,
+    HKStockHotDailyRepository,
     StockHotDailyRepository,
     StockRepository,
+    USStockHotDailyRepository,
 )
 from backend.app.schemas import DailyBar, HotStock, Stock
 from backend.app.services import Service
@@ -31,9 +33,11 @@ from backend.scripts.sync_stock_list_db import sync_stock_list
 
 from .dependencies import (
     get_daily_repository,
+    get_hk_stock_hot_repository,
     get_service,
     get_stock_hot_repository,
     get_stock_repository,
+    get_us_stock_hot_repository,
 )
 
 router = APIRouter()
@@ -48,6 +52,14 @@ DailyRepository = Annotated[DailyBarRepository, Depends(get_daily_repository)]
 StockHotRepository = Annotated[
     StockHotDailyRepository,
     Depends(get_stock_hot_repository),
+]
+HKStockHotRepository = Annotated[
+    HKStockHotDailyRepository,
+    Depends(get_hk_stock_hot_repository),
+]
+USStockHotRepository = Annotated[
+    USStockHotDailyRepository,
+    Depends(get_us_stock_hot_repository),
 ]
 dbService = Annotated[Service, Depends(get_service)]
 
@@ -113,7 +125,7 @@ async def sync_hot_stock_database() -> dict[str, str | float]:
 
     return await _run_database_sync(
         "sync_hot_stock_db.py",
-        "每日股票热度同步完成",
+        "A 股、港股和美股每日热度同步完成",
         sync_stock_hot,
     )
 
@@ -123,11 +135,15 @@ def database_latest_update_times(
     stock_repository: StockListRepository,
     daily_repository: DailyRepository,
     stock_hot_repository: StockHotRepository,
+    hk_stock_hot_repository: HKStockHotRepository,
+    us_stock_hot_repository: USStockHotRepository,
 ) -> dict[str, datetime | None]:
-    """返回三个同步任务所对应数据表的最新更新时间。"""
+    """返回各同步数据表的最新更新时间。"""
 
     return {
         "hot-stock": stock_hot_repository.get_latest_update_time(),
+        "hk-hot-stock": hk_stock_hot_repository.get_latest_update_time(),
+        "us-hot-stock": us_stock_hot_repository.get_latest_update_time(),
         "daily-k": daily_repository.get_latest_update_time(),
         "stock-list": stock_repository.get_latest_update_time(),
     }
@@ -166,6 +182,30 @@ def hot_stock(service: dbService, count: int = 100) -> list[dict]:
 
     hot_stock_table = service.get_hot_stock().head(count)
     # 将 pandas 的 NaN/NaT 转为 None，确保可选字段能被 JSON 正确编码。
+    hot_stock_table = hot_stock_table.astype(object).where(
+        pd.notna(hot_stock_table),
+        None,
+    )
+    return hot_stock_table.to_dict(orient="records")
+
+
+@router.get("/hk-hot-stock", response_model=list[HotStock])
+def hk_hot_stock(service: dbService, count: int = 50) -> list[dict]:
+    """返回最新港股热度榜；数据库缓存超过两小时时自动同步。"""
+
+    hot_stock_table = service.get_hk_hot_stock().head(count)
+    hot_stock_table = hot_stock_table.astype(object).where(
+        pd.notna(hot_stock_table),
+        None,
+    )
+    return hot_stock_table.to_dict(orient="records")
+
+
+@router.get("/us-hot-stock", response_model=list[HotStock])
+def us_hot_stock(service: dbService, count: int = 50) -> list[dict]:
+    """返回最新美股热度榜；数据库缓存超过两小时时自动同步。"""
+
+    hot_stock_table = service.get_us_hot_stock().head(count)
     hot_stock_table = hot_stock_table.astype(object).where(
         pd.notna(hot_stock_table),
         None,

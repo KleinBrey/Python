@@ -13,8 +13,10 @@ from backend.app.jobs import create_scheduler
 from backend.app.provider import HithinkProvider, IwencaiProvider, TushareProvider
 from backend.app.repository import (
     DailyBarRepository,
+    HKStockHotDailyRepository,
     StockHotDailyRepository,
     StockRepository,
+    USStockHotDailyRepository,
 )
 from backend.app.services import Service
 
@@ -36,6 +38,8 @@ async def lifespan(app: FastAPI):
     stock_repository = StockRepository(database)
     daily_repository = DailyBarRepository(database)
     stock_hot_repository = StockHotDailyRepository(database)
+    hk_stock_hot_repository = HKStockHotDailyRepository(database)
+    us_stock_hot_repository = USStockHotDailyRepository(database)
 
     # 注册API调用
     hithink_provider = HithinkProvider()
@@ -50,15 +54,19 @@ async def lifespan(app: FastAPI):
         daily_repository=daily_repository,
         iwencai_provider=iwencai_provider,
         stock_hot_repository=stock_hot_repository,
+        hk_stock_hot_repository=hk_stock_hot_repository,
+        us_stock_hot_repository=us_stock_hot_repository,
     )
 
     # 将共享实例挂载到 app.state，供路由及其他应用组件复用。
     app.state.stock_repository = stock_repository
     app.state.daily_repository = daily_repository
     app.state.stock_hot_repository = stock_hot_repository
+    app.state.hk_stock_hot_repository = hk_stock_hot_repository
+    app.state.us_stock_hot_repository = us_stock_hot_repository
     app.state.service = service
 
-    # 工作日 18:00 同步当日热门股数据。
+    # 工作日按调度配置同步当日热门股数据。
     scheduler = create_scheduler(settings)
     app.state.scheduler = scheduler
     if settings.scheduler_enabled:

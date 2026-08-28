@@ -38,6 +38,8 @@ uv run uvicorn backend.app.main:app \
 - `POST /api/stocks-list`：从 Tushare 更新股票列表。
 - `GET /api/hot-stock`：读取最新 A 股热度榜；数据更新时间不足 2 小时直接返回，
   否则先从问财同步后返回。
+- `GET /api/hk-hot-stock`：读取最新港股热度榜，使用独立的两小时数据库缓存。
+- `GET /api/us-hot-stock`：读取最新美股热度榜，使用独立的两小时数据库缓存。
 
 ### `app/config/`
 
@@ -46,14 +48,16 @@ uv run uvicorn backend.app.main:app \
 ### `app/database/`
 
 - `connection.py`：管理 `data/market.duckdb` 的普通连接和 DuckDB Web UI 长连接；
-- `schema.sql`：创建 `stocks`、`daily_bars`、`stock_hot_daily` 三张表；
+- `schema.sql`：创建股票基础信息、日 K 以及 A 股、港股、美股热度表；
 - `operation.sql`、`study.md`：DuckDB 操作和学习记录。
 
 主要表：
 
 - `stocks`：股票代码、名称、交易所、市场、类型和来源；
 - `daily_bars`：股票日 K，主键为 `symbol + date`；
-- `stock_hot_daily`：问财每日股票热度，主键为 `trade_date + symbol`。
+- `stock_hot_daily`：问财每日股票热度，主键为 `trade_date + symbol`；
+- `hk_stock_hot_daily`：问财每日港股热度，主键为 `trade_date + symbol`；
+- `us_stock_hot_daily`：问财每日美股热度，主键为 `trade_date + symbol`。
 
 ### `app/provider/`
 
@@ -69,7 +73,9 @@ uv run uvicorn backend.app.main:app \
 
 - `StockRepository`；
 - `DailyBarRepository`；
-- `StockHotDailyRepository`。
+- `StockHotDailyRepository`；
+- `HKStockHotDailyRepository`；
+- `USStockHotDailyRepository`。
 
 Repository 负责字段检查、日期转换以及 DuckDB 的幂等 upsert。
 
@@ -87,7 +93,7 @@ Repository 负责字段检查、日期转换以及 DuckDB 的幂等 upsert。
 默认任务：
 
 - 每月 1 日 10:00 更新股票列表；
-- 工作日 18:00 更新股票热度；
+- 工作日 15:00 更新 A 股、港股和美股热度；
 - 工作日配置时间更新最近 3 日的日 K；
 - 周六 09:00 校准最近 60 日的日 K；
 - 每月 1 日 10:00 校准最近 365 日的日 K。

@@ -1,16 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getHotStockListApi } from '@/api/hithink/api.js';
+import { getHKHotStocksApi, getHotStocksApi, getUSHotStocksApi } from '@/api/quantide/api.js';
+import { transformHotRankingResponse } from '../utils/transformers.js';
 
-const initialConfig = {
-  title: '同花顺热榜',
-  timestamp: null,
-  rows: []
+const MARKET_CONFIG = {
+  'a-share': {
+    title: 'A股热榜',
+    request: getHotStocksApi
+  },
+  'hk-share': {
+    title: '港股热榜',
+    request: getHKHotStocksApi
+  },
+  'us-share': {
+    title: '美股热榜',
+    request: getUSHotStocksApi
+  }
 };
 
-export function useHotStockRanking() {
+export function useHotStockRanking(marketId = 'a-share') {
+  const market = MARKET_CONFIG[marketId] ?? MARKET_CONFIG['a-share'];
+
   // 分别保存热榜数据、加载状态和请求错误。
-  const [ranking, setRanking] = useState(initialConfig);
+  const [ranking, setRanking] = useState({
+    title: market.title,
+    timestamp: null,
+    rows: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -26,27 +42,26 @@ export function useHotStockRanking() {
     setError('');
 
     try {
-      const response = await getHotStockListApi('hour');
+      const response = await market.request();
 
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
 
+      const nextRanking = transformHotRankingResponse(response?.data);
       setRanking({
-        title: '同花顺热榜',
-        timestamp: response?.data?.timestamp ?? null,
-        rows: Array.isArray(response?.data?.item) ? response.data.item : []
+        ...nextRanking,
+        title: market.title
       });
     } catch (requestError) {
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
-      console.error('获取股票热榜失败', requestError);
-      setError(requestError.message || '获取股票热榜失败');
+      console.error(`获取${market.title}失败`, requestError);
+      setError(requestError.message || `获取${market.title}失败`);
     } finally {
       // 过期请求直接忽略
-      if (requestId !== requestIdRef.current) return;
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, []);
+  }, [market]);
 
   useEffect(() => {
     // Hook 首次挂载时自动加载热榜。

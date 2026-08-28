@@ -242,12 +242,14 @@ class DailyBarRepository(BaseRepository):
 class StockHotDailyRepository(BaseRepository):
     """负责 stock_hot_daily 表的读写。"""
 
+    table_name = "stock_hot_daily"
+
     def get_latest_update_time(self) -> datetime | None:
         """获取股票热度表最近一次更新时间；无数据时返回 ``None``。"""
 
         with self.db.connection(read_only=True) as connection:
             row = connection.execute(
-                "SELECT MAX(update_time) FROM stock_hot_daily"
+                f"SELECT MAX(update_time) FROM {self.table_name}"
             ).fetchone()
 
         return row[0] if row and row[0] is not None else None
@@ -256,7 +258,7 @@ class StockHotDailyRepository(BaseRepository):
         """获取数据库中最新交易日的股票热度榜。"""
 
         with self.db.connection(read_only=True) as connection:
-            return connection.execute("""
+            return connection.execute(f"""
                 SELECT
                     trade_date,
                     symbol,
@@ -266,9 +268,9 @@ class StockHotDailyRepository(BaseRepository):
                     hot_value,
                     source,
                     update_time
-                FROM stock_hot_daily
+                FROM {self.table_name}
                 WHERE trade_date = (
-                    SELECT MAX(trade_date) FROM stock_hot_daily
+                    SELECT MAX(trade_date) FROM {self.table_name}
                 )
                 ORDER BY hot_value DESC, symbol
                 """).df()
@@ -280,7 +282,7 @@ class StockHotDailyRepository(BaseRepository):
 
         with self.db.connection(read_only=True) as connection:
             return connection.execute(
-                """
+                f"""
                 SELECT
                     trade_date,
                     symbol,
@@ -290,7 +292,7 @@ class StockHotDailyRepository(BaseRepository):
                     hot_value,
                     source,
                     update_time
-                FROM stock_hot_daily
+                FROM {self.table_name}
                 WHERE trade_date = ?
                 ORDER BY hot_value DESC, symbol
                 """,
@@ -318,8 +320,8 @@ class StockHotDailyRepository(BaseRepository):
 
         with self.db.connection() as connection:
             connection.register("incoming_stock_hot_daily", hot_rows)
-            connection.execute("""
-                INSERT INTO stock_hot_daily (
+            connection.execute(f"""
+                INSERT INTO {self.table_name} (
                     trade_date,
                     symbol,
                     name,
@@ -353,3 +355,15 @@ class StockHotDailyRepository(BaseRepository):
         """兼容 insert 风格命名；实际执行新增或更新。"""
 
         return self.upsert_stock_hot_daily(rows)
+
+
+class HKStockHotDailyRepository(StockHotDailyRepository):
+    """负责 hk_stock_hot_daily 表的读写。"""
+
+    table_name = "hk_stock_hot_daily"
+
+
+class USStockHotDailyRepository(StockHotDailyRepository):
+    """负责 us_stock_hot_daily 表的读写。"""
+
+    table_name = "us_stock_hot_daily"

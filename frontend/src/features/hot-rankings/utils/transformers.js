@@ -23,6 +23,15 @@ export function transformHotRankingResponse(payload) {
       heat: row.heat ?? row.hot_value ?? row.hotRank ?? '-'
     }));
 
+  if (Array.isArray(payload)) {
+    return {
+      id: 'hot-stock-list',
+      title: '股票热榜',
+      timestamp: payload[0]?.update_time ?? null,
+      rows: normalizeRows(payload)
+    };
+  }
+
   if (Array.isArray(payload?.items)) {
     const ranking = payload.items.find(item => item.id === 'hot-stock-list') || payload.items[0];
     return {

@@ -6,8 +6,10 @@ Repository 层：数据访问对象（DAO）。
 from .duck_db import (
     BaseRepository,
     DailyBarRepository,
+    HKStockHotDailyRepository,
     StockHotDailyRepository,
     StockRepository,
+    USStockHotDailyRepository,
 )
 
 __all__ = [
@@ -15,4 +17,6 @@ __all__ = [
     "StockRepository",
     "DailyBarRepository",
     "StockHotDailyRepository",
+    "HKStockHotDailyRepository",
+    "USStockHotDailyRepository",
 ]

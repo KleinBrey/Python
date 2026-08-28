@@ -28,7 +28,7 @@ class DailyBar(BaseModel):
 
 
 class HotStock(BaseModel):
-    """A 股热度榜中的一条记录。"""
+    """股票热度榜中的一条记录。"""
 
     trade_date: date
     symbol: str

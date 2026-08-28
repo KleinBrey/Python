@@ -1,13 +1,16 @@
 """市场数据格式化与同步服务。"""
 
 from datetime import date, datetime, timedelta
+from typing import Callable
 from zoneinfo import ZoneInfo
 
 from ..provider import HithinkProvider, IwencaiProvider, TushareProvider
 from ..repository import (
     DailyBarRepository,
+    HKStockHotDailyRepository,
     StockHotDailyRepository,
     StockRepository,
+    USStockHotDailyRepository,
 )
 from ..utils.symbol import chunked
 
@@ -30,6 +33,8 @@ class Service:
         daily_repository: DailyBarRepository | None = None,
         iwencai_provider: IwencaiProvider | None = None,
         stock_hot_repository: StockHotDailyRepository | None = None,
+        hk_stock_hot_repository: HKStockHotDailyRepository | None = None,
+        us_stock_hot_repository: USStockHotDailyRepository | None = None,
     ):
         self.hithink_provider = hithink_provider
         self.tushare_provider = tushare_provider
@@ -37,7 +42,11 @@ class Service:
         self.daily_repository = daily_repository
         self.iwencai_provider = iwencai_provider
         self.stock_hot_repository = stock_hot_repository
+        self.hk_stock_hot_repository = hk_stock_hot_repository
+        self.us_stock_hot_repository = us_stock_hot_repository
         self._hot_stock_sync_lock = threading.Lock()
+        self._hk_hot_stock_sync_lock = threading.Lock()
+        self._us_hot_stock_sync_lock = threading.Lock()
 
     @staticmethod
     def format_stock_list(value: pd.DataFrame, source: str) -> pd.DataFrame:
@@ -183,7 +192,49 @@ class Service:
     ) -> int:
         """获取并保存指定交易日的问财股票热度榜。"""
 
-        if self.iwencai_provider is None or self.stock_hot_repository is None:
+        return self._update_hot_stock(
+            repository=self.stock_hot_repository,
+            fetch_method_name="fetch_hot_rank",
+            market_name="A 股",
+            trade_date=trade_date,
+        )
+
+    def update_hk_hot_stock(
+        self,
+        trade_date: date | datetime | str | None = None,
+    ) -> int:
+        """获取并保存指定交易日的问财港股热度榜。"""
+
+        return self._update_hot_stock(
+            repository=self.hk_stock_hot_repository,
+            fetch_method_name="fetch_hk_hot_rank",
+            market_name="港股",
+            trade_date=trade_date,
+        )
+
+    def update_us_hot_stock(
+        self,
+        trade_date: date | datetime | str | None = None,
+    ) -> int:
+        """获取并保存指定交易日的问财美股热度榜。"""
+
+        return self._update_hot_stock(
+            repository=self.us_stock_hot_repository,
+            fetch_method_name="fetch_us_hot_rank",
+            market_name="美股",
+            trade_date=trade_date,
+        )
+
+    def _update_hot_stock(
+        self,
+        repository: StockHotDailyRepository | None,
+        fetch_method_name: str,
+        market_name: str,
+        trade_date: date | datetime | str | None,
+    ) -> int:
+        """获取、格式化并保存一个市场的股票热度榜。"""
+
+        if self.iwencai_provider is None or repository is None:
             raise RuntimeError("未配置问财 Provider 或股票热度 Repository")
 
         if trade_date is None:
@@ -191,16 +242,16 @@ class Service:
 
         try:
             # API 请求数据
-            result = self.iwencai_provider.fetch_hot_rank()
+            result = getattr(self.iwencai_provider, fetch_method_name)()
             # 格式化清洗数据
             hot_rows = self.format_hot_stock(result, trade_date)
             # 存到数据库
-            affected_rows = self.stock_hot_repository.upsert_stock_hot_daily(hot_rows)
+            affected_rows = repository.upsert_stock_hot_daily(hot_rows)
         except Exception as error:
-            print(f"股票热度更新失败: {error}")
+            print(f"{market_name}热度更新失败: {error}")
             raise
 
-        print(f"股票热度更新成功，共写入 {affected_rows} 条")
+        print(f"{market_name}热度更新成功，共写入 {affected_rows} 条")
         return affected_rows
 
     def get_hot_stock(
@@ -209,22 +260,64 @@ class Service:
     ) -> pd.DataFrame:
         """返回最新 A 股热度榜，缓存超过两小时时先同步数据。"""
 
-        if self.stock_hot_repository is None:
+        return self._get_hot_stock(
+            repository=self.stock_hot_repository,
+            update=self.update_hot_stock,
+            sync_lock=self._hot_stock_sync_lock,
+            request_time=request_time,
+        )
+
+    def get_hk_hot_stock(
+        self,
+        request_time: datetime | None = None,
+    ) -> pd.DataFrame:
+        """返回最新港股热度榜，缓存超过两小时时先同步数据。"""
+
+        return self._get_hot_stock(
+            repository=self.hk_stock_hot_repository,
+            update=self.update_hk_hot_stock,
+            sync_lock=self._hk_hot_stock_sync_lock,
+            request_time=request_time,
+        )
+
+    def get_us_hot_stock(
+        self,
+        request_time: datetime | None = None,
+    ) -> pd.DataFrame:
+        """返回最新美股热度榜，缓存超过两小时时先同步数据。"""
+
+        return self._get_hot_stock(
+            repository=self.us_stock_hot_repository,
+            update=self.update_us_hot_stock,
+            sync_lock=self._us_hot_stock_sync_lock,
+            request_time=request_time,
+        )
+
+    def _get_hot_stock(
+        self,
+        repository: StockHotDailyRepository | None,
+        update: Callable[[date], int],
+        sync_lock: threading.Lock,
+        request_time: datetime | None,
+    ) -> pd.DataFrame:
+        """读取一个市场的最新热度榜，并在缓存过期时同步。"""
+
+        if repository is None:
             raise RuntimeError("未配置股票热度 Repository")
 
         current_time = request_time or datetime.now(ZoneInfo("Asia/Shanghai"))
-        latest_update_time = self.stock_hot_repository.get_latest_update_time()
+        latest_update_time = repository.get_latest_update_time()
 
         if not self._is_hot_stock_fresh(latest_update_time, current_time):
             # 路由是同步接口，可能被多个工作线程同时调用。锁内再次检查，
             # 确保缓存过期时只发起一次问财同步。
-            with self._hot_stock_sync_lock:
-                latest_update_time = self.stock_hot_repository.get_latest_update_time()
+            with sync_lock:
+                latest_update_time = repository.get_latest_update_time()
                 if not self._is_hot_stock_fresh(latest_update_time, current_time):
                     trade_date = self._to_shanghai_naive(current_time).date()
-                    self.update_hot_stock(trade_date)
+                    update(trade_date)
 
-        return self.stock_hot_repository.get_latest()
+        return repository.get_latest()
 
     def _is_hot_stock_fresh(
         self,

@@ -11,7 +11,7 @@ const SYNC_TASKS = [
   {
     id: 'hot-stock',
     name: '股票热度',
-    description: '获取当天 A 股热度榜，并更新股票热度数据表。',
+    description: '获取当天 A 股、港股和美股热度榜，并更新对应数据表。',
     run: syncHotStock
   },
   {

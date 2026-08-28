@@ -11,12 +11,14 @@ import moment from 'moment';
 export default function HotRankingsDashboard() {
   const panelRefs = useRef({});
   const [fullscreenMarket, setFullscreenMarket] = useState(null);
-  const { ranking, loading: rankingLoading, error: rankingError, refresh } = useHotStockRanking();
+  const aShareRanking = useHotStockRanking('a-share');
+  const hkShareRanking = useHotStockRanking('hk-share');
+  const usShareRanking = useHotStockRanking('us-share');
 
   const markets = [
-    { id: 'a-share', title: 'A股热榜' },
-    { id: 'hk-share', title: '港股热榜' },
-    { id: 'us-share', title: '美股热榜' }
+    { id: 'a-share', title: 'A股热榜', state: aShareRanking },
+    { id: 'hk-share', title: '港股热榜', state: hkShareRanking },
+    { id: 'us-share', title: '美股热榜', state: usShareRanking }
   ];
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function HotRankingsDashboard() {
     <div className={cn('dashboard-content', styles.dashboardGrid)}>
       {markets.map(market => {
         const isFullscreen = fullscreenMarket === market.id;
+        const { ranking, loading: rankingLoading, error: rankingError, refresh } = market.state;
 
         return (
           <section
@@ -114,7 +117,11 @@ export default function HotRankingsDashboard() {
               </div>
             </div>
             <div className={styles.tableWrap}>
-              <RankingTable rows={ranking.rows} loading={rankingLoading} showKline={isFullscreen} />
+              <RankingTable
+                rows={ranking.rows}
+                loading={rankingLoading}
+                showKline={isFullscreen && market.id === 'a-share'}
+              />
             </div>
           </section>
         );

@@ -183,8 +183,21 @@ class IwencaiProvider:
             "港股关注度排名前50",
             page_size=50,
         )
+        frame = pd.DataFrame(data)
 
-        return self.format_hot_rank(data)
+        hot_col = next(col for col in frame.columns if col.startswith("个股热度"))
+
+        frame = frame.rename(
+            columns={
+                "股票代码": "symbol",
+                "股票简称": "name",
+                "收盘价": "price",
+                "最新涨跌幅": "change_pct",
+                hot_col: "hot_rank",
+            }
+        )
+
+        return frame
 
     def fetch_us_hot_rank(self) -> pd.DataFrame:
         """获取美股关注度排名前 50。"""

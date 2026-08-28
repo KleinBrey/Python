@@ -2,7 +2,11 @@
 
 from backend.app.database import DuckDBDatabase
 from backend.app.provider import IwencaiProvider
-from backend.app.repository import StockHotDailyRepository
+from backend.app.repository import (
+    HKStockHotDailyRepository,
+    StockHotDailyRepository,
+    USStockHotDailyRepository,
+)
 from backend.app.services import Service
 
 
@@ -13,6 +17,8 @@ def sync_stock_hot() -> None:
 
     # 注册股票热度 Repository。
     stock_hot_repository = StockHotDailyRepository(database)
+    hk_stock_hot_repository = HKStockHotDailyRepository(database)
+    us_stock_hot_repository = USStockHotDailyRepository(database)
 
     # 注册问财 API。
     iwencai_provider = IwencaiProvider()
@@ -21,10 +27,14 @@ def sync_stock_hot() -> None:
     service = Service(
         iwencai_provider=iwencai_provider,
         stock_hot_repository=stock_hot_repository,
+        hk_stock_hot_repository=hk_stock_hot_repository,
+        us_stock_hot_repository=us_stock_hot_repository,
     )
 
-    # 获取并保存当天股票热度。
+    # 获取并保存当天 A 股、港股和美股热度。
     service.update_hot_stock()
+    service.update_hk_hot_stock()
+    service.update_us_hot_stock()
 
 
 def main() -> None:
