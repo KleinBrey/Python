@@ -1,7 +1,27 @@
 import pandas as pd
 import pytest
 
-from backend.app.provider.iwencai_provider import IwencaiProvider
+from backend.app.provider.iwencai_provider import IwencaiError, IwencaiProvider
+
+
+def test_request_page_switches_to_next_api_key(monkeypatch):
+    provider = IwencaiProvider()
+    provider.api_keys = ["key-1", "key-2", "key-3"]
+    used_keys = []
+
+    def fake_send_request(payload, api_key):
+        used_keys.append(api_key)
+        if api_key == "key-1":
+            raise IwencaiError("密钥失效")
+        return {"datas": []}
+
+    monkeypatch.setattr(provider, "_send_request", fake_send_request)
+
+    assert provider._request_page("测试", 1, 50) == {"datas": []}
+    assert used_keys == ["key-1", "key-2"]
+
+    provider._request_page("测试", 2, 50)
+    assert used_keys[-1] == "key-2"
 
 
 @pytest.mark.parametrize(

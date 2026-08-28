@@ -43,9 +43,17 @@ class IwencaiProvider:
         timeout: int = 60,
     ) -> None:
         settings = IwencaiSettings()
-        self.api_key = settings.api_key.strip()
-        self.api_key_backup = settings.api_key_backup.strip()
-        self.api_key_weibo = settings.api_key_weibo.strip()
+        self.api_keys = [
+            key
+            for key in (
+                settings.api_key_weibo.strip(),
+                settings.api_key_backup.strip(),
+                settings.api_key.strip(),
+            )
+            if key
+        ]
+        # 当前使用的Key下标
+        self.current_api_key_index = 0
         self.base_url = settings.base_url
         self.timeout = max(1, timeout)
         self.session = requests.Session()
@@ -61,8 +69,8 @@ class IwencaiProvider:
         normalized_query = " ".join(query.split())
         if not normalized_query:
             raise ValueError("查询条件不能为空")
-        if not self.api_key:
-            raise IwencaiError("未配置 IWENCAI_API_KEY")
+        if not self.api_keys:
+            raise IwencaiError("未配置问财 API Key")
         if page_size < 1 or max_pages < 1:
             raise ValueError("page_size 和 max_pages 必须大于 0")
 
@@ -100,23 +108,41 @@ class IwencaiProvider:
         page: int,
         page_size: int,
     ) -> dict[str, Any]:
-        headers = {
-            # "Authorization": f"Bearer {self.api_key}",
-            # "Authorization": f"Bearer {self.api_key_backup}",
-            "Authorization": f"Bearer {self.api_key_weibo}",
-            "X-Claw-Call-Type": "normal",
-            "X-Claw-Skill-Id": "hithink-astock-selector",
-            "X-Claw-Skill-Version": "1.0.0",
-            "X-Claw-Plugin-Id": "none",
-            "X-Claw-Plugin-Version": "none",
-            "X-Claw-Trace-Id": secrets.token_hex(32),
-        }
         payload = {
             "query": query,
             "page": str(page),
             "limit": str(page_size),
             "is_cache": "1",
             "expand_index": "true",
+        }
+
+        last_error: IwencaiError | None = None
+        # 最多尝试列表长度
+        for _ in self.api_keys:
+            api_key = self.api_keys[self.current_api_key_index]
+            try:
+                return self._send_request(payload, api_key)
+            except IwencaiError as exc:
+                last_error = exc
+                self.current_api_key_index = (self.current_api_key_index + 1) % len(
+                    self.api_keys
+                )
+
+        raise IwencaiError(f"所有问财 API Key 均请求失败：{last_error}") from last_error
+
+    def _send_request(
+        self,
+        payload: dict[str, str],
+        api_key: str,
+    ) -> dict[str, Any]:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "X-Claw-Call-Type": "normal",
+            "X-Claw-Skill-Id": "hithink-astock-selector",
+            "X-Claw-Skill-Version": "1.0.0",
+            "X-Claw-Plugin-Id": "none",
+            "X-Claw-Plugin-Version": "none",
+            "X-Claw-Trace-Id": secrets.token_hex(32),
         }
 
         try:
