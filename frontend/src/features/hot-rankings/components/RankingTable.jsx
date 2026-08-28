@@ -46,14 +46,37 @@ function keepKlineRowsWithStocks({ nodes }) {
   });
 }
 
-export default function RankingTable({ rows, loading, showKline = false }) {
-  const columnDefs = useRef([
-    { headerName: '股票', field: 'name', flex: 1 },
-    { headerName: '代码', field: 'thscode', flex: 1 },
-    { headerName: '排名', field: 'rank', flex: 0.7, minWidth: 72 },
-    { headerName: '热度', field: 'heat', flex: 1 }
-  ]);
+function formatChangePercent(value) {
+  if (value === null || value === undefined || value === '') return '-';
 
+  const change = Number(value);
+  if (!Number.isFinite(change)) return '-';
+
+  const sign = change > 0 ? '+' : '';
+  return `${sign}${change.toFixed(2)}%`;
+}
+
+function ChangePercentCell(params) {
+  // 涨跌幅使用快照最新值
+  const change = Number(params.data.change_pct);
+  const color = change > 0 ? '#f04451' : change < 0 ? '#24bd7a' : undefined;
+  return <span style={{ color }}>{formatChangePercent(change)}</span>;
+}
+
+const COLUMN_DEFS = [
+  { headerName: '股票', field: 'name', flex: 1, cellStyle: { color: '#ff7f50' } },
+  { headerName: '代码', field: 'symbol', flex: 1 },
+  {
+    headerName: '涨幅%',
+    field: 'change_pct',
+    flex: 0.5,
+    minWidth: 92,
+    cellRenderer: ChangePercentCell
+  },
+  { headerName: '热度', field: 'hot_value', flex: 1 }
+];
+
+export default function RankingTable({ rows, loading, showKline = false }) {
   // 普通状态只展示股票行；榜单进入全屏后，才为每只股票插入对应的 K 线行。
   const rowData = useMemo(
     () =>
@@ -88,7 +111,7 @@ export default function RankingTable({ rows, loading, showKline = false }) {
             <AgGridReact
               theme={themeDarkBlue}
               rowData={rowData}
-              columnDefs={columnDefs.current}
+              columnDefs={COLUMN_DEFS}
               defaultColDef={{ resizable: true, sortable: true }}
               fullWidthCellRenderer={RankingKlineRow}
               getRowHeight={params => (params.data?.rowType === 'kline' ? KLINE_ROW_HEIGHT : undefined)}
