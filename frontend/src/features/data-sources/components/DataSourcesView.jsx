@@ -5,7 +5,21 @@ import { Button } from '@/shadcn/components/ui/button.jsx';
 import { shortTime } from '@/utils/formatters.js';
 import styles from './DataSourcesView.module.css';
 
-export default function DataSourcesView({ tasks, results, runningTaskId, error, runSync }) {
+function latestDataText(taskId, latestUpdateTimes, latestDataStatus) {
+  if (latestDataStatus === 'loading') return '读取中…';
+  if (latestDataStatus === 'failed') return '读取失败';
+  return latestUpdateTimes[taskId] ? shortTime(latestUpdateTimes[taskId]).slice(0, 19) : '暂无数据';
+}
+
+export default function DataSourcesView({
+  tasks,
+  results,
+  latestUpdateTimes,
+  latestDataStatus,
+  runningTaskId,
+  error,
+  runSync
+}) {
   return (
     <div className="dashboard-content">
       <section className="dashboard-panel">
@@ -35,6 +49,10 @@ export default function DataSourcesView({ tasks, results, runningTaskId, error, 
                 <p className={styles.description}>{task.description}</p>
 
                 <dl>
+                  <div>
+                    <dt>最新数据</dt>
+                    <dd>{latestDataText(task.id, latestUpdateTimes, latestDataStatus)}</dd>
+                  </div>
                   <div>
                     <dt>最近执行</dt>
                     <dd>{shortTime(result.finishedAt)}</dd>

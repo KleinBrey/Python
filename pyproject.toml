@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.4,<10", "httpx>=0.28,<1"]
+dev = ["httpx>=0.28,<1"]
 
 [project.scripts]
 quant-api = "backend.run:main"
@@ -32,7 +32,3 @@ quant-sync = "backend.scripts.sync_daily_k_db:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["backend*"]
-
-[tool.pytest.ini_options]
-testpaths = ["backend/tests"]
-addopts = "-q"

@@ -130,14 +130,6 @@ uv run quant-api
 uv run quant-sync
 ```
 
-## 测试
-
-测试统一位于 `backend/tests`，包导入均使用 `backend.app`。
-
-```bash
-uv run pytest
-```
-
 ## 新功能放置位置
 
 | 需求 | 目录 |

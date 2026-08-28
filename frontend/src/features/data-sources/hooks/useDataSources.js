@@ -1,6 +1,11 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { syncDailyK, syncHotStock, syncStockList } from '../api/dataSourcesApi.js';
+import {
+  fetchLatestUpdateTimes,
+  syncDailyK,
+  syncHotStock,
+  syncStockList
+} from '../api/dataSourcesApi.js';
 
 const SYNC_TASKS = [
   {
@@ -29,8 +34,31 @@ const INITIAL_RESULTS = Object.fromEntries(
 
 export function useDataSources() {
   const [results, setResults] = useState(INITIAL_RESULTS);
+  const [latestUpdateTimes, setLatestUpdateTimes] = useState({});
+  const [latestDataStatus, setLatestDataStatus] = useState('loading');
   const [error, setError] = useState('');
   const activeTask = useRef(null);
+  const latestRequestId = useRef(0);
+
+  const loadLatestUpdateTimes = useCallback(async () => {
+    const requestId = latestRequestId.current + 1;
+    latestRequestId.current = requestId;
+    setLatestDataStatus('loading');
+
+    try {
+      const { data } = await fetchLatestUpdateTimes();
+      if (requestId !== latestRequestId.current) return;
+      setLatestUpdateTimes(data);
+      setLatestDataStatus('ready');
+    } catch {
+      if (requestId !== latestRequestId.current) return;
+      setLatestDataStatus('failed');
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadLatestUpdateTimes();
+  }, [loadLatestUpdateTimes]);
 
   const runSync = useCallback(async taskId => {
     if (activeTask.current) return;
@@ -56,6 +84,7 @@ export function useDataSources() {
           duration: data.duration_seconds
         }
       }));
+      void loadLatestUpdateTimes();
     } catch (requestError) {
       const message = requestError.response?.data?.detail || requestError.message || '同步脚本执行失败';
       setError(`${task.name}：${message}`);
@@ -66,13 +95,15 @@ export function useDataSources() {
     } finally {
       activeTask.current = null;
     }
-  }, []);
+  }, [loadLatestUpdateTimes]);
 
   const runningTaskId = Object.keys(results).find(taskId => results[taskId].status === 'running') || null;
 
   return {
     tasks: SYNC_TASKS,
     results,
+    latestUpdateTimes,
+    latestDataStatus,
     runningTaskId,
     error,
     runSync

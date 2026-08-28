@@ -57,6 +57,14 @@ class BaseRepository:
 class StockRepository(BaseRepository):
     """负责 stocks 表的读写。"""
 
+    def get_latest_update_time(self) -> datetime | None:
+        """获取股票基础信息表最近一次更新时间。"""
+
+        with self.db.connection(read_only=True) as connection:
+            row = connection.execute("SELECT MAX(update_time) FROM stocks").fetchone()
+
+        return row[0] if row and row[0] is not None else None
+
     def get_table_data(self) -> pd.DataFrame:
         """获取全部股票基础信息。"""
 
@@ -110,6 +118,16 @@ class StockRepository(BaseRepository):
 
 class DailyBarRepository(BaseRepository):
     """负责 daily_bars 表的读写。"""
+
+    def get_latest_update_time(self) -> datetime | None:
+        """获取日 K 线表最近一次更新时间。"""
+
+        with self.db.connection(read_only=True) as connection:
+            row = connection.execute(
+                "SELECT MAX(update_time) FROM daily_bars"
+            ).fetchone()
+
+        return row[0] if row and row[0] is not None else None
 
     def get_table_data(self) -> pd.DataFrame:
         """获取全部日线数据"""

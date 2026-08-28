@@ -17,7 +17,11 @@ from fastapi import (
 )
 from starlette.concurrency import run_in_threadpool
 
-from backend.app.repository import DailyBarRepository, StockRepository
+from backend.app.repository import (
+    DailyBarRepository,
+    StockHotDailyRepository,
+    StockRepository,
+)
 from backend.app.schemas import DailyBar, HotStock, Stock
 from backend.app.services import Service
 from backend.app.utils.symbol import validate_symbol
@@ -25,7 +29,12 @@ from backend.scripts.sync_daily_k_db import sync_daily_k
 from backend.scripts.sync_hot_stock_db import sync_stock_hot
 from backend.scripts.sync_stock_list_db import sync_stock_list
 
-from .dependencies import get_daily_repository, get_stock_repository, get_service
+from .dependencies import (
+    get_daily_repository,
+    get_service,
+    get_stock_hot_repository,
+    get_stock_repository,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -36,6 +45,10 @@ database_sync_lock = threading.Lock()
 # 使用 Annotated 封装依赖声明，避免每个接口重复书写 Depends。
 StockListRepository = Annotated[StockRepository, Depends(get_stock_repository)]
 DailyRepository = Annotated[DailyBarRepository, Depends(get_daily_repository)]
+StockHotRepository = Annotated[
+    StockHotDailyRepository,
+    Depends(get_stock_hot_repository),
+]
 dbService = Annotated[Service, Depends(get_service)]
 
 
@@ -103,6 +116,21 @@ async def sync_hot_stock_database() -> dict[str, str | float]:
         "每日股票热度同步完成",
         sync_stock_hot,
     )
+
+
+@router.get("/database-sync/latest-update-times")
+def database_latest_update_times(
+    stock_repository: StockListRepository,
+    daily_repository: DailyRepository,
+    stock_hot_repository: StockHotRepository,
+) -> dict[str, datetime | None]:
+    """返回三个同步任务所对应数据表的最新更新时间。"""
+
+    return {
+        "hot-stock": stock_hot_repository.get_latest_update_time(),
+        "daily-k": daily_repository.get_latest_update_time(),
+        "stock-list": stock_repository.get_latest_update_time(),
+    }
 
 
 @router.get("/stocks-list", response_model=list[Stock])
