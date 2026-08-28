@@ -168,6 +168,10 @@ class IwencaiProvider:
             raise IwencaiError("问财返回格式异常")
         return result
 
+    """
+        API调用
+    """
+
     def fetch_hot_rank(self) -> pd.DataFrame:
         """获取 A 股热度列表。"""
         data = self.query(

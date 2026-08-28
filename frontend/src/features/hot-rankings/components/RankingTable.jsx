@@ -64,7 +64,7 @@ function ChangePercentCell(params) {
 }
 
 const COLUMN_DEFS = [
-  { headerName: '股票', field: 'name', flex: 1, cellStyle: { color: '#ff7f50' } },
+  { headerName: '股票', field: 'name', flex: 1 },
   { headerName: '代码', field: 'symbol', flex: 1 },
   {
     headerName: '涨幅%',

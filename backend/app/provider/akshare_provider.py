@@ -6,9 +6,6 @@
 from __future__ import annotations
 
 import os
-import re
-import time
-from pprint import pprint
 
 import akshare as ak
 import pandas as pd
@@ -204,30 +201,3 @@ class AkShareProvider:
 
         result["source"] = self.source
         return {"data": {"item": result.to_dict(orient="records")}}
-
-
-def main() -> None:
-    """获取并打印 601899 最近 30 天的日线数据。"""
-
-    provider = AkShareProvider()
-
-    # stocks = provider.fetch_stock_list()
-
-    # pprint(pd.DataFrame(stocks["data"]["item"]))
-
-    # end = int(time.time() * 1000)
-    # start = end - 30 * 24 * 60 * 60 * 1000
-
-    # result = provider.fetch_historical(
-    #     "601899.SH",
-    #     start,
-    #     end,
-    # )
-    # pprint(result)
-
-    stock_zh_a_spot_em_df = ak.stock_zh_a_spot_em()
-    print(stock_zh_a_spot_em_df)
-
-
-if __name__ == "__main__":
-    main()

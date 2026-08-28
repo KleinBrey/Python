@@ -88,25 +88,3 @@ class HithinkProvider:
         time.sleep(random.uniform(0.2, 0.4))
         result = self.get(url, params)
         return result["data"]["item"]
-
-
-if __name__ == "__main__":
-    # 直接运行当前文件时，获取并打印股票列表。
-    # 被 main.py 导入时不会执行，避免重复请求接口。
-    providerInstant = HithinkProvider()
-
-    stock_list = providerInstant.fetch_stock_list()
-
-    pprint(stock_list)
-
-    # snap_data = providerInstant.fetch_snapshot("600519.SH")  # 调用函数获取数据
-
-    # pprint(snap_data)
-
-    # end = int(time.time() * 1000)
-
-    # start = end - 30 * 24 * 60 * 60 * 1000
-
-    # history_data = providerInstant.fetch_historical("600519.SH", start, end)
-
-    # pprint(history_data)  # 打印获取到的数据
