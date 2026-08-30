@@ -69,7 +69,7 @@ def load_market_data() -> pd.DataFrame:
 
     console.rule(f"今日:{today} 最新交易日:{latest_trade_date}")
 
-    hot_stocks = StockHotDailyRepository(database).get_by_trade_date(latest_trade_date)
+    hot_stocks = StockHotDailyRepository(database).get_by_trade_date(today)
 
     return stocks, daily_bars, hot_stocks
 

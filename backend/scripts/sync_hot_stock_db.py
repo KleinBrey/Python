@@ -33,8 +33,8 @@ def sync_stock_hot() -> None:
 
     # 获取并保存当天 A 股、港股和美股热度。
     service.update_hot_stock()
-    service.update_hk_hot_stock()
-    service.update_us_hot_stock()
+    # service.update_hk_hot_stock()
+    # service.update_us_hot_stock()
 
 
 def main() -> None:
