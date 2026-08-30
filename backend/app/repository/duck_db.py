@@ -134,7 +134,7 @@ class DailyBarRepository(BaseRepository):
 
         with self.db.connection(read_only=True) as connection:
             return connection.execute(
-                "SELECT * FROM daily_bars ORDER BY symbol, date"
+                "SELECT * FROM daily_bars ORDER BY symbol, trade_date"
             ).df()
 
     def get_by_symbol_and_date_range(
