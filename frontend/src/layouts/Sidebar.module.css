@@ -61,6 +61,7 @@
   display: flex;
   flex-direction: column;
   color: #fafafa;
+  min-width: 0;
 }
 
 .sidebarNav {
@@ -107,6 +108,7 @@
 .navItem span {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .navItem .nav-status {
@@ -152,23 +154,15 @@
   flex: 0 0 auto;
 }
 
-@keyframes revealSidebarText {
-  from {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  to {
-    opacity: 1;
-    visibility: visible;
-  }
-}
-
-:global([data-state='expanded']) .title,
-:global([data-state='expanded']) .sidebarNav p,
-:global([data-state='expanded']) .navItem span,
-:global([data-state='expanded']) .sidebarFooter span {
-  animation: revealSidebarText 80ms ease-out 140ms both;
+.title,
+.sidebarNav p,
+.navItem span,
+.sidebarFooter span {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 80ms ease-out 140ms,
+    visibility 0s linear 140ms;
 }
 
 :global([data-collapsible='icon']) .logo {
@@ -180,7 +174,24 @@
 :global([data-collapsible='icon']) .sidebarNav p,
 :global([data-collapsible='icon']) .navItem span,
 :global([data-collapsible='icon']) .sidebarFooter span {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  transition-delay: 0s;
+}
+
+:global([data-collapsible='icon']) .title,
+:global([data-collapsible='icon']) .sidebarFooter span {
+  flex: 0 0 0;
+  max-width: 0;
+  overflow: hidden;
+}
+
+:global([data-collapsible='icon']) .sidebarNav p {
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 0;
 }
 
 :global([data-collapsible='icon']) .sidebar {

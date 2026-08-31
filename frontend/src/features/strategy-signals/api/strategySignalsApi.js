@@ -1,5 +1,9 @@
 import { apiGet } from '@/api/client.js';
 
-export function getStrategyStocks({ source = 'all', limit = 1000, signal } = {}) {
-  return apiGet(`/api/strategy-stocks?source=${encodeURIComponent(source)}&limit=${limit}`, { signal });
+export function getStrategies({ signal } = {}) {
+  return apiGet('/api/strategies', { signal });
+}
+
+export function getStrategySignals(strategyId, { limit = 100, signal } = {}) {
+  return apiGet(`/api/strategies/${encodeURIComponent(strategyId)}/signals?limit=${limit}`, { signal });
 }

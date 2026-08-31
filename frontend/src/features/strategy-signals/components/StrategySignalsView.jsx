@@ -1,33 +1,118 @@
-import { Braces, FileSearch, Layers3, ListChecks, Loader2, RefreshCcw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { BarChart3, ChevronRight, Loader2, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
+import moment from 'moment';
 
-import MetricCard from '@/components/MetricCard.jsx';
 import { Button } from '@/shadcn/components/ui/button.jsx';
 import { cn } from '@/shadcn/lib/utils.js';
-import SourceCard from './SourceCard.jsx';
-import StockTable from './StockTable.jsx';
+import StrategyResultsTable from './StrategyResultsTable.jsx';
 import styles from './StrategySignals.module.css';
 
-const filters = [['all', '全部来源'], ['iwencai', '同花顺问财'], ['handwritten', '手写策略']];
+function formatTimestamp(value) {
+  if (!value) return '尚未运行';
+  const timestamp = moment(value);
+  return timestamp.isValid() ? timestamp.format('YYYY-MM-DD HH:mm:ss') : '尚未运行';
+}
 
 export default function StrategySignalsView({ state }) {
-  const { sources, stocks, activeSource, sourceCountById, loading, error, selectSource, refresh } = state;
+  const panelRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { strategies, activeStrategyId, result, loading, error, selectStrategy, refresh } = state;
+  const activeStrategy = result?.strategy || strategies.find(strategy => strategy.id === activeStrategyId);
+  const rows = result?.items || [];
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(document.fullscreenElement === panelRef.current);
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await panelRef.current?.requestFullscreen();
+      }
+    } catch (fullscreenError) {
+      console.error('切换策略结果全屏失败', fullscreenError);
+    }
+  }
+
   return (
     <div className={cn('dashboard-content', styles.root)}>
-      <section className="dashboard-metric-grid" aria-label="策略来源概览">
-        <MetricCard label="策略来源" value={sources.length || 2} note="问财选股 + Python 手写策略" icon={Layers3} tone="indigo" />
-        <MetricCard label="股票记录" value={stocks.length} note="当前筛选来源返回的记录" icon={ListChecks} tone="teal" />
-        <MetricCard label="问财选股" value={sourceCountById.iwencai ?? '-'} note="读取最新问财导出结果" icon={FileSearch} tone="rose" />
-        <MetricCard label="手写策略" value={sourceCountById.handwritten ?? '-'} note="项目内 Python 策略结果" icon={Braces} tone="amber" />
-      </section>
-      <section className={styles.toolbar}>
-        <div className={styles.sourceFilter} aria-label="策略来源筛选">
-          {filters.map(([id, label]) => <Button key={id} type="button" className={activeSource === id ? styles.active : undefined} onClick={() => selectSource(id)} disabled={loading} size="sm" variant="ghost">{label}</Button>)}
+      <aside className={cn('dashboard-panel', styles.strategySidebar)} aria-label="策略列表">
+        <div className={styles.sidebarHeader}>
+          <span>策略列表</span>
+          <small>{strategies.length}</small>
         </div>
-        <Button type="button" className="dashboard-ghost-button" onClick={refresh} disabled={loading} variant="outline">{loading ? <Loader2 className="dashboard-spin" size={15} /> : <RefreshCcw size={15} />}重新读取</Button>
+        <nav className={styles.strategyList}>
+          {strategies.map(strategy => {
+            const active = strategy.id === activeStrategyId;
+            return (
+              <button
+                key={strategy.id}
+                type="button"
+                className={cn(styles.strategyItem, active && styles.strategyItemActive)}
+                onClick={() => selectStrategy(strategy.id)}
+                aria-current={active ? 'page' : undefined}
+              >
+                <span className={styles.strategyIcon}><BarChart3 size={17} /></span>
+                <span className={styles.strategyText}>
+                  <strong>{strategy.name}</strong>
+                  <small>Python 策略</small>
+                </span>
+                <ChevronRight size={16} />
+              </button>
+            );
+          })}
+          {!strategies.length && !loading ? <p className={styles.noStrategy}>暂无可用策略</p> : null}
+        </nav>
+      </aside>
+
+      <section className={cn('dashboard-panel', 'dashboard-table-panel', styles.resultPanel)} ref={panelRef}>
+        <div className="dashboard-panel-header">
+          <div>
+            <h2>{activeStrategy?.name || '策略结果'}</h2>
+            <span>{error || `最近运行：${formatTimestamp(result?.generated_at)}`}</span>
+          </div>
+          <div className={styles.headerActions}>
+            <Button
+              type="button"
+              className={cn('dashboard-ghost-button', styles.fullscreenButton)}
+              variant="outline"
+              size="icon-lg"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? '退出全屏' : '全屏显示策略结果'}
+              aria-pressed={isFullscreen}
+              title={isFullscreen ? '退出全屏' : '全屏显示策略结果'}
+            >
+              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            </Button>
+            <Button type="button" className="dashboard-ghost-button" onClick={refresh} disabled={loading || !activeStrategyId} variant="outline">
+              {loading ? <Loader2 className="dashboard-spin" size={15} /> : <RefreshCcw size={15} />}
+              <span>{loading ? '运行中' : '重新运行'}</span>
+            </Button>
+          </div>
+        </div>
+
+        {activeStrategy ? (
+          <div className={styles.strategySummary}>
+            <div><span>命中股票</span><strong>{loading && !result ? '-' : result?.count ?? 0}</strong></div>
+            <div><span>交易日期</span><strong>{result?.trade_date || '-'}</strong></div>
+            <div><span>策略条件</span><strong>{activeStrategy.rules?.[0] || '-'}</strong></div>
+            <div><span>策略条件</span><strong>{activeStrategy.rules?.[1] || '-'}</strong></div>
+            <p title={activeStrategy.description}>{activeStrategy.description}</p>
+          </div>
+        ) : null}
+
+        {error ? <div className={styles.errorNotice}>{error}</div> : null}
+        <div className={styles.tableWrap}>
+          <StrategyResultsTable rows={rows} loading={loading} />
+        </div>
       </section>
-      {error ? <div className="dashboard-notice">{error}</div> : null}
-      <section className={styles.sourceGrid}>{sources.map(source => <SourceCard key={source.id} source={source} />)}</section>
-      <StockTable stocks={stocks} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-"""恐慌下跌 V 字反弹策略（V1）。
+"""恐慌下跌 V 字反弹策略（V1）实现。
 
 策略只识别信号，不执行交易：
 
@@ -11,6 +11,8 @@
 from __future__ import annotations
 
 import pandas as pd
+
+from backend.app.provider import TushareProvider
 
 # 恐慌阶段参数
 PANIC_DOWN_WINDOW = 6
@@ -27,6 +29,25 @@ BIG_BULL_CLOSE_POSITION = 0.70
 PANIC_VALID_DAYS = 3
 
 REQUIRED_COLUMNS = ["symbol", "date", "open", "high", "low", "close", "volume"]
+
+RESULT_COLUMNS = [
+    "symbol",
+    "name",
+    "exchange",
+    "market_cap",
+    "latest_date",
+    "latest_close",
+    "latest_1d_pct",
+    "latest_5d_pct",
+    "volume_ratio",
+    "drawdown_20",
+    "signal_stage",
+    "panic_signal",
+    "reversal_signal",
+    "confirmed_signal",
+    "hot_rank",
+    "hot_value",
+]
 
 
 def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
@@ -220,3 +241,56 @@ def show_signals(df: pd.DataFrame) -> None:
     ]
     has_signal = df["panic_signal"] | df["reversal_signal"] | df["confirmed_signal"]
     print(df.loc[has_signal, columns].to_string(index=False))
+
+
+def run_strategy(
+    *,
+    stocks: pd.DataFrame,
+    daily_bars: pd.DataFrame,
+    hot_stocks: pd.DataFrame,
+    tushare_provider: TushareProvider,
+) -> pd.DataFrame:
+    """计算最新交易日的恐慌、反转或确认信号。"""
+
+    if daily_bars.empty:
+        return pd.DataFrame(columns=RESULT_COLUMNS)
+
+    signals = run_panic_reversal_strategy(
+        daily_bars.rename(columns={"trade_date": "date"})
+    )
+    latest = signals.groupby("symbol", sort=False).tail(1)
+    latest = latest[
+        latest["panic_signal"]
+        | latest["reversal_signal"]
+        | latest["confirmed_signal"]
+    ].rename(
+        columns={
+            "date": "latest_date",
+            "close": "latest_close",
+            "return_1d": "latest_1d_pct",
+            "return_5d": "latest_5d_pct",
+        }
+    )
+    if latest.empty:
+        return pd.DataFrame(columns=RESULT_COLUMNS)
+
+    latest["signal_stage"] = "恐慌"
+    latest.loc[latest["reversal_signal"], "signal_stage"] = "反转"
+    latest.loc[latest["confirmed_signal"], "signal_stage"] = "确认"
+
+    trade_date = latest["latest_date"].max().strftime("%Y%m%d")
+    stock_info = stocks.merge(
+        tushare_provider.fetch_daily_basic(trade_date),
+        on="symbol",
+        how="left",
+    )
+
+    hot_stocks = hot_stocks.drop_duplicates("symbol").reset_index(drop=True)
+    hot_stocks["hot_rank"] = hot_stocks.index + 1
+
+    return (
+        stock_info.merge(latest, on="symbol")
+        .merge(hot_stocks[["symbol", "hot_rank", "hot_value"]], on="symbol")
+        .sort_values("hot_rank")[RESULT_COLUMNS]
+        .reset_index(drop=True)
+    )

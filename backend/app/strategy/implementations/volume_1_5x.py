@@ -1,4 +1,5 @@
-"""
+"""成交量 1.5 倍放量突破策略实现。
+
 总市值大于100亿,ST股除外,科创板除外,北交所除外，
 最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5,
 最近5日涨幅大于5%,按现在个股热度排序
@@ -8,12 +9,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 import pandas as pd
-
 from rich.console import Console
-
-from datetime import date
 
 from backend.app.database import DuckDBDatabase
 from backend.app.provider import TushareProvider
@@ -22,7 +21,6 @@ from backend.app.repository import (
     StockRepository,
     StockHotDailyRepository,
 )
-from backend.app.utils.symbol import validate_symbol
 
 console = Console()
 
@@ -33,7 +31,16 @@ pd.set_option("display.unicode.ambiguous_as_wide", True)
 
 
 # 计算因子
-INDICATOR_COLUMNS = ["symbol", "volume_ratio", "latest_5d_pct", "latest_1d_pct"]
+INDICATOR_COLUMNS = [
+    "symbol",
+    "latest_date",
+    "latest_close",
+    "recent_5d_avg_volume",
+    "previous_20d_avg_volume",
+    "volume_ratio",
+    "latest_5d_pct",
+    "latest_1d_pct",
+]
 
 # 返回结果
 RESULT_COLUMNS = [
@@ -47,6 +54,9 @@ RESULT_COLUMNS = [
     "previous_20d_avg_volume",
     "volume_ratio",
     "latest_5d_pct",
+    "latest_1d_pct",
+    "hot_rank",
+    "hot_value",
 ]
 
 
@@ -55,21 +65,14 @@ def load_market_data() -> pd.DataFrame:
 
     database = DuckDBDatabase()
 
+    # 全部股票列表
     stocks = StockRepository(database).get_table_data()
 
+    # 全部股票日线数据
     daily_bars = DailyBarRepository(database).get_table_data()
 
-    # 今日日期
-    today = date.today().strftime("%Y-%m-%d")
-
-    # 数据库最新交易日
-    latest_trade_date = (
-        pd.to_datetime(daily_bars["trade_date"]).max().strftime("%Y-%m-%d")
-    )
-
-    console.rule(f"今日:{today} 最新交易日:{latest_trade_date}")
-
-    hot_stocks = StockHotDailyRepository(database).get_by_trade_date(today)
+    # 最新股票热度
+    hot_stocks = StockHotDailyRepository(database).get_latest()
 
     return stocks, daily_bars, hot_stocks
 
@@ -94,9 +97,9 @@ class StrategyConfig:
 
 class VolumeBreakoutStrategy:
 
-    def __init__(self):
+    def __init__(self, tushare_provider: TushareProvider | None = None):
         self.config = StrategyConfig()
-        self.tushareProvider = TushareProvider()
+        self.tushare_provider = tushare_provider or TushareProvider()
 
     def select(
         self, stocks: pd.DataFrame, daily_bars: pd.DataFrame, hot_stocks: pd.DataFrame
@@ -107,8 +110,8 @@ class VolumeBreakoutStrategy:
             return pd.DataFrame(columns=RESULT_COLUMNS)
 
         # 股票候选池
-        pd = self.merge_stock_basic(stocks, daily_bars)
-        candidates = self.filter_stocks(pd)
+        stocks_with_basic = self.merge_stock_basic(stocks, daily_bars)
+        candidates = self.filter_stocks(stocks_with_basic)
 
         # 指标计算池
         bars = self.filter_daily_bars(daily_bars, candidates["symbol"])
@@ -130,7 +133,7 @@ class VolumeBreakoutStrategy:
             pd.to_datetime(daily_bars["trade_date"]).max().strftime("%Y%m%d")
         )
 
-        daily_basic = self.tushareProvider.fetch_daily_basic(latest_trade_date)
+        daily_basic = self.tushare_provider.fetch_daily_basic(latest_trade_date)
 
         # 合并股票动态字段
         result = stocks.merge(daily_basic, on="symbol", how="left")
@@ -216,6 +219,10 @@ class VolumeBreakoutStrategy:
             rows.append(
                 {
                     "symbol": symbol,
+                    "latest_date": recent["trade_date"].iloc[-1],
+                    "latest_close": recent["close"].iloc[-1],
+                    "recent_5d_avg_volume": recent_avg_volume,
+                    "previous_20d_avg_volume": previous_avg_volume,
                     "volume_ratio": volume_ratio,
                     "latest_5d_pct": latest_5d_pct,
                     "latest_1d_pct": latest_1d_pct,
@@ -241,22 +248,43 @@ class VolumeBreakoutStrategy:
     ) -> pd.DataFrame:
         """按热度进行筛选和排序"""
 
-        # 获取hot_stocks排序
-        symbol_order = {
-            symbol: index for index, symbol in enumerate(hot_stocks["symbol"])
-        }
+        if result.empty or hot_stocks.empty:
+            return pd.DataFrame(columns=RESULT_COLUMNS)
 
-        # 数字小的靠前
-        result["order"] = result["symbol"].map(symbol_order)
+        hot_stocks = hot_stocks.drop_duplicates("symbol").reset_index(drop=True)
+        hot_stocks["hot_rank"] = hot_stocks.index + 1
 
         return (
-            result[result["order"].notna()].sort_values("order").reset_index(drop=True)
+            result.merge(hot_stocks[["symbol", "hot_rank", "hot_value"]], on="symbol")
+            .sort_values("hot_rank")[RESULT_COLUMNS]
+            .reset_index(drop=True)
         )
+
+
+def run_strategy(
+    *,
+    stocks: pd.DataFrame,
+    daily_bars: pd.DataFrame,
+    hot_stocks: pd.DataFrame,
+    tushare_provider: TushareProvider,
+) -> pd.DataFrame:
+    """供 API 调用的策略入口。"""
+
+    return VolumeBreakoutStrategy(tushare_provider).select(
+        stocks,
+        daily_bars,
+        hot_stocks,
+    )
 
 
 if __name__ == "__main__":
     with console.status("[bold green]正在请求股票数据..."):
         stocks, daily_bars, hot_stocks = load_market_data()
+        # 数据库最新交易日
+        latest_trade_date = (
+            pd.to_datetime(daily_bars["trade_date"]).max().strftime("%Y-%m-%d")
+        )
+        console.rule(f"今日:{date.today():%Y-%m-%d} 最新交易日:{latest_trade_date}")
         selected_stocks = VolumeBreakoutStrategy().select(
             stocks, daily_bars, hot_stocks
         )
@@ -277,7 +305,7 @@ if __name__ == "__main__":
                     "market_cap",
                     "latest_5d_pct",
                     "latest_1d_pct",
-                    "order",
+                    "hot_rank",
                 ]
             ].rename(
                 columns={
@@ -286,7 +314,7 @@ if __name__ == "__main__":
                     "market_cap": "市值(亿)",
                     "latest_5d_pct": "5日涨幅(%)",
                     "latest_1d_pct": "今日涨幅(%)",
-                    "order": "热度排名",
+                    "hot_rank": "热度排名",
                 }
             )
         )

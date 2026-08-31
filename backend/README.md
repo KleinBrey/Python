@@ -104,6 +104,10 @@ Repository 负责字段检查、日期转换以及 DuckDB 的幂等 upsert。
 
 包含股票热度与量价突破策略，使用股票基础信息、日 K、每日市值和问财热度进行筛选。
 
+策略的名称、说明和规则集中配置在 `app/strategy/strategies.json`。新增策略时，
+在该文件增加一个唯一的 `id`，并在 `app/strategy/registry.py` 的
+`STRATEGY_EXECUTORS` 中登记对应执行函数。
+
 ### `app/utils/` 和 `app/view/`
 
 - `utils/`：日期、交易所和股票代码处理；

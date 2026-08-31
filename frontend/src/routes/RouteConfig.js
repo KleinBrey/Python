@@ -9,27 +9,27 @@ export const dashboardGroups = [
         description: '同花顺官方热股、飙升与涨停榜',
         status: '已接入'
       },
-      {
-        id: 'market-overview',
-        path: '/market-overview',
-        title: '市场概览',
-        description: '指数、涨跌分布、成交概览',
-        status: '已接入'
-      },
+      // {
+      //   id: 'market-overview',
+      //   path: '/market-overview',
+      //   title: '市场概览',
+      //   description: '指数、涨跌分布、成交概览',
+      //   status: '已接入'
+      // },
       {
         id: 'strategy-signals',
         path: '/strategy-signals',
         title: '策略信号',
-        description: '问财选股、手写策略和统一股票列表',
+        description: 'Python 量化策略与最新选股信号',
         status: '已接入'
-      },
-      {
-        id: 'chart-center',
-        path: '/chart-center',
-        title: '图表中心',
-        description: '历史行情和自定义图表',
-        status: '规划中'
       }
+      // {
+      //   id: 'chart-center',
+      //   path: '/chart-center',
+      //   title: '图表中心',
+      //   description: '历史行情和自定义图表',
+      //   status: '规划中'
+      // }
     ]
   },
   {
@@ -52,14 +52,14 @@ export const dashboardGroups = [
         title: '数据同步',
         description: '手动执行数据库同步脚本',
         status: '执行'
-      },
-      {
-        id: 'database',
-        path: '/database',
-        title: 'MongoDB',
-        description: '缓存、采集结果、策略结果',
-        status: '查看'
       }
+      // {
+      //   id: 'database',
+      //   path: '/database',
+      //   title: 'MongoDB',
+      //   description: '缓存、采集结果、策略结果',
+      //   status: '查看'
+      // }
     ]
   }
 ];

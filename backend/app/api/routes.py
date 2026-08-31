@@ -26,6 +26,12 @@ from backend.app.repository import (
 )
 from backend.app.schemas import DailyBar, HotStock, Stock
 from backend.app.services import Service
+from backend.app.strategy.registry import (
+    STRATEGY_EXECUTORS,
+    execute_strategy,
+    strategy_list,
+)
+from backend.app.strategy.result import format_strategy_result
 from backend.app.utils.symbol import validate_symbol
 from backend.scripts.sync_daily_k_db import sync_daily_k
 from backend.scripts.sync_hot_stock_db import sync_stock_hot
@@ -72,7 +78,9 @@ async def _run_database_sync(
     """在线程池运行阻塞式同步脚本，并统一返回执行结果。"""
 
     if not database_sync_lock.acquire(blocking=False):
-        raise HTTPException(status_code=409, detail="已有数据库同步任务正在执行，请稍后再试")
+        raise HTTPException(
+            status_code=409, detail="已有数据库同步任务正在执行，请稍后再试"
+        )
 
     started_at = time.perf_counter()
     try:
@@ -248,3 +256,42 @@ def daily_bars(
     records = daily_bar_table.to_dict(orient="records")
 
     return records
+
+
+@router.get("/strategies")
+def strategies() -> dict[str, list[dict[str, object]]]:
+    """返回策略列表"""
+
+    return {"items": strategy_list()}
+
+
+@router.get("/strategies/{strategy_id}/signals")
+def strategy_signals(
+    strategy_id: str,
+    stock_repository: StockListRepository,
+    daily_repository: DailyRepository,
+    stock_hot_repository: StockHotRepository,
+    service: dbService,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+) -> dict[str, object]:
+    """执行指定策略并返回结果"""
+
+    if strategy_id not in STRATEGY_EXECUTORS:
+        raise HTTPException(status_code=404, detail="该策略不存在")
+
+    try:
+        selected_stocks = execute_strategy(
+            strategy_id,
+            stocks=stock_repository.get_table_data(),
+            daily_bars=daily_repository.get_table_data(),
+            hot_stocks=stock_hot_repository.get_latest(),
+            tushare_provider=service.tushare_provider,
+        )
+    except Exception as error:
+        logger.exception("执行策略 %s 失败", strategy_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"策略执行失败：{error}",
+        ) from error
+
+    return format_strategy_result(strategy_id, selected_stocks, limit=limit)
