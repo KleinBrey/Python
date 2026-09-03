@@ -189,7 +189,7 @@
 .tableWrap {
   flex: 1;
   height: calc(100vh - 318px);
-  min-height: 540px;
+  /* min-height: 540px; */
 }
 
 @media (max-width: 1180px) {

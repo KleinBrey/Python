@@ -59,7 +59,9 @@ export default function StrategySignalsView({ state }) {
                 onClick={() => selectStrategy(strategy.id)}
                 aria-current={active ? 'page' : undefined}
               >
-                <span className={styles.strategyIcon}><BarChart3 size={17} /></span>
+                <span className={styles.strategyIcon}>
+                  <BarChart3 size={17} />
+                </span>
                 <span className={styles.strategyText}>
                   <strong>{strategy.name}</strong>
                   <small>Python 策略</small>
@@ -91,7 +93,13 @@ export default function StrategySignalsView({ state }) {
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </Button>
-            <Button type="button" className="dashboard-ghost-button" onClick={refresh} disabled={loading || !activeStrategyId} variant="outline">
+            <Button
+              type="button"
+              className="dashboard-ghost-button"
+              onClick={refresh}
+              disabled={loading || !activeStrategyId}
+              variant="outline"
+            >
               {loading ? <Loader2 className="dashboard-spin" size={15} /> : <RefreshCcw size={15} />}
               <span>{loading ? '运行中' : '重新运行'}</span>
             </Button>
@@ -100,10 +108,22 @@ export default function StrategySignalsView({ state }) {
 
         {activeStrategy ? (
           <div className={styles.strategySummary}>
-            <div><span>命中股票</span><strong>{loading && !result ? '-' : result?.count ?? 0}</strong></div>
-            <div><span>交易日期</span><strong>{result?.trade_date || '-'}</strong></div>
-            <div><span>策略条件</span><strong>{activeStrategy.rules?.[0] || '-'}</strong></div>
-            <div><span>策略条件</span><strong>{activeStrategy.rules?.[1] || '-'}</strong></div>
+            <div>
+              <span>命中股票</span>
+              <strong>{loading && !result ? '-' : (result?.count ?? 0)}</strong>
+            </div>
+            <div>
+              <span>交易日期</span>
+              <strong>{result?.trade_date || '-'}</strong>
+            </div>
+            <div>
+              <span>策略条件</span>
+              <strong>{activeStrategy.rules?.[0] || '-'}</strong>
+            </div>
+            <div>
+              <span>策略条件</span>
+              <strong>{activeStrategy.rules?.[1] || '-'}</strong>
+            </div>
             <p title={activeStrategy.description}>{activeStrategy.description}</p>
           </div>
         ) : null}
