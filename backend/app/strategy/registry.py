@@ -4,12 +4,20 @@ import json
 from pathlib import Path
 
 from .implementations.panic_reversal import run_strategy as run_panic_reversal
+from .implementations.second_rebound_short import (
+    run_strategy as run_second_rebound_short,
+)
+from .implementations.strong_breakout_pullback import (
+    run_strategy as run_strong_breakout_pullback,
+)
 from .implementations.volume_1_5x import run_strategy as run_volume_1_5x
 
 CONFIG_PATH = Path(__file__).with_name("strategies.json")
 
 STRATEGY_EXECUTORS = {
     "panic-reversal": run_panic_reversal,
+    "second-rebound-short": run_second_rebound_short,
+    "strong-breakout-pullback": run_strong_breakout_pullback,
     "volume-1-5x": run_volume_1_5x,
 }
 
