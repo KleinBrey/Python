@@ -38,7 +38,7 @@ export function AppSidebar() {
                     <NavLink
                       className={({ isActive }) => `${style.navItem}${isActive ? ` ${style.active}` : ''}`}
                       key={item.path}
-                      title={`${item.title}：${item.description}`}
+                      title={`${item.title}`}
                       to={item.path}
                     >
                       <Icon size={16} />

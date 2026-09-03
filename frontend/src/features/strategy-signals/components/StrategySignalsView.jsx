@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BarChart3, ChevronRight, Loader2, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
+import { BookOpenText, ChevronRight, Loader2, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
 import moment from 'moment';
 
 import { Button } from '@/shadcn/components/ui/button.jsx';
@@ -60,7 +60,7 @@ export default function StrategySignalsView({ state }) {
                 aria-current={active ? 'page' : undefined}
               >
                 <span className={styles.strategyIcon}>
-                  <BarChart3 size={17} />
+                  <BookOpenText size={17} />
                 </span>
                 <span className={styles.strategyText}>
                   <strong>{strategy.name}</strong>
