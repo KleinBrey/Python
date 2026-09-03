@@ -1,6 +1,6 @@
-import { SidebarProvider, SidebarTrigger } from '@/shadcn/components/ui/sidebar'
-import { AppSidebar } from './Sidebar.jsx'
-import style from './Layout.module.css'
+import { SidebarProvider, SidebarTrigger } from '@/shadcn/components/ui/sidebar';
+import { AppSidebar } from './Sidebar.jsx';
+import style from './Layout.module.css';
 
 export default function Layout({ children }) {
   return (
@@ -11,13 +11,12 @@ export default function Layout({ children }) {
           <SidebarTrigger />
           <div className={style.headerTitle}>
             <div>
-              <h1>股票看板中心</h1>
-              {/* <span>{selectedDashboard?.title || 'Dashboard'}</span> */}
+              <h1>交易投研系统</h1>
             </div>
           </div>
         </header>
         <main>{children}</main>
       </section>
     </SidebarProvider>
-  )
+  );
 }

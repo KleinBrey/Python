@@ -1,29 +1,16 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shadcn/components/ui/sidebar';
 import logoUrl from '@/assets/branding/logo.png';
-
 import React from 'react';
-import {
-  BarChart3,
-  ChartNoAxesCombined,
-  Database,
-  LayoutDashboard,
-  PieChart,
-  Search,
-  Server,
-  TrendingUp
-} from 'lucide-react';
+import { ChartNoAxesCombined, LayoutDashboard, ChartCandlestick, DatabaseBackup, Flame, Server } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { dashboardGroups } from '../routes/RouteConfig.js';
 import style from './Sidebar.module.css';
 
 const iconById = {
-  'hot-rankings': TrendingUp,
-  'market-overview': PieChart,
+  'hot-rankings': Flame,
   'strategy-signals': ChartNoAxesCombined,
-  'iwencai-selector': Search,
-  'chart-center': BarChart3,
-  'data-sources': LayoutDashboard,
-  database: Database
+  'a-share-market': ChartCandlestick,
+  'data-sources': DatabaseBackup
 };
 
 export function AppSidebar() {
