@@ -75,7 +75,7 @@ class TodayVolumeBreakoutStrategyTests(unittest.TestCase):
 
     def test_registry_loads_and_executes_strategy(self) -> None:
         definition = find_strategy("today_volume_breakout")
-        self.assertEqual(definition["name"], "最新交易日成交量 2 倍放量突破")
+        self.assertEqual(definition["name"], "巨量人气股(大市值)")
 
         result = execute_strategy(
             "today_volume_breakout",

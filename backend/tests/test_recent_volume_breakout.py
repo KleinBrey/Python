@@ -98,7 +98,7 @@ class VolumeBreakoutStrategyTests(unittest.TestCase):
         definition = find_strategy("recent_volume_breakout")
 
         self.assertIn("recent_volume_breakout", [item["id"] for item in definitions])
-        self.assertEqual(definition["name"], "最近5日成交量 1.5 倍放量突破")
+        self.assertEqual(definition["name"], "堆量1.5倍")
 
         result = execute_strategy(
             "recent_volume_breakout",

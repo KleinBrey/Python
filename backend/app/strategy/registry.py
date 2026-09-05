@@ -3,11 +3,8 @@
 import json
 from pathlib import Path
 
-from .implementations.panic_reversal import run_strategy as run_panic_reversal
-from .implementations.second_rebound_short import (
-    run_strategy as run_second_rebound_short,
-)
-from .implementations.strong_breakout_pullback import (
+from .implementations.panic_reversal_v import run_strategy as run_panic_reversal
+from .implementations.breakout_pullback_n import (
     run_strategy as run_strong_breakout_pullback,
 )
 from .implementations.today_volume_breakout import (
@@ -15,6 +12,9 @@ from .implementations.today_volume_breakout import (
 )
 from .implementations.recent_volume_breakout import (
     run_strategy as run_recent_volume_breakout,
+)
+from .implementations.second_rebound_short import (
+    run_strategy as run_second_rebound_short,
 )
 
 CONFIG_PATH = Path(__file__).with_name("strategies.json")

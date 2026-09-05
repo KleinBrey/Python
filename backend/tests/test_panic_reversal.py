@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from backend.app.strategy.implementations.panic_reversal import (
+from backend.app.strategy.implementations.panic_reversal_v import (
     RESULT_COLUMNS,
 )
 from backend.app.strategy.registry import execute_strategy
@@ -13,9 +13,7 @@ from backend.app.strategy.result import format_strategy_result
 
 class FakeTushareProvider:
     def fetch_daily_basic(self, trade_date: str) -> pd.DataFrame:
-        return pd.DataFrame(
-            {"symbol": ["TEST.SZ"], "market_cap": [20_000_000_000]}
-        )
+        return pd.DataFrame({"symbol": ["TEST.SZ"], "market_cap": [20_000_000_000]})
 
 
 class PanicReversalStrategyTests(unittest.TestCase):
@@ -25,10 +23,8 @@ class PanicReversalStrategyTests(unittest.TestCase):
             {
                 "symbol": "TEST.SZ",
                 "trade_date": pd.date_range("2026-07-01", periods=26),
-                "open": [100.0] * 20
-                + [100.0, 96.0, 92.0, 88.0, 80.0, 90.0],
-                "high": [101.0] * 20
-                + [101.0, 97.0, 93.0, 89.0, 91.0, 96.0],
+                "open": [100.0] * 20 + [100.0, 96.0, 92.0, 88.0, 80.0, 90.0],
+                "high": [101.0] * 20 + [101.0, 97.0, 93.0, 89.0, 91.0, 96.0],
                 "low": [99.0] * 20 + [95.0, 91.0, 87.0, 79.0, 78.0, 89.0],
                 "close": closes,
                 "volume": [100.0] * 23 + [200.0, 200.0, 150.0],
@@ -41,9 +37,7 @@ class PanicReversalStrategyTests(unittest.TestCase):
                 "exchange": ["SZ"],
             }
         )
-        hot_stocks = pd.DataFrame(
-            {"symbol": ["TEST.SZ"], "hot_value": [1000.0]}
-        )
+        hot_stocks = pd.DataFrame({"symbol": ["TEST.SZ"], "hot_value": [1000.0]})
 
         result = execute_strategy(
             "panic-reversal",

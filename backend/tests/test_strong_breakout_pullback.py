@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from backend.app.strategy.implementations.strong_breakout_pullback import (
+from backend.app.strategy.implementations.breakout_pullback_n import (
     RESULT_COLUMNS,
     run_strong_breakout_pullback_strategy,
 )
@@ -13,9 +13,7 @@ from backend.app.strategy.registry import execute_strategy, find_strategy
 
 class FakeTushareProvider:
     def fetch_daily_basic(self, trade_date: str) -> pd.DataFrame:
-        return pd.DataFrame(
-            {"symbol": ["TEST.SZ"], "market_cap": [20_000_000_000]}
-        )
+        return pd.DataFrame({"symbol": ["TEST.SZ"], "market_cap": [20_000_000_000]})
 
 
 def make_bars(
@@ -80,9 +78,7 @@ class StrongBreakoutPullbackStrategyTests(unittest.TestCase):
         self.assertTrue(result.empty)
 
     def test_requires_confirmation_volume_to_expand(self) -> None:
-        result = run_strong_breakout_pullback_strategy(
-            make_bars(confirm_volume=120.0)
-        )
+        result = run_strong_breakout_pullback_strategy(make_bars(confirm_volume=120.0))
 
         self.assertTrue(result.empty)
 
@@ -107,9 +103,7 @@ class StrongBreakoutPullbackStrategyTests(unittest.TestCase):
                 "exchange": ["SZ"],
             }
         )
-        hot_stocks = pd.DataFrame(
-            {"symbol": ["TEST.SZ"], "hot_value": [1000.0]}
-        )
+        hot_stocks = pd.DataFrame({"symbol": ["TEST.SZ"], "hot_value": [1000.0]})
 
         result = execute_strategy(
             "strong-breakout-pullback",
@@ -120,7 +114,7 @@ class StrongBreakoutPullbackStrategyTests(unittest.TestCase):
         )
 
         definition = find_strategy("strong-breakout-pullback")
-        self.assertEqual(definition["name"], "强势突破缩量回调放量企稳")
+        self.assertEqual(definition["name"], "突破回调 N 字企稳")
         self.assertEqual(result.columns.tolist(), RESULT_COLUMNS)
         self.assertEqual(result["symbol"].tolist(), ["TEST.SZ"])
         self.assertEqual(result.loc[0, "signal_stage"], "放量企稳")
