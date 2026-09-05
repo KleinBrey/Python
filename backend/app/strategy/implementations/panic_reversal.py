@@ -1,11 +1,7 @@
-"""恐慌下跌 V 字反弹策略（V1）实现。
+"""恐慌下跌 V 字反弹策略。
 
-策略只识别信号，不执行交易：
+持续下跌 -> 下跌加速/恐慌放量 -> 反转 K 线 -> 次日确认
 
-    持续下跌 -> 下跌加速/恐慌放量 -> 反转 K 线 -> 次日确认
-
-输入是包含 ``symbol/date/open/high/low/close/volume`` 的日 K DataFrame。
-所有信号只使用当前及历史行情，不使用未来数据。
 """
 
 from __future__ import annotations
@@ -14,18 +10,30 @@ import pandas as pd
 
 from backend.app.provider import TushareProvider
 
+from dataclasses import dataclass
+
 # 恐慌阶段参数
+# 统计最近 6 个交易日内的收跌天数。
 PANIC_DOWN_WINDOW = 6
+# 最近 6 个交易日中至少有 4 天收跌，才视为持续下跌。
 PANIC_MIN_DOWN_DAYS = 4
+# 当前收盘价相对近 20 日最高价回撤至少 10%，视为深度回撤。
 PANIC_DRAWDOWN = -0.10
+# 最近 5 日跌幅达到 14 日 ATR 波动率的 2.5 倍，视为快速下跌。
 PANIC_ATR_MULTIPLE = 2.5
+# 当日成交量至少为此前 20 日均量的 1.5 倍，视为恐慌放量。
 PANIC_VOLUME_RATIO = 1.5
 
 # 反转阶段参数
+# 长下影或大阳线反转时，成交量至少为此前 20 日均量的 1.3 倍。
 REVERSAL_VOLUME_RATIO = 1.3
+# 下影线长度至少占当日最高价与最低价区间的 35%。
 LONG_WICK_RATIO = 0.35
+# 长下影反转 K 线的收盘价至少位于当日振幅区间的 65% 位置。
 REVERSAL_CLOSE_POSITION = 0.65
+# 大阳线或高开走强 K 线的收盘价至少位于当日振幅区间的 70% 位置。
 BIG_BULL_CLOSE_POSITION = 0.70
+# 恐慌信号出现后的 3 个交易日内，反转 K 线均可触发反转信号。
 PANIC_VALID_DAYS = 3
 
 REQUIRED_COLUMNS = ["symbol", "date", "open", "high", "low", "close", "volume"]
@@ -48,6 +56,27 @@ RESULT_COLUMNS = [
     "hot_rank",
     "hot_value",
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class StrategyConfig:
+    """策略参数"""
+
+    # 最小市值 100亿
+    min_market_cap: float = 10_000_000_000
+    # 最近5天的成交量
+    recent_volume_days: int = 5
+    # 前20天的成交量
+    previous_volume_days: int = 20
+    # 最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5
+    min_volume_ratio: float = 1.5
+    # 最近5日涨幅大于等于5%
+    min_return_5d_pct: float = 0.05
+
+    @property
+    def required_trading_days(self) -> int:
+        # 一共需要25天的数据
+        return self.recent_volume_days + self.previous_volume_days
 
 
 def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
@@ -260,9 +289,7 @@ def run_strategy(
     )
     latest = signals.groupby("symbol", sort=False).tail(1)
     latest = latest[
-        latest["panic_signal"]
-        | latest["reversal_signal"]
-        | latest["confirmed_signal"]
+        latest["panic_signal"] | latest["reversal_signal"] | latest["confirmed_signal"]
     ].rename(
         columns={
             "date": "latest_date",

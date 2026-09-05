@@ -10,6 +10,9 @@ from .implementations.second_rebound_short import (
 from .implementations.strong_breakout_pullback import (
     run_strategy as run_strong_breakout_pullback,
 )
+from .implementations.today_volume_breakout import (
+    run_strategy as run_today_volume_breakout,
+)
 from .implementations.recent_volume_breakout import (
     run_strategy as run_recent_volume_breakout,
 )
@@ -21,6 +24,7 @@ STRATEGY_EXECUTORS = {
     "second-rebound-short": run_second_rebound_short,
     "strong-breakout-pullback": run_strong_breakout_pullback,
     "recent_volume_breakout": run_recent_volume_breakout,
+    "today_volume_breakout": run_today_volume_breakout,
 }
 
 
