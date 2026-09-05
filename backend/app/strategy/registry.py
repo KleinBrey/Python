@@ -7,6 +7,9 @@ from .implementations.panic_reversal_v import run_strategy as run_panic_reversal
 from .implementations.breakout_pullback_n import (
     run_strategy as run_strong_breakout_pullback,
 )
+from .implementations.today_emotion_reversal import (
+    run_strategy as run_today_emotion_reversal,
+)
 from .implementations.today_volume_breakout import (
     run_strategy as run_today_volume_breakout,
 )
@@ -25,6 +28,7 @@ STRATEGY_EXECUTORS = {
     "strong-breakout-pullback": run_strong_breakout_pullback,
     "recent_volume_breakout": run_recent_volume_breakout,
     "today_volume_breakout": run_today_volume_breakout,
+    "today_emotion_reversal": run_today_emotion_reversal,
 }
 
 

@@ -9,20 +9,30 @@ export function useStrategySignals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
+  const signalRequestControllerRef = useRef(null);
 
-  const loadSignals = useCallback(async (strategyId, signal) => {
+  const loadSignals = useCallback(async strategyId => {
+    signalRequestControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    signalRequestControllerRef.current = controller;
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
     try {
-      const payload = await getStrategySignals(strategyId, { signal });
+      const payload = await getStrategySignals(strategyId, { signal: controller.signal });
       if (requestId === requestIdRef.current) setResult(payload);
     } catch (requestError) {
       if (requestError.name !== 'AbortError' && requestId === requestIdRef.current) {
         setError(requestError.message || '策略结果加载失败');
       }
     } finally {
-      if (!signal?.aborted && requestId === requestIdRef.current) setLoading(false);
+      if (signalRequestControllerRef.current === controller) {
+        signalRequestControllerRef.current = null;
+        if (!controller.signal.aborted && requestId === requestIdRef.current) {
+          setLoading(false);
+        }
+      }
     }
   }, []);
 
@@ -36,7 +46,7 @@ export function useStrategySignals() {
         setStrategies(strategyItems);
         setActiveStrategyId(firstStrategyId);
         if (firstStrategyId) {
-          await loadSignals(firstStrategyId, controller.signal);
+          await loadSignals(firstStrategyId);
         } else {
           setLoading(false);
         }
@@ -51,6 +61,8 @@ export function useStrategySignals() {
     initialize();
     return () => {
       controller.abort();
+      signalRequestControllerRef.current?.abort();
+      signalRequestControllerRef.current = null;
       requestIdRef.current += 1;
     };
   }, [loadSignals]);

@@ -2,11 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 import { getDailyBarsApi } from '@/api/quantide/api.js';
 import { mergeAShareStockHistoryWithSnapshot, transformAShareStockHistory } from '../utils/aShareMarketTransformers.js';
+import { useTradingCalendar } from '@/contexts';
 
 const historyCache = new Map();
 const pendingRequests = new Map();
 
 export function useAShareStockKline() {
+  const { getLatestTradingDay } = useTradingCalendar();
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,6 +17,8 @@ export function useAShareStockKline() {
 
   const loadKline = useCallback(async (symbol, todaySnapshot) => {
     if (!symbol) return;
+
+    const latestTradingDay = moment(await getLatestTradingDay()).format('YYYY-MM-DD');
 
     const requestId = ++requestIdRef.current;
     const cachedRows = historyCache.get(symbol);
@@ -51,11 +56,21 @@ export function useAShareStockKline() {
 
       if (requestId !== requestIdRef.current) return;
 
-      setData({
-        dataSource: '本地历史 + 同花顺快照',
-        adjustLabel: '前复权',
-        rows: mergeAShareStockHistoryWithSnapshot(historyRows, todaySnapshot)
-      });
+      const latestDatabaseTradingDay = historyRows.at(-1).date;
+
+      if (latestDatabaseTradingDay === latestTradingDay) {
+        setData({
+          dataSource: '本地历史 + 同花顺快照',
+          adjustLabel: '前复权',
+          rows: historyRows
+        });
+      } else {
+        setData({
+          dataSource: '本地历史 + 同花顺快照',
+          adjustLabel: '前复权',
+          rows: mergeAShareStockHistoryWithSnapshot(historyRows, todaySnapshot)
+        });
+      }
     } catch (requestError) {
       pendingRequests.delete(symbol);
       if (requestId !== requestIdRef.current) return;

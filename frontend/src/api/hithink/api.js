@@ -1,6 +1,13 @@
 import request from './request.js';
 
 /**
+ * 获取交易日历
+ */
+export function getTradingDaysCalendarApi() {
+  return request.get('/api/a-share/calendar/trading-days');
+}
+
+/**
  * 标的检索。
  * @param {{q: string, exchange?: string, asset_type?: string, limit?: number}} params
  */

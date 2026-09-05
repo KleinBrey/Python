@@ -35,12 +35,6 @@ export function useAShareMarketRanking() {
       // 过期请求直接忽略
       if (requestId !== requestIdRef.current) return;
 
-      console.log({
-        title: '同花顺热榜',
-        timestamp: hotStocks[0].update_time || '',
-        rows: attachSnapshots(hotStocks, snapshotData?.item)
-      });
-
       setRanking({
         title: '同花顺热榜',
         timestamp: hotStocks[0].update_time || '',

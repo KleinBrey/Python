@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClientSideRowModelModule, CellStyleModule, colorSchemeDark, themeQuartz } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import moment from 'moment';
-
 import { getDailyBarsApi } from '@/api/quantide/api.js';
 import StockKlineChart from '@/components/TradingView/StockKlineChart.jsx';
 import styles from './StrategyResultsTable.module.css';
@@ -64,40 +63,46 @@ function useStrategyStockKline() {
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
 
-  const loadKline = useCallback(async symbol => {
-    if (!symbol) return;
-    const requestId = ++requestIdRef.current;
-    const cachedRows = historyCache.get(symbol);
-    if (cachedRows) {
-      setData({ dataSource: '本地历史行情', adjustLabel: '前复权', rows: cachedRows });
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const response = await getDailyBarsApi({
-        symbol,
-        start: moment().subtract(1, 'year').format('YYYY-MM-DD'),
-        end: moment().format('YYYY-MM-DD')
-      });
-      const rows = transformHistory(response?.data);
-      historyCache.set(symbol, rows);
-      if (requestId === requestIdRef.current) {
-        setData({ dataSource: '本地历史行情', adjustLabel: '前复权', rows });
+  const loadKline = useCallback(
+    async symbol => {
+      if (!symbol) return;
+      const requestId = ++requestIdRef.current;
+      const cachedRows = historyCache.get(symbol);
+      if (cachedRows) {
+        setData({ dataSource: '本地历史行情', adjustLabel: '前复权', rows: cachedRows });
+        return;
       }
-    } catch (requestError) {
-      if (requestId === requestIdRef.current) {
-        setError(requestError.message || 'K 线加载失败');
-      }
-    } finally {
-      if (requestId === requestIdRef.current) setLoading(false);
-    }
-  }, []);
 
-  useEffect(() => () => {
-    requestIdRef.current += 1;
-  }, []);
+      setLoading(true);
+      setError('');
+      try {
+        const response = await getDailyBarsApi({
+          symbol,
+          start: moment().subtract(1, 'year').format('YYYY-MM-DD'),
+          end: moment().format('YYYY-MM-DD')
+        });
+        const rows = transformHistory(response?.data);
+        historyCache.set(symbol, rows);
+        if (requestId === requestIdRef.current) {
+          setData({ dataSource: '本地历史行情', adjustLabel: '前复权', rows });
+        }
+      } catch (requestError) {
+        if (requestId === requestIdRef.current) {
+          setError(requestError.message || 'K 线加载失败');
+        }
+      } finally {
+        if (requestId === requestIdRef.current) setLoading(false);
+      }
+    },
+    [getLatestTradingDay]
+  );
+
+  useEffect(
+    () => () => {
+      requestIdRef.current += 1;
+    },
+    []
+  );
 
   return { data, loading, error, loadKline };
 }
@@ -105,19 +110,73 @@ function useStrategyStockKline() {
 const columnDefs = [
   { headerName: '股票', field: 'name', minWidth: 120, flex: 1, cellStyle: { color: '#ff7f50', fontWeight: 700 } },
   { headerName: '代码', field: 'symbol', minWidth: 110, flex: 1 },
-  { headerName: '信号阶段', field: 'signal_stage', minWidth: 96, flex: 0.7, valueFormatter: params => params.value || '-' },
-  { headerName: '前高', field: 'first_peak', minWidth: 88, flex: 0.7, valueFormatter: params => formatNumber(params.value) },
+  {
+    headerName: '信号阶段',
+    field: 'signal_stage',
+    minWidth: 96,
+    flex: 0.7,
+    valueFormatter: params => params.value || '-'
+  },
+  {
+    headerName: '前高',
+    field: 'first_peak',
+    minWidth: 88,
+    flex: 0.7,
+    valueFormatter: params => formatNumber(params.value)
+  },
   { headerName: '中间回落', field: 'pullback_depth', minWidth: 104, flex: 0.8, cellRenderer: PercentCell },
-  { headerName: '上影占比', field: 'upper_wick_ratio', minWidth: 104, flex: 0.8, valueFormatter: params => formatPlainPercent(params.value) },
-  { headerName: '阴线实体', field: 'bear_body_ratio', minWidth: 104, flex: 0.8, valueFormatter: params => formatPlainPercent(params.value) },
+  {
+    headerName: '上影占比',
+    field: 'upper_wick_ratio',
+    minWidth: 104,
+    flex: 0.8,
+    valueFormatter: params => formatPlainPercent(params.value)
+  },
+  {
+    headerName: '阴线实体',
+    field: 'bear_body_ratio',
+    minWidth: 104,
+    flex: 0.8,
+    valueFormatter: params => formatPlainPercent(params.value)
+  },
   { headerName: '突破涨幅', field: 'breakout_return', minWidth: 104, flex: 0.8, cellRenderer: PercentCell },
-  { headerName: '回调量比', field: 'pullback_volume_ratio', minWidth: 104, flex: 0.8, valueFormatter: params => `${formatNumber(params.value)}x` },
-  { headerName: '最新价', field: 'latest_close', minWidth: 88, flex: 0.7, valueFormatter: params => formatNumber(params.value) },
+  {
+    headerName: '回调量比',
+    field: 'pullback_volume_ratio',
+    minWidth: 104,
+    flex: 0.8,
+    valueFormatter: params => `${formatNumber(params.value)}x`
+  },
+  {
+    headerName: '最新价',
+    field: 'latest_close',
+    minWidth: 88,
+    flex: 0.7,
+    valueFormatter: params => formatNumber(params.value)
+  },
   { headerName: '今日涨幅', field: 'latest_1d_pct', minWidth: 104, flex: 0.8, cellRenderer: PercentCell },
   { headerName: '5日涨幅', field: 'latest_5d_pct', minWidth: 104, flex: 0.8, cellRenderer: PercentCell },
-  { headerName: '成交量比', field: 'volume_ratio', minWidth: 104, flex: 0.8, valueFormatter: params => `${formatNumber(params.value)}x` },
-  { headerName: '市值(亿)', field: 'market_cap', minWidth: 104, flex: 0.8, valueFormatter: params => formatMarketCap(params.value) },
-  { headerName: '热度排名', field: 'hot_rank', minWidth: 100, flex: 0.7, valueFormatter: params => params.value ? `#${params.value}` : '-' }
+  {
+    headerName: '成交量比',
+    field: 'volume_ratio',
+    minWidth: 104,
+    flex: 0.8,
+    valueFormatter: params => `${formatNumber(params.value)}x`
+  },
+  {
+    headerName: '市值(亿)',
+    field: 'market_cap',
+    minWidth: 104,
+    flex: 0.8,
+    valueFormatter: params => formatMarketCap(params.value)
+  },
+  {
+    headerName: '热度排名',
+    field: 'hot_rank',
+    minWidth: 100,
+    flex: 0.7,
+    valueFormatter: params => (params.value ? `#${params.value}` : '-')
+  }
 ];
 
 function StrategyKlineRow({ data }) {
@@ -159,14 +218,15 @@ function keepKlineRowsWithStocks({ nodes }) {
 
 export default function StrategyResultsTable({ rows, loading }) {
   const rowData = useMemo(
-    () => rows.flatMap((row, index) => {
-      const rowKey = `${row.symbol}-${index}`;
-      const stockRowId = `stock-${rowKey}`;
-      return [
-        { ...row, rowId: stockRowId },
-        { rowType: 'kline', rowId: `kline-${rowKey}`, parentRowId: stockRowId, stock: row }
-      ];
-    }),
+    () =>
+      rows.flatMap((row, index) => {
+        const rowKey = `${row.symbol}-${index}`;
+        const stockRowId = `stock-${rowKey}`;
+        return [
+          { ...row, rowId: stockRowId },
+          { rowType: 'kline', rowId: `kline-${rowKey}`, parentRowId: stockRowId, stock: row }
+        ];
+      }),
     [rows]
   );
 
