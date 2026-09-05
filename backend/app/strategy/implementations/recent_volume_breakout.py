@@ -1,8 +1,9 @@
-"""成交量 1.5 倍放量突破策略实现。
+"""最近 5 日成交量 1.5 倍放量突破策略实现。
 
-总市值大于100亿,ST股除外,科创板除外,北交所除外，
-最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5,
-最近5日涨幅大于5%,按现在个股热度排序
+总市值大于100亿,ST股除外,科创板除外,北交所除外,
+最近5个交易日均成交量 / 最近5个交易日前20个交易日均成交量 >= 1.5,
+最近5日涨幅 >= 5%,
+按现在个股热度排序
 
 """
 
@@ -87,12 +88,15 @@ class StrategyConfig:
     recent_volume_days: int = 5
     # 前20天的成交量
     previous_volume_days: int = 20
-    # 一共需要25天的数据
-    required_trading_days: int = 25
     # 最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5
     min_volume_ratio: float = 1.5
-    # 最近5日涨幅大于5%
+    # 最近5日涨幅大于等于5%
     min_return_5d_pct: float = 0.05
+
+    @property
+    def required_trading_days(self) -> int:
+        # 一共需要25天的数据
+        return self.recent_volume_days + self.previous_volume_days
 
 
 class VolumeBreakoutStrategy:
@@ -109,29 +113,31 @@ class VolumeBreakoutStrategy:
         if stocks.empty or daily_bars.empty:
             return pd.DataFrame(columns=RESULT_COLUMNS)
 
-        # 股票候选池
-        stocks_with_basic = self.merge_stock_basic(stocks, daily_bars)
-        candidates = self.filter_stocks(stocks_with_basic)
+        # 获取最新历史交易日
+        latest_trade_date = (
+            pd.to_datetime(daily_bars["trade_date"]).max().strftime("%Y%m%d")
+        )
 
-        # 指标计算池
-        bars = self.filter_daily_bars(daily_bars, candidates["symbol"])
-        indicators = self.calculate_indicators(bars)
+        # 合并股票市值，市盈率等动态字段
+        stocks = self.merge_stock_basic(stocks, latest_trade_date)
+        # 过滤掉 ST、科创板和北交所股票
+        stocks = self.filter_stocks(stocks)
+
+        # 返回符合条件的股票的行情数据
+        daily_bars = self.filter_daily_bars(daily_bars, stocks["symbol"])
+        # 计算指标
+        daily_bars = self.calculate_indicators(daily_bars)
 
         # 筛选过滤排序
-        result = candidates.merge(indicators, on="symbol", how="inner")
+        result = stocks.merge(daily_bars, on="symbol", how="inner")
         result = self._filter_volume_ratio(result)
         result = self._filter_return(result)
         return self._sort_filter_by_hot(result, hot_stocks)
 
     def merge_stock_basic(
-        self, stocks: pd.DataFrame, daily_bars: pd.DataFrame
+        self, stocks: pd.DataFrame, latest_trade_date: str
     ) -> pd.DataFrame:
         """补齐股票的动态字段，如市值，市盈率"""
-
-        # 最新交易日
-        latest_trade_date = (
-            pd.to_datetime(daily_bars["trade_date"]).max().strftime("%Y%m%d")
-        )
 
         daily_basic = self.tushare_provider.fetch_daily_basic(latest_trade_date)
 
@@ -178,7 +184,7 @@ class VolumeBreakoutStrategy:
 
     def calculate_indicators(self, bars: pd.DataFrame) -> pd.DataFrame:
         """最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5,
-        最近5日涨幅大于5%"""
+        最近5日涨幅大于等于5%"""
 
         rows: list[dict[str, object]] = []
         # 一共需要25个交易日
@@ -237,10 +243,9 @@ class VolumeBreakoutStrategy:
         return result[result["volume_ratio"] >= self.config.min_volume_ratio]
 
     def _filter_return(self, result: pd.DataFrame) -> pd.DataFrame:
-        """保留最近 5 日涨幅大于 5% 的股票"""
+        """保留最近 5 日涨幅大于等于 5% 的股票"""
 
-        comparable_return = result["latest_5d_pct"].round(10)
-        return result[comparable_return > self.config.min_return_5d_pct]
+        return result[result["latest_5d_pct"] >= self.config.min_return_5d_pct]
 
     @staticmethod
     def _sort_filter_by_hot(
@@ -303,6 +308,9 @@ if __name__ == "__main__":
                     "symbol",
                     "name",
                     "market_cap",
+                    "recent_5d_avg_volume",
+                    "previous_20d_avg_volume",
+                    "volume_ratio",
                     "latest_5d_pct",
                     "latest_1d_pct",
                     "hot_rank",
@@ -312,6 +320,9 @@ if __name__ == "__main__":
                     "symbol": "股票代码",
                     "name": "股票名称",
                     "market_cap": "市值(亿)",
+                    "recent_5d_avg_volume": "最近5日均量",
+                    "previous_20d_avg_volume": "此前20日均量",
+                    "volume_ratio": "均量比",
                     "latest_5d_pct": "5日涨幅(%)",
                     "latest_1d_pct": "今日涨幅(%)",
                     "hot_rank": "热度排名",

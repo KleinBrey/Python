@@ -10,7 +10,9 @@ from .implementations.second_rebound_short import (
 from .implementations.strong_breakout_pullback import (
     run_strategy as run_strong_breakout_pullback,
 )
-from .implementations.volume_1_5x import run_strategy as run_volume_1_5x
+from .implementations.recent_volume_breakout import (
+    run_strategy as run_recent_volume_breakout,
+)
 
 CONFIG_PATH = Path(__file__).with_name("strategies.json")
 
@@ -18,7 +20,7 @@ STRATEGY_EXECUTORS = {
     "panic-reversal": run_panic_reversal,
     "second-rebound-short": run_second_rebound_short,
     "strong-breakout-pullback": run_strong_breakout_pullback,
-    "volume-1-5x": run_volume_1_5x,
+    "recent_volume_breakout": run_recent_volume_breakout,
 }
 
 

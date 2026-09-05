@@ -10,7 +10,7 @@ from backend.app.strategy.registry import (
     strategy_list,
 )
 from backend.app.strategy.result import format_strategy_result
-from backend.app.strategy.implementations.volume_1_5x import (
+from backend.app.strategy.implementations.recent_volume_breakout import (
     RESULT_COLUMNS,
     VolumeBreakoutStrategy,
 )
@@ -76,12 +76,12 @@ class VolumeBreakoutStrategyTests(unittest.TestCase):
 
     def test_payload_is_json_ready_and_reports_total_before_limit(self) -> None:
         selected = self.strategy.select(self.stocks, self.bars, self.hot_stocks)
-        payload = format_strategy_result("volume-1-5x", selected, limit=1)
+        payload = format_strategy_result("recent_volume_breakout", selected, limit=1)
 
         self.assertEqual(payload["count"], 1)
         self.assertEqual(payload["trade_date"], "2026-07-25")
         self.assertEqual(payload["items"][0]["latest_date"], "2026-07-25T00:00:00")
-        self.assertEqual(payload["strategy"]["id"], "volume-1-5x")
+        self.assertEqual(payload["strategy"]["id"], "recent_volume_breakout")
 
     def test_empty_hot_ranking_returns_stable_columns(self) -> None:
         result = self.strategy.select(
@@ -95,13 +95,13 @@ class VolumeBreakoutStrategyTests(unittest.TestCase):
 
     def test_registry_loads_metadata_and_executes_strategy_by_id(self) -> None:
         definitions = strategy_list()
-        definition = find_strategy("volume-1-5x")
+        definition = find_strategy("recent_volume_breakout")
 
-        self.assertIn("volume-1-5x", [item["id"] for item in definitions])
-        self.assertEqual(definition["name"], "成交量 1.5 倍放量突破")
+        self.assertIn("recent_volume_breakout", [item["id"] for item in definitions])
+        self.assertEqual(definition["name"], "最近5日成交量 1.5 倍放量突破")
 
         result = execute_strategy(
-            "volume-1-5x",
+            "recent_volume_breakout",
             stocks=self.stocks,
             daily_bars=self.bars,
             hot_stocks=self.hot_stocks,
