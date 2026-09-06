@@ -76,10 +76,23 @@ export default function StrategySignalsView({ state }) {
           isFullscreen && styles.windowFullscreen
         )}
       >
-        <div className="dashboard-panel-header">
-          <div>
-            <h2>{activeStrategy?.name || '策略结果'}</h2>
-            <span>{error || `最近运行：${formatTimestamp(result?.generated_at)}`}</span>
+        <div className={cn('dashboard-panel-header', styles.resultHeader)}>
+          <div className={styles.headerContent}>
+            <div className={styles.strategyHeading}>
+              <h2>{activeStrategy?.name || '策略结果'}</h2>
+              {activeStrategy?.description ? <span>{activeStrategy.description}</span> : null}
+            </div>
+            <div className={styles.headerMeta}>
+              <span>
+                最近运行 <strong>{formatTimestamp(result?.generated_at)}</strong>
+              </span>
+              <span>
+                命中股票 <strong>{loading && !result ? '-' : (result?.count ?? 0)}</strong>
+              </span>
+              <span>
+                交易日期 <strong>{result?.trade_date || '-'}</strong>
+              </span>
+            </div>
           </div>
           <div className={styles.headerActions}>
             <Button
@@ -106,28 +119,6 @@ export default function StrategySignalsView({ state }) {
             </Button>
           </div>
         </div>
-
-        {activeStrategy ? (
-          <div className={styles.strategySummary}>
-            <div>
-              <span>命中股票</span>
-              <strong>{loading && !result ? '-' : (result?.count ?? 0)}</strong>
-            </div>
-            <div>
-              <span>交易日期</span>
-              <strong>{result?.trade_date || '-'}</strong>
-            </div>
-            <div>
-              <span>策略条件</span>
-              <strong>{activeStrategy.rules?.[0] || '-'}</strong>
-            </div>
-            <div>
-              <span>策略条件</span>
-              <strong>{activeStrategy.rules?.[1] || '-'}</strong>
-            </div>
-            <p title={activeStrategy.description}>{activeStrategy.description}</p>
-          </div>
-        ) : null}
 
         {error ? <div className={styles.errorNotice}>{error}</div> : null}
         <div className={styles.tableWrap}>

@@ -117,6 +117,54 @@
   min-height: calc(100vh - 116px);
 }
 
+.resultHeader {
+  min-height: 96px;
+  padding-bottom: 14px;
+  padding-top: 14px;
+}
+
+.headerContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.strategyHeading {
+  align-items: baseline;
+  display: flex;
+  gap: 14px;
+}
+
+.strategyHeading span {
+  color: #71717a;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerMeta {
+  background: #202024;
+  border: 1px solid #3f3f46;
+  border-left: 3px solid #60a5fa;
+  border-radius: 6px;
+  color: #a1a1aa;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 6px 20px;
+  margin-top: 12px;
+  max-width: 100%;
+  padding: 8px 12px;
+  width: fit-content;
+}
+
+.headerMeta strong {
+  color: #fafafa;
+  font-size: 13px;
+  margin-left: 4px;
+}
+
 .headerActions {
   align-items: center;
   display: flex;
@@ -146,41 +194,6 @@
   min-height: 0;
 }
 
-.strategySummary {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: grid;
-  gap: 20px;
-  grid-template-columns: repeat(4, minmax(100px, auto)) minmax(180px, 1fr);
-  min-height: 82px;
-  padding: 12px 18px;
-}
-
-.strategySummary div span,
-.strategySummary div strong {
-  display: block;
-}
-
-.strategySummary div span {
-  color: #71717a;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.strategySummary div strong {
-  color: #f4f4f5;
-  font-size: 15px;
-  margin-top: 5px;
-}
-
-.strategySummary p {
-  color: #71717a;
-  font-size: 12px;
-  line-height: 1.55;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .errorNotice {
   background: #260b13;
   border-bottom: 1px solid #7f1d34;
@@ -192,18 +205,8 @@
 
 .tableWrap {
   flex: 1;
-  height: calc(100vh - 318px);
+  height: calc(100vh - 264px);
   /* min-height: 540px; */
-}
-
-@media (max-width: 1180px) {
-  .strategySummary {
-    grid-template-columns: repeat(4, minmax(90px, 1fr));
-  }
-
-  .strategySummary p {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 900px) {
@@ -217,11 +220,5 @@
 
   .strategyList {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-}
-
-@media (max-width: 620px) {
-  .strategySummary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
