@@ -2,10 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getStrategies, getStrategySignals } from '../api/strategySignalsApi.js';
 
+import { columnDefs as columnDefsConfig } from '../utils/tableColumns.jsx';
+
 export function useStrategySignals() {
   const [strategies, setStrategies] = useState([]);
   const [activeStrategyId, setActiveStrategyId] = useState('');
   const [result, setResult] = useState(null);
+  const [columnDefs, setColumnDefs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
@@ -13,7 +16,6 @@ export function useStrategySignals() {
 
   const loadSignals = useCallback(async strategyId => {
     signalRequestControllerRef.current?.abort();
-
     const controller = new AbortController();
     signalRequestControllerRef.current = controller;
     const requestId = ++requestIdRef.current;
@@ -43,6 +45,7 @@ export function useStrategySignals() {
         const payload = await getStrategies({ signal: controller.signal });
         const strategyItems = Array.isArray(payload?.items) ? payload.items : [];
         const firstStrategyId = strategyItems[0]?.id || '';
+        setColumnDefs(columnDefsConfig[firstStrategyId] || columnDefsConfig['default']);
         setStrategies(strategyItems);
         setActiveStrategyId(firstStrategyId);
         if (firstStrategyId) {
@@ -71,6 +74,7 @@ export function useStrategySignals() {
     strategyId => {
       if (!strategyId || strategyId === activeStrategyId) return;
       setActiveStrategyId(strategyId);
+      setColumnDefs(columnDefsConfig[strategyId] || columnDefsConfig['default']);
       setResult(null);
       loadSignals(strategyId);
     },
@@ -83,6 +87,7 @@ export function useStrategySignals() {
     result,
     loading,
     error,
+    columnDefs,
     selectStrategy,
     refresh: () => activeStrategyId && loadSignals(activeStrategyId)
   };

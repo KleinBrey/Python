@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BookOpenText, ChevronRight, Loader2, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
 import moment from 'moment';
-
 import { Button } from '@/shadcn/components/ui/button.jsx';
 import { cn } from '@/shadcn/lib/utils.js';
 import StrategyResultsTable from './StrategyResultsTable.jsx';
@@ -16,7 +15,7 @@ function formatTimestamp(value) {
 export default function StrategySignalsView({ state }) {
   const panelRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { strategies, activeStrategyId, result, loading, error, selectStrategy, refresh } = state;
+  const { strategies, activeStrategyId, result, columnDefs, loading, error, selectStrategy, refresh } = state;
   const activeStrategy = result?.strategy || strategies.find(strategy => strategy.id === activeStrategyId);
   const rows = result?.items || [];
 
@@ -130,7 +129,7 @@ export default function StrategySignalsView({ state }) {
 
         {error ? <div className={styles.errorNotice}>{error}</div> : null}
         <div className={styles.tableWrap}>
-          <StrategyResultsTable rows={rows} loading={loading} />
+          <StrategyResultsTable rows={rows} columnDefs={columnDefs} loading={loading} />
         </div>
       </section>
     </div>
