@@ -6,6 +6,7 @@ import pandas as pd
 
 from backend.app.strategy.implementations.breakout_pullback_n import (
     RESULT_COLUMNS,
+    StrategyConfig,
     run_strong_breakout_pullback_strategy,
 )
 from backend.app.strategy.registry import execute_strategy, find_strategy
@@ -62,6 +63,14 @@ def make_bars(
 
 
 class StrongBreakoutPullbackStrategyTests(unittest.TestCase):
+    def test_thresholds_can_be_overridden_with_config(self) -> None:
+        result = run_strong_breakout_pullback_strategy(
+            make_bars(),
+            StrategyConfig(min_confirm_volume_ratio=2.0),
+        )
+
+        self.assertTrue(result.empty)
+
     def test_detects_three_stage_pattern(self) -> None:
         result = run_strong_breakout_pullback_strategy(make_bars())
 

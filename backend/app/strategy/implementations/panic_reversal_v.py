@@ -6,35 +6,25 @@
 
 from __future__ import annotations
 
-import pandas as pd
-
-from backend.app.provider import TushareProvider
-
 from dataclasses import dataclass
+from datetime import date
 
-# 恐慌阶段参数
-# 统计最近 6 个交易日内的收跌天数。
-PANIC_DOWN_WINDOW = 6
-# 最近 6 个交易日中至少有 4 天收跌，才视为持续下跌。
-PANIC_MIN_DOWN_DAYS = 4
-# 当前收盘价相对近 20 日最高价回撤至少 10%，视为深度回撤。
-PANIC_DRAWDOWN = -0.10
-# 最近 5 日跌幅达到 14 日 ATR 波动率的 2.5 倍，视为快速下跌。
-PANIC_ATR_MULTIPLE = 2.5
-# 当日成交量至少为此前 20 日均量的 1.5 倍，视为恐慌放量。
-PANIC_VOLUME_RATIO = 1.5
+import pandas as pd
+from rich.console import Console
 
-# 反转阶段参数
-# 长下影或大阳线反转时，成交量至少为此前 20 日均量的 1.3 倍。
-REVERSAL_VOLUME_RATIO = 1.3
-# 下影线长度至少占当日最高价与最低价区间的 35%。
-LONG_WICK_RATIO = 0.35
-# 长下影反转 K 线的收盘价至少位于当日振幅区间的 65% 位置。
-REVERSAL_CLOSE_POSITION = 0.65
-# 大阳线或高开走强 K 线的收盘价至少位于当日振幅区间的 70% 位置。
-BIG_BULL_CLOSE_POSITION = 0.70
-# 恐慌信号出现后的 3 个交易日内，反转 K 线均可触发反转信号。
-PANIC_VALID_DAYS = 3
+from backend.app.database import DuckDBDatabase
+from backend.app.provider import TushareProvider
+from backend.app.repository import (
+    DailyBarRepository,
+    StockHotDailyRepository,
+    StockRepository,
+)
+
+console = Console()
+
+# 让中文和特殊 Unicode 字符在终端表格中尽量正确对齐。
+pd.set_option("display.unicode.east_asian_width", True)
+pd.set_option("display.unicode.ambiguous_as_wide", True)
 
 REQUIRED_COLUMNS = ["symbol", "date", "open", "high", "low", "close", "volume"]
 
@@ -62,35 +52,95 @@ RESULT_COLUMNS = [
 class StrategyConfig:
     """策略参数"""
 
-    # 最小市值 100亿
-    min_market_cap: float = 10_000_000_000
-    # 最近5天的成交量
-    recent_volume_days: int = 5
-    # 前20天的成交量
-    previous_volume_days: int = 20
-    # 最近5个交易日均成交量/最近5个交易日前20个交易日均成交量大于等于1.5
-    min_volume_ratio: float = 1.5
-    # 最近5日涨幅大于等于5%
-    min_return_5d_pct: float = 0.05
+    # 恐慌阶段：最近 6 个交易日内统计收跌天数。
+    panic_down_window: int = 6
+    # 恐慌阶段：最近窗口内至少 4 天收跌。
+    panic_min_down_days: int = 4
+    # 恐慌阶段：当前收盘价相对近 20 日最高价至少回撤 10%。
+    panic_drawdown: float = -0.10
+    # 恐慌阶段：最近 5 日跌幅至少达到 14 日 ATR 波动率的 2.5 倍。
+    panic_atr_multiple: float = 2.5
+    # 恐慌阶段：当日成交量至少为此前 20 日均量的 1.5 倍。
+    panic_volume_ratio: float = 1.5
 
-    @property
-    def required_trading_days(self) -> int:
-        # 一共需要25天的数据
-        return self.recent_volume_days + self.previous_volume_days
+    # 反转阶段：长下影或大阳线成交量至少为此前 20 日均量的 1.3 倍。
+    reversal_volume_ratio: float = 1.3
+    # 反转阶段：下影线至少占当日振幅的 35%。
+    long_wick_ratio: float = 0.35
+    # 反转阶段：长下影 K 线收盘价至少位于日内振幅的 65% 位置。
+    reversal_close_position: float = 0.65
+    # 反转阶段：大阳线或高开走强收盘价至少位于日内振幅的 70% 位置。
+    big_bull_close_position: float = 0.70
+    # 恐慌信号出现后的 3 个交易日内，反转 K 线仍可触发反转信号。
+    panic_valid_days: int = 3
 
 
-def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """计算收益率、ATR、量比和 K 线形态等基础指标。"""
+DEFAULT_CONFIG = StrategyConfig()
 
-    result = df.copy()
-    previous_close = result["close"].shift(1)
 
-    result["return_1d"] = result["close"].pct_change(fill_method=None)
-    result["return_5d"] = result["close"] / result["close"].shift(5) - 1
+def load_market_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """读取本地股票、日 K 和最新热度数据。"""
+
+    database = DuckDBDatabase()
+    stocks = StockRepository(database).get_table_data()
+    daily_bars = DailyBarRepository(database).get_table_data()
+    hot_stocks = StockHotDailyRepository(database).get_latest()
+    return stocks, daily_bars, hot_stocks
+
+
+def _shift_by_symbol(
+    df: pd.DataFrame,
+    series: pd.Series,
+    periods: int = 1,
+) -> pd.Series:
+    """在股票分组内位移；单股辅助函数也可继续独立使用。"""
+
+    if "symbol" not in df.columns:
+        return series.shift(periods)
+    return series.groupby(df["symbol"], sort=False, dropna=False).shift(periods)
+
+
+def _rolling_by_symbol(
+    df: pd.DataFrame,
+    series: pd.Series,
+    window: int,
+    operation: str,
+) -> pd.Series:
+    """在股票分组内执行 rolling，并恢复为原 DataFrame 的行索引。"""
+
+    if "symbol" not in df.columns:
+        return getattr(series.rolling(window), operation)()
+
+    rolling = series.groupby(
+        df["symbol"],
+        sort=False,
+        dropna=False,
+    ).rolling(window)
+    return getattr(rolling, operation)().reset_index(level=0, drop=True)
+
+
+def calculate_indicators(
+    df: pd.DataFrame,
+    config: StrategyConfig,
+) -> pd.DataFrame:
+    """原地计算收益率、ATR、量比和 K 线形态等基础指标。"""
+
+    result = df
+    previous_close = _shift_by_symbol(result, result["close"])
+
+    result["return_1d"] = result["close"] / previous_close - 1
+    result["return_5d"] = (
+        result["close"] / _shift_by_symbol(result, result["close"], 5) - 1
+    )
     # 在最近 6 根 K 线中统计收跌天数，用“下跌密度”过滤单日偶发暴跌。
-    result["down_count"] = result["return_1d"].lt(0).rolling(PANIC_DOWN_WINDOW).sum()
+    result["down_count"] = _rolling_by_symbol(
+        result,
+        result["return_1d"].lt(0),
+        config.panic_down_window,
+        "sum",
+    )
 
-    result["high_20"] = result["high"].rolling(20).max()
+    result["high_20"] = _rolling_by_symbol(result, result["high"], 20, "max")
     result["drawdown_20"] = result["close"] / result["high_20"] - 1
 
     true_range_1 = result["high"] - result["low"]
@@ -100,11 +150,17 @@ def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     result["tr"] = pd.concat([true_range_1, true_range_2, true_range_3], axis=1).max(
         axis=1
     )
-    result["atr_14"] = result["tr"].rolling(14).mean()
+    result["atr_14"] = _rolling_by_symbol(result, result["tr"], 14, "mean")
     result["atr_pct"] = result["atr_14"] / previous_close
 
     # 均量不包含今天，避免用今天的数据稀释今天的放量程度。
-    result["volume_ma20"] = result["volume"].shift(1).rolling(20).mean()
+    previous_volume = _shift_by_symbol(result, result["volume"])
+    result["volume_ma20"] = _rolling_by_symbol(
+        result,
+        previous_volume,
+        20,
+        "mean",
+    )
     result["volume_ratio"] = result["volume"] / result["volume_ma20"]
 
     result["body"] = (result["close"] - result["open"]).abs()
@@ -112,7 +168,12 @@ def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     result["is_bear"] = result["close"] < result["open"]
     result["is_bull"] = result["close"] > result["open"]
 
-    result["body_ma3"] = result["body_pct"].shift(1).rolling(3).mean()
+    result["body_ma3"] = _rolling_by_symbol(
+        result,
+        _shift_by_symbol(result, result["body_pct"]),
+        3,
+        "mean",
+    )
     # 比较基准不含当天，避免大阴线自己抬高均值后反而无法被识别。
     result["large_bear"] = result["is_bear"] & (
         result["body_pct"] >= result["body_ma3"] * 1.3
@@ -128,33 +189,41 @@ def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def calculate_panic_signal(df: pd.DataFrame) -> pd.DataFrame:
-    """判断行情是否进入持续下跌后的恐慌区。"""
+def calculate_panic_signal(
+    df: pd.DataFrame,
+    config: StrategyConfig,
+) -> pd.DataFrame:
+    """原地判断行情是否进入持续下跌后的恐慌区。"""
 
-    result = df.copy()
-    continuous_drop = result["down_count"] >= PANIC_MIN_DOWN_DAYS
+    result = df
+    continuous_drop = result["down_count"] >= config.panic_min_down_days
     # 既接受相对 20 日高点的深度回撤，也接受按个股 ATR 标准化后的快速下跌。
-    large_drop = (result["drawdown_20"] <= PANIC_DRAWDOWN) | (
-        result["return_5d"] <= -result["atr_pct"] * PANIC_ATR_MULTIPLE
+    large_drop = (result["drawdown_20"] <= config.panic_drawdown) | (
+        result["return_5d"] <= -result["atr_pct"] * config.panic_atr_multiple
     )
-    panic_action = (result["volume_ratio"] >= PANIC_VOLUME_RATIO) | result["large_bear"]
+    panic_action = (
+        result["volume_ratio"] >= config.panic_volume_ratio
+    ) | result["large_bear"]
 
     # 三个阶段必须同时成立：持续下跌、跌幅足够、并出现放量或大阴线宣泄。
     result["panic_signal"] = continuous_drop & large_drop & panic_action
     return result
 
 
-def calculate_reversal_signal(df: pd.DataFrame) -> pd.DataFrame:
-    """识别恐慌发生后 3 个交易日内出现的反转 K 线。"""
+def calculate_reversal_signal(
+    df: pd.DataFrame,
+    config: StrategyConfig,
+) -> pd.DataFrame:
+    """原地识别恐慌发生后 3 个交易日内出现的反转 K 线。"""
 
-    result = df.copy()
-    previous_close = result["close"].shift(1)
+    result = df
+    previous_close = _shift_by_symbol(result, result["close"])
 
     # 长下影且收在日内高位，表示盘中抛压被承接；放量用于确认承接有效。
     result["long_lower_wick"] = (
-        (result["lower_wick_ratio"] >= LONG_WICK_RATIO)
-        & (result["close_position"] >= REVERSAL_CLOSE_POSITION)
-        & (result["volume_ratio"] >= REVERSAL_VOLUME_RATIO)
+        (result["lower_wick_ratio"] >= config.long_wick_ratio)
+        & (result["close_position"] >= config.reversal_close_position)
+        & (result["volume_ratio"] >= config.reversal_volume_ratio)
     )
 
     bull_body_pct = (result["close"] - result["open"]) / previous_close
@@ -162,20 +231,21 @@ def calculate_reversal_signal(df: pd.DataFrame) -> pd.DataFrame:
     result["big_bull"] = (
         result["is_bull"]
         & (bull_body_pct >= result["atr_pct"] * 1.2)
-        & (result["close_position"] >= BIG_BULL_CLOSE_POSITION)
-        & (result["volume_ratio"] >= REVERSAL_VOLUME_RATIO)
+        & (result["close_position"] >= config.big_bull_close_position)
+        & (result["volume_ratio"] >= config.reversal_volume_ratio)
     )
 
     # 收盘站上昨日最高价，比盘中短暂突破更能体现买方持续占优。
+    previous_high = _shift_by_symbol(result, result["high"])
     result["strong_reclaim"] = result["is_bull"] & (
-        result["close"] > result["high"].shift(1)
+        result["close"] > previous_high
     )
     gap_up = result["open"] > previous_close * 1.01
     # 高开后继续收强，排除高开低走造成的假突破。
     result["gap_and_run"] = (
         gap_up
         & result["is_bull"]
-        & (result["close_position"] >= BIG_BULL_CLOSE_POSITION)
+        & (result["close_position"] >= config.big_bull_close_position)
     )
 
     result["reversal_bar"] = (
@@ -186,11 +256,14 @@ def calculate_reversal_signal(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # shift(1) 确保今天的 panic_signal 不会用于今天自己的反转判断。
+    previous_panic = _shift_by_symbol(result, result["panic_signal"])
     result["recent_panic"] = (
-        result["panic_signal"]
-        .shift(1)
-        .rolling(PANIC_VALID_DAYS)
-        .max()
+        _rolling_by_symbol(
+            result,
+            previous_panic,
+            config.panic_valid_days,
+            "max",
+        )
         .fillna(0)
         .astype(bool)
     )
@@ -199,13 +272,19 @@ def calculate_reversal_signal(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculate_confirmed_signal(df: pd.DataFrame) -> pd.DataFrame:
-    """确认反转信号后的下一交易日是否继续走强。"""
+    """原地确认反转信号后的下一交易日是否继续走强。"""
 
-    result = df.copy()
-    previous_reversal = result["reversal_signal"].shift(1).fillna(False).astype(bool)
-    breaks_previous_high = result["close"] > result["high"].shift(1)
+    result = df
+    previous_reversal = (
+        _shift_by_symbol(result, result["reversal_signal"])
+        .fillna(False)
+        .astype(bool)
+    )
+    previous_high = _shift_by_symbol(result, result["high"])
+    previous_close = _shift_by_symbol(result, result["close"])
+    breaks_previous_high = result["close"] > previous_high
     bullish_follow_through = result["is_bull"] & (
-        result["close"] >= result["close"].shift(1)
+        result["close"] >= previous_close
     )
 
     # 只在反转后的第一根 K 线上确认：突破昨日高点，或阳线收盘不低于昨日。
@@ -215,7 +294,10 @@ def calculate_confirmed_signal(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def run_panic_reversal_strategy(df: pd.DataFrame) -> pd.DataFrame:
+def run_panic_reversal_strategy(
+    df: pd.DataFrame,
+    config: StrategyConfig = DEFAULT_CONFIG,
+) -> pd.DataFrame:
     """运行完整策略；多只股票会按 ``symbol`` 分组独立计算。"""
 
     missing_columns = [
@@ -233,20 +315,14 @@ def run_panic_reversal_strategy(df: pd.DataFrame) -> pd.DataFrame:
     for column in ["open", "high", "low", "close", "volume"]:
         bars[column] = pd.to_numeric(bars[column], errors="raise")
 
-    def run_one_symbol(symbol_bars: pd.DataFrame) -> pd.DataFrame:
-        # 所有 shift/rolling 都必须在单只股票内部按日期计算，禁止跨股票串值。
-        result = symbol_bars.sort_values("date").copy()
-        result = calculate_indicators(result)
-        result = calculate_panic_signal(result)
-        result = calculate_reversal_signal(result)
-        result = calculate_confirmed_signal(result)
-        return result
-
-    results = []
-    for _, symbol_bars in bars.groupby("symbol", sort=False, dropna=False):
-        results.append(run_one_symbol(symbol_bars))
-
-    return pd.concat(results).sort_values(["symbol", "date"]).reset_index(drop=True)
+    # 整体排序后，每个阶段都以全市场分组向量化方式在同一个 DataFrame 上
+    # 追加指标，避免复制百万行数据。
+    bars = bars.sort_values(["symbol", "date"]).reset_index(drop=True)
+    bars = calculate_indicators(bars, config)
+    bars = calculate_panic_signal(bars, config)
+    bars = calculate_reversal_signal(bars, config)
+    bars = calculate_confirmed_signal(bars)
+    return bars
 
 
 def show_signals(df: pd.DataFrame) -> None:
@@ -278,6 +354,7 @@ def run_strategy(
     daily_bars: pd.DataFrame,
     hot_stocks: pd.DataFrame,
     tushare_provider: TushareProvider,
+    config: StrategyConfig = DEFAULT_CONFIG,
 ) -> pd.DataFrame:
     """计算最新交易日的恐慌、反转或确认信号。"""
 
@@ -285,7 +362,8 @@ def run_strategy(
         return pd.DataFrame(columns=RESULT_COLUMNS)
 
     signals = run_panic_reversal_strategy(
-        daily_bars.rename(columns={"trade_date": "date"})
+        daily_bars.rename(columns={"trade_date": "date"}),
+        config=config,
     )
     latest = signals.groupby("symbol", sort=False).tail(1)
     latest = latest[
@@ -321,3 +399,63 @@ def run_strategy(
         .sort_values("hot_rank")[RESULT_COLUMNS]
         .reset_index(drop=True)
     )
+
+
+if __name__ == "__main__":
+    with console.status("[bold green]正在读取本地数据并计算恐慌反转策略..."):
+        stocks, daily_bars, hot_stocks = load_market_data()
+        latest_date = pd.to_datetime(daily_bars["trade_date"]).max()
+        latest_trade_date = (
+            latest_date.strftime("%Y-%m-%d") if pd.notna(latest_date) else "无数据"
+        )
+        selected_stocks = run_strategy(
+            stocks=stocks,
+            daily_bars=daily_bars,
+            hot_stocks=hot_stocks,
+            tushare_provider=TushareProvider(),
+        )
+
+    console.rule(f"今日:{date.today():%Y-%m-%d} 最新交易日:{latest_trade_date}")
+    console.print("[green]✓ 策略计算完成[/green]")
+
+    if selected_stocks.empty:
+        console.print("[yellow]当前交易日没有恐慌、反转或确认信号。[/yellow]")
+    else:
+        display = selected_stocks.copy()
+        display["market_cap"] = (display["market_cap"] / 1e8).round(2)
+        display["latest_close"] = display["latest_close"].round(2)
+        display["latest_1d_pct"] = (display["latest_1d_pct"] * 100).round(2)
+        display["latest_5d_pct"] = (display["latest_5d_pct"] * 100).round(2)
+        display["volume_ratio"] = display["volume_ratio"].round(2)
+        display["drawdown_20"] = (display["drawdown_20"] * 100).round(2)
+
+        console.print(
+            display[
+                [
+                    "symbol",
+                    "name",
+                    "market_cap",
+                    "latest_close",
+                    "latest_1d_pct",
+                    "latest_5d_pct",
+                    "volume_ratio",
+                    "drawdown_20",
+                    "signal_stage",
+                    "hot_rank",
+                ]
+            ].rename(
+                columns={
+                    "symbol": "股票代码",
+                    "name": "股票名称",
+                    "market_cap": "市值(亿)",
+                    "latest_close": "最新价",
+                    "latest_1d_pct": "今日涨幅(%)",
+                    "latest_5d_pct": "5日涨幅(%)",
+                    "volume_ratio": "量比",
+                    "drawdown_20": "20日回撤(%)",
+                    "signal_stage": "信号阶段",
+                    "hot_rank": "热度排名",
+                }
+            )
+        )
+        console.print(f"[green]共筛选出 {len(display)} 只股票。[/green]")
