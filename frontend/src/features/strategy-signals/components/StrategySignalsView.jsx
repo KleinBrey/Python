@@ -58,7 +58,6 @@ export default function StrategySignalsView({ state }) {
                 </span>
                 <span className={styles.strategyText}>
                   <strong>{strategy.name}</strong>
-                  <small>Python 策略</small>
                 </span>
                 <ChevronRight size={16} />
               </button>

@@ -6,6 +6,7 @@ import pandas as pd
 
 from backend.app.strategy.implementations.second_rebound_short import (
     RESULT_COLUMNS,
+    StrategyConfig,
     latest_filter_counts,
     run_second_rebound_short_strategy,
 )
@@ -52,6 +53,15 @@ def make_short_bars(*, long_upper_wick: bool = False) -> pd.DataFrame:
 
 
 class SecondReboundShortStrategyTests(unittest.TestCase):
+    def test_thresholds_can_be_overridden_with_config(self) -> None:
+        result = run_second_rebound_short_strategy(
+            make_short_bars(),
+            StrategyConfig(min_volume_ratio=3.0),
+        )
+
+        self.assertFalse(result.iloc[-2]["rejection_signal"])
+        self.assertFalse(result.iloc[-1]["follow_signal"])
+
     def test_detects_big_bear_and_follow_through(self) -> None:
         result = run_second_rebound_short_strategy(make_short_bars())
 
