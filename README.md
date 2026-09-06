@@ -1,43 +1,40 @@
-# quant-platform
+# QuantTide（量潮）
 
-本地 A 股行情数据底座。第一阶段只维护全市场最近一年的**不复权日 K**，为后续可视化、因子计算、量化选股和回测提供统一数据入口。
+QuantTide 是一个本地 A 股量化投研平台，使用 FastAPI、DuckDB、Pandas 和 APScheduler，提供股票基础信息、日 K、股票热度同步、自然语言选股以及量化策略实验能力。
 
-
-## 结构
+## 项目结构
 
 ```text
-quant-platform/
+quanttide/
 ├── backend/
 │   ├── app/
-│   │   ├── api/             # FastAPI 路由
-│   │   ├── core/            # 配置
-│   │   ├── database/        # DuckDB 连接与 DDL
-│   │   ├── providers/       # HiThink Financial API
-│   │   ├── repositories/    # DuckDB 读写
-│   │   ├── services/        # 清洗与同步业务
-│   │   ├── jobs/            # 定时更新和校准
-│   │   ├── schemas/         # Pydantic 模型
-│   │   └── main.py
-│   ├── scripts/
-│   ├── tests/
-│   └── .env
-├── frontend/                # 原 React + Vite 前端，本次未修改
+│   │   ├── api/             # FastAPI 路由和依赖
+│   │   ├── config/          # 应用与调度配置
+│   │   ├── database/        # DuckDB 连接、表结构和辅助 SQL
+│   │   ├── jobs/            # 定时任务
+│   │   ├── provider/        # Tushare、HiThink、AkShare、问财
+│   │   ├── repository/      # DuckDB 数据访问
+│   │   ├── schemas/         # Pydantic API 模型
+│   │   ├── services/        # 数据格式化和同步业务
+│   │   ├── strategy/        # 选股策略
+│   │   ├── utils/           # 日期、股票代码工具
+│   │   ├── view/            # Rich 命令行展示
+│   │   └── main.py          # FastAPI 入口
+│   ├── scripts/             # 股票列表、日 K、热度同步脚本
+│   ├── tests/               # 后端测试
+│   └── run.py               # API 快捷启动入口
 ├── data/
 │   └── market.duckdb
-├── pyproject.toml           # Python 依赖与项目配置的唯一来源
-├── uv.lock                  # uv 生成的可复现依赖锁文件
+├── frontend/
+├── pyproject.toml
 └── README.md
 ```
-
 
 ## 安装
 
 要求 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
 
 ```bash
-cd 当前项目地址
-# 删除旧的虚拟环境
-rm -rf .venv
 uv sync
 ```
 
@@ -55,40 +52,29 @@ source .venv/bin/activate
 echo $VIRTUAL_ENV
 ```
 
-## 初始化与同步
+## 初始化和同步
+
+同步脚本会自动初始化 `data/market.duckdb` 和所需数据表。依次同步股票列表、日 K 和当日股票热度：
 
 ```bash
-# 创建 market.duckdb 和表
-uv run python backend/scripts/init_db.py
-
-# 小批量试跑
-uv run quant-sync \
-  --mode initial --symbols 000001,600519
-
-# 初始化全市场最近一年日 K
-uv run quant-sync --mode initial
+uv run python -m backend.scripts.sync_stock_list_db
+uv run quant-sync
+uv run python -m backend.scripts.sync_stock_hot_db
 ```
 
-全市场任务逐只写入，单只失败不会回滚其他股票。重新执行会幂等覆盖，可安全断点续跑。可用 `--limit 20` 限制试跑数量。
+`quant-sync` 会显示交互式菜单，可选择：
 
-同步模式：
-
-- `daily`：从每只股票本地最新日期向前回看 5 个自然日后增量更新；
-- `weekly`：重新校准数据库最近 60 个交易日；
-- `monthly`：重新校准最近一年；
-- `initial`：初始化最近一年。
-
-## 定时任务
-
-FastAPI 默认内置 APScheduler：
-
-- 周一至周五 18:00：每日增量；
-- 周六 09:00：最近 60 个交易日校准；
-- 每月 1 日 10:00：最近一年校准。
-
-时间和开关可在 `backend/.env` 调整。节假日即使触发，空响应也不会生成伪交易日。也可设置 `SCHEDULER_ENABLED=false`，再由系统 Cron 调用同步脚本。
+- 最近 3 个自然日，每批 100 只；
+- 最近 60 个自然日，每批 50 只；
+- 最近 365 个自然日，每批 10 只。
 
 ## 启动 API
+
+```bash
+uv run quant-api
+```
+
+也可以直接启动 Uvicorn：
 
 ```bash
 uv run uvicorn backend.app.main:app \
@@ -96,16 +82,17 @@ uv run uvicorn backend.app.main:app \
 ```
 
 - Swagger：<http://127.0.0.1:8001/docs>
-- `GET /api/health`
-- `GET /api/market/status`
-- `GET /api/stocks?query=茅台`
-- `GET /api/market/bars/600519.SH`
-- `POST /api/jobs/run?mode=daily`
+- `GET /api/stocks-list`：读取本地股票列表
+- `POST /api/stocks-list`：从 Tushare 更新股票列表
 
-## 验证
+## 定时任务
 
-```bash
-uv run pytest
-```
+FastAPI 启动时默认注册以下任务：
+
+- 每月 1 日 10:00：更新股票列表；
+- 周一至周五 18:00：更新股票热度；
+- 周一至周五配置时间：更新最近 3 个自然日的日 K；
+- 每周六 09:00：校准最近 60 个自然日的日 K；
+- 每月 1 日 10:00：校准最近 365 个自然日的日 K。
 
 数据仅用于研究，不构成投资建议。

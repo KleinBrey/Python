@@ -14,7 +14,7 @@
 得到候选股票
 ```
 
-代码刻意保持简单。前 8 节使用本目录的迷你 CSV，不联网，也不修改项目数据；第 9 节开始以只读方式访问项目现有的 `data/simple.duckdb`。
+代码刻意保持简单。前 8 节使用本目录的迷你 CSV，不联网，也不修改项目数据；第 9 节开始以只读方式访问项目现有的 `data/market.duckdb`。
 
 ## 运行环境
 
@@ -55,10 +55,9 @@ python -m pip install pandas duckdb
 
 项目目前有两套代码：
 
-- `backend/simple` 使用 `data/simple.duckdb`，日期列叫 `date`，当前已有本地数据；
-- `backend/app` 使用 `data/market.duckdb`，日期列叫 `trade_date`，并多了复权和同步记录等字段。
+- `backend/app` 使用 `data/market.duckdb`，日 K 日期列叫 `date`。
 
-本教程优先贴合正在使用 Pandas 的 `backend/simple` 和它的放量策略，所以第 8～10 节读取 `simple.duckdb`。以后切换到 `market.duckdb` 时，主要是把 `date` 改为 `trade_date`，Pandas 的分析方法不变。
+本教程贴合当前的 `backend/app` 和它的放量策略，所以第 8～10 节读取 `market.duckdb`，并统一使用日 K 的 `date` 字段。
 
 ## 推荐练习
 

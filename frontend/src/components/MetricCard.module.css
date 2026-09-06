@@ -1,0 +1,72 @@
+.card {
+  background: linear-gradient(180deg, var(--card) 0%, #151518 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+  min-height: 156px;
+  padding: 22px;
+}
+
+.head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.head span {
+  color: var(--muted-foreground);
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.icon {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.teal {
+  background: #063f3b;
+  color: #5eead4;
+}
+
+.indigo {
+  background: #24214d;
+  color: #a5b4fc;
+}
+
+.rose {
+  background: #4a1023;
+  color: #fda4af;
+}
+
+.amber {
+  background: #462f09;
+  color: #fbbf24;
+}
+
+.neutral {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.card strong {
+  color: var(--foreground);
+  display: block;
+  font-size: 32px;
+  line-height: 1.1;
+  margin-top: 24px;
+  overflow-wrap: anywhere;
+}
+
+.card p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-top: 10px;
+}

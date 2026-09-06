@@ -40,13 +40,17 @@ export function statusLabel(status, fallback = '未知') {
     error: '读取失败',
     offline: '不可用',
     blocked: '待配置',
+    idle: '待执行',
+    running: '执行中',
+    success: '已完成',
+    failed: '执行失败',
   };
   return labels[status] || fallback;
 }
 
 export function statusTone(status) {
-  if (status === 'online' || status === 'ready') return 'ok';
-  if (status === 'blocked' || status === 'degraded' || status === 'missing') return 'warn';
-  if (status === 'offline' || status === 'error') return 'bad';
+  if (status === 'online' || status === 'ready' || status === 'success') return 'ok';
+  if (status === 'blocked' || status === 'degraded' || status === 'missing' || status === 'running') return 'warn';
+  if (status === 'offline' || status === 'error' || status === 'failed') return 'bad';
   return 'idle';
 }

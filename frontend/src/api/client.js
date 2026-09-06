@@ -1,7 +1,4 @@
-const API_BASE_URLS = [
-  import.meta.env.VITE_API_BASE_URL,
-  'http://127.0.0.1:8001',
-].filter(Boolean);
+const API_BASE_URLS = [import.meta.env.VITE_API_BASE_URL, 'http://127.0.0.1:8001'].filter(Boolean);
 
 function networkError(lastError) {
   const targets = API_BASE_URLS.join('、');
@@ -19,7 +16,7 @@ export async function apiGet(path, options = {}) {
       const response = await fetch(`${baseUrl}${path}`, options);
       const payload = await response.json();
       if (!response.ok) {
-        const error = new Error(payload.error || '请求失败');
+        const error = new Error(payload.error || payload.detail || '请求失败');
         error.responseReceived = true;
         throw error;
       }
@@ -43,11 +40,11 @@ export async function apiPost(path, body, options = {}) {
         ...options,
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       });
       const payload = await response.json();
       if (!response.ok) {
-        const error = new Error(payload.error || '请求失败');
+        const error = new Error(payload.error || payload.detail || '请求失败');
         error.responseReceived = true;
         throw error;
       }

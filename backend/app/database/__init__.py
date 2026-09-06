@@ -1,4 +1,3 @@
-from backend.app.database.connection import DuckDBDatabase
+from .connection import DuckDBDatabase
 
 __all__ = ["DuckDBDatabase"]
-

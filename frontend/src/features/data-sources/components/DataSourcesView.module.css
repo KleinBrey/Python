@@ -1,0 +1,140 @@
+.grid {
+  align-items: stretch;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  min-height: 330px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 18px;
+}
+
+.cardHead {
+  align-items: start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.cardHead span {
+  color: var(--muted-foreground);
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+}
+
+.cardHead > div {
+  min-width: 0;
+}
+
+.card h3 {
+  color: var(--foreground);
+  font-size: 22px;
+  line-height: 1.2;
+  margin-top: 8px;
+}
+
+.description {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.6;
+  margin-top: 16px;
+  min-height: 42px;
+  overflow-wrap: anywhere;
+}
+
+.card dl {
+  border-bottom: 1px solid #27272a;
+  border-top: 1px solid #27272a;
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px 0;
+}
+
+.card dl div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.card dt {
+  color: #71717a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.card dd {
+  color: #e4e4e7;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result {
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 14px;
+  max-height: 104px;
+  min-width: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 9px 10px;
+  word-break: break-word;
+}
+
+.running {
+  background: #392907;
+  color: #fde68a;
+}
+
+.success {
+  background: #052e2b;
+  color: #99f6e4;
+}
+
+.failed {
+  background: #3f101b;
+  color: #fecdd3;
+}
+
+.runButton {
+  margin-top: auto;
+  width: 100%;
+}
+
+@media (max-width: 1180px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    min-height: 300px;
+  }
+}

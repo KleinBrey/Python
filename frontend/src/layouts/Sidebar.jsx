@@ -1,34 +1,17 @@
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from '@/components/ui/sidebar'
-
-import React from 'react'
-import {
-  BarChart3,
-  ChartNoAxesCombined,
-  Database,
-  LayoutDashboard,
-  PieChart,
-  Search,
-  Server,
-  TrendingUp,
-} from 'lucide-react'
-import { NavLink } from 'react-router-dom'
-import { dashboardGroups } from '../config/dashboardRegistry.js'
-import style from './Sidebar.module.css'
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shadcn/components/ui/sidebar';
+import logoUrl from '@/assets/branding/logo.png';
+import React from 'react';
+import { ChartNoAxesCombined, LayoutDashboard, ChartCandlestick, DatabaseBackup, Flame, Server } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { dashboardGroups } from '../routes/RouteConfig.js';
+import style from './Sidebar.module.css';
 
 const iconById = {
-  'hot-rankings': TrendingUp,
-  'market-overview': PieChart,
+  'hot-rankings': Flame,
   'strategy-signals': ChartNoAxesCombined,
-  'iwencai-selector': Search,
-  'chart-center': BarChart3,
-  'data-sources': LayoutDashboard,
-  database: Database,
-}
+  'a-share-market': ChartCandlestick,
+  'data-sources': DatabaseBackup
+};
 
 export function AppSidebar() {
   return (
@@ -36,34 +19,32 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className={style.logo}>
           <div className={style.mark}>
-            <img src="/static/logo.png" alt="Stock Flow Logo" />
+            <img src={logoUrl} alt="Stock Flow Logo" />
           </div>
           <div className={style.title}>
-            <span>Stock Flow</span>
+            <span>Quant Tide</span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent className={style.sidebarContent}>
         <aside className={style.sidebar}>
           <nav className={style.sidebarNav} aria-label="股票看板导航">
-            {dashboardGroups.map((group) => (
+            {dashboardGroups.map(group => (
               <section key={group.title}>
                 <p>{group.title}</p>
-                {group.items.map((item) => {
-                  const Icon = iconById[item.id] || LayoutDashboard
+                {group.items.map(item => {
+                  const Icon = iconById[item.id] || LayoutDashboard;
                   return (
                     <NavLink
-                      className={({ isActive }) =>
-                        `${style.navItem}${isActive ? ` ${style.active}` : ''}`
-                      }
+                      className={({ isActive }) => `${style.navItem}${isActive ? ` ${style.active}` : ''}`}
                       key={item.path}
-                      title={`${item.title}：${item.description}`}
+                      title={`${item.title}`}
                       to={item.path}
                     >
                       <Icon size={16} />
                       <span>{item.title}</span>
                     </NavLink>
-                  )
+                  );
                 })}
               </section>
             ))}
@@ -81,5 +62,5 @@ export function AppSidebar() {
         </div>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

@@ -1,13 +1,34 @@
 from fastapi import Request
 
-from backend.app.repositories import MarketDataRepository
-from backend.app.services import MarketDataService
+from backend.app.repository import (
+    DailyBarRepository,
+    HKStockHotDailyRepository,
+    StockHotDailyRepository,
+    StockRepository,
+    USStockHotDailyRepository,
+)
+from backend.app.services import Service
 
 
-def get_repository(request: Request) -> MarketDataRepository:
-    return request.app.state.repository
+def get_stock_repository(request: Request) -> StockRepository:
+    return request.app.state.stock_repository
 
 
-def get_service(request: Request) -> MarketDataService:
-    return request.app.state.market_service
+def get_daily_repository(request: Request) -> DailyBarRepository:
+    return request.app.state.daily_repository
 
+
+def get_stock_hot_repository(request: Request) -> StockHotDailyRepository:
+    return request.app.state.stock_hot_repository
+
+
+def get_hk_stock_hot_repository(request: Request) -> HKStockHotDailyRepository:
+    return request.app.state.hk_stock_hot_repository
+
+
+def get_us_stock_hot_repository(request: Request) -> USStockHotDailyRepository:
+    return request.app.state.us_stock_hot_repository
+
+
+def get_service(request: Request) -> Service:
+    return request.app.state.service
