@@ -128,15 +128,19 @@
   flex: 0 0 auto;
 }
 
-.resultPanel:fullscreen {
+.windowFullscreen {
   background: var(--background);
   border: 0;
   border-radius: 0;
   height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  inset: 0;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
 }
 
-.resultPanel:fullscreen .tableWrap {
+.windowFullscreen .tableWrap {
   flex: 1;
   height: auto;
   min-height: 0;

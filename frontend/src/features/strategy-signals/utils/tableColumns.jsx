@@ -41,12 +41,12 @@ export const columnDefs = {
       field: 'hot_rank',
       minWidth: 100,
       flex: 0.7,
-      valueFormatter: params => (params.value ? `#${params.value}` : '-')
+      valueFormatter: params => (params.value ? `${params.value}` : '-')
     }
   ]
 };
 
-const columnDefs = [
+const columnDefsTemp = [
   { headerName: '股票', field: 'name', minWidth: 120, flex: 1, cellStyle: { color: '#ff7f50', fontWeight: 700 } },
   { headerName: '代码', field: 'symbol', minWidth: 110, flex: 1 },
   {
